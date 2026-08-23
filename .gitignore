@@ -1,0 +1,38 @@
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Python / Django
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.log
+
+# Laravel / PHP
+vendor/
+storage/*.key
+bootstrap/cache/*
+!bootstrap/cache/.gitignore
+
+# React / Node
+node_modules/
+dist/
+.vite/
+
+# IDE / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# IA / datasets
+datasets/
+dataset/
+data/
+*.h5
+*.keras
+*.pt
+*.pth
+*.onnx

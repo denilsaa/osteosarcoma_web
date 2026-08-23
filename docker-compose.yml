@@ -1,0 +1,428 @@
+services:
+
+  # =========================================================
+  # BASE DE DATOS - USUARIOS
+  # =========================================================
+  postgres_usuarios:
+    image: postgres:17
+    container_name: osteosarcoma_postgres_usuarios
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_USUARIOS_DB}
+      POSTGRES_USER: ${POSTGRES_USUARIOS_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_USUARIOS_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_usuarios_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USUARIOS_USER} -d ${POSTGRES_USUARIOS_DB}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - osteosarcoma_network
+
+
+  # =========================================================
+  # SERVICIO - USUARIOS
+  # =========================================================
+  servicio_usuarios:
+    build:
+      context: ./servicios/servicio_usuarios
+      dockerfile: Dockerfile
+
+    container_name: osteosarcoma_servicio_usuarios
+    restart: unless-stopped
+
+    environment:
+      DJANGO_SECRET_KEY: ${USUARIOS_DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: ${USUARIOS_DJANGO_DEBUG}
+
+      DB_NAME: ${POSTGRES_USUARIOS_DB}
+      DB_USER: ${POSTGRES_USUARIOS_APP_USER}
+      DB_PASSWORD: ${POSTGRES_USUARIOS_APP_PASSWORD}
+      DB_HOST: postgres_usuarios
+      DB_PORT: 5432
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - ./servicios/servicio_usuarios:/app
+
+    depends_on:
+      postgres_usuarios:
+        condition: service_healthy
+
+    networks:
+      - osteosarcoma_network
+
+
+  # =========================================================
+  # BASE DE DATOS - CLINICO
+  # =========================================================
+  postgres_clinico:
+    image: postgres:17
+    container_name: osteosarcoma_postgres_clinico
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_CLINICO_DB}
+      POSTGRES_USER: ${POSTGRES_CLINICO_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_CLINICO_PASSWORD}
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - postgres_clinico_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_CLINICO_USER} -d ${POSTGRES_CLINICO_DB}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - osteosarcoma_network
+
+
+  # =========================================================
+  # SERVICIO - CLINICO
+  # =========================================================
+  servicio_clinico:
+    build:
+      context: ./servicios/servicio_clinico
+      dockerfile: Dockerfile
+
+    container_name: osteosarcoma_servicio_clinico
+    restart: unless-stopped
+
+    environment:
+      DJANGO_SECRET_KEY: ${CLINICO_DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: ${CLINICO_DJANGO_DEBUG}
+
+      DB_NAME: ${POSTGRES_CLINICO_DB}
+      DB_USER: ${POSTGRES_CLINICO_APP_USER}
+      DB_PASSWORD: ${POSTGRES_CLINICO_APP_PASSWORD}
+      DB_HOST: postgres_clinico
+      DB_PORT: 5432
+
+    ports:
+      - "8001:8000"
+
+    volumes:
+      - ./servicios/servicio_clinico:/app
+
+    depends_on:
+      postgres_clinico:
+        condition: service_healthy
+
+    networks:
+      - osteosarcoma_network
+
+
+  # =========================================================
+  # BASE DE DATOS - IA
+  # =========================================================
+  postgres_ia:
+    image: postgres:17
+    container_name: osteosarcoma_postgres_ia
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_IA_DB}
+      POSTGRES_USER: ${POSTGRES_IA_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_IA_PASSWORD}
+
+    ports:
+      - "5434:5432"
+
+    volumes:
+      - postgres_ia_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_IA_USER} -d ${POSTGRES_IA_DB}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - osteosarcoma_network
+
+
+  # =========================================================
+  # SERVICIO - IA
+  # =========================================================
+  servicio_ia:
+    build:
+      context: ./servicios/servicio_ia
+      dockerfile: Dockerfile
+
+    container_name: osteosarcoma_servicio_ia
+    restart: unless-stopped
+
+    environment:
+      DJANGO_SECRET_KEY: ${IA_DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: ${IA_DJANGO_DEBUG}
+
+      DB_NAME: ${POSTGRES_IA_DB}
+      DB_USER: ${POSTGRES_IA_APP_USER}
+      DB_PASSWORD: ${POSTGRES_IA_APP_PASSWORD}
+      DB_HOST: postgres_ia
+      DB_PORT: 5432
+
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+
+    ports:
+      - "8002:8000"
+
+    volumes:
+      - ./servicios/servicio_ia:/app
+
+    depends_on:
+      postgres_ia:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+    networks:
+      - osteosarcoma_network
+
+
+  # =========================================================
+  # BASE DE DATOS - RADIOGRAFIAS
+  # =========================================================
+  postgres_radiografias:
+    image: postgres:17
+    container_name: osteosarcoma_postgres_radiografias
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_RADIOGRAFIAS_DB}
+      POSTGRES_USER: ${POSTGRES_RADIOGRAFIAS_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_RADIOGRAFIAS_PASSWORD}
+
+    ports:
+      - "5435:5432"
+
+    volumes:
+      - postgres_radiografias_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_RADIOGRAFIAS_USER} -d ${POSTGRES_RADIOGRAFIAS_DB}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - osteosarcoma_network
+
+
+  # =========================================================
+  # SERVICIO - RADIOGRAFIAS
+  # =========================================================
+  servicio_radiografias:
+    build:
+      context: ./servicios/servicio_radiografias
+      dockerfile: Dockerfile
+
+    container_name: osteosarcoma_servicio_radiografias
+    restart: unless-stopped
+
+    environment:
+      APP_ENV: ${RADIOGRAFIAS_APP_ENV}
+      APP_DEBUG: ${RADIOGRAFIAS_APP_DEBUG}
+
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres_radiografias
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_RADIOGRAFIAS_DB}
+      DB_USERNAME: ${POSTGRES_RADIOGRAFIAS_APP_USER}
+      DB_PASSWORD: ${POSTGRES_RADIOGRAFIAS_APP_PASSWORD}
+
+    ports:
+      - "8003:8000"
+
+    volumes:
+      - ./servicios/servicio_radiografias:/app
+
+    depends_on:
+      postgres_radiografias:
+        condition: service_healthy
+
+    networks:
+      - osteosarcoma_network
+
+
+  # =========================================================
+  # BASE DE DATOS - REPORTES
+  # =========================================================
+  postgres_reportes:
+    image: postgres:17
+    container_name: osteosarcoma_postgres_reportes
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_REPORTES_DB}
+      POSTGRES_USER: ${POSTGRES_REPORTES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_REPORTES_PASSWORD}
+
+    ports:
+      - "5436:5432"
+
+    volumes:
+      - postgres_reportes_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_REPORTES_USER} -d ${POSTGRES_REPORTES_DB}"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - osteosarcoma_network
+
+
+  # =========================================================
+  # SERVICIO - REPORTES
+  # =========================================================
+  servicio_reportes:
+    build:
+      context: ./servicios/servicio_reportes
+      dockerfile: Dockerfile
+
+    container_name: osteosarcoma_servicio_reportes
+    restart: unless-stopped
+
+    environment:
+      APP_ENV: ${REPORTES_APP_ENV}
+      APP_DEBUG: ${REPORTES_APP_DEBUG}
+
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres_reportes
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_REPORTES_DB}
+      DB_USERNAME: ${POSTGRES_REPORTES_APP_USER}
+      DB_PASSWORD: ${POSTGRES_REPORTES_APP_PASSWORD}
+
+    ports:
+      - "8004:8000"
+
+    volumes:
+      - ./servicios/servicio_reportes:/app
+
+    depends_on:
+      postgres_reportes:
+        condition: service_healthy
+
+    networks:
+      - osteosarcoma_network
+
+
+  # =========================================================
+  # RABBITMQ
+  # =========================================================
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: osteosarcoma_rabbitmq
+    restart: unless-stopped
+
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - osteosarcoma_network
+
+  # =========================================================
+  # FRONTEND - REACT
+  # =========================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+
+    container_name: osteosarcoma_frontend
+    restart: unless-stopped
+
+    ports:
+      - "5173:5173"
+
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+
+    environment:
+      VITE_API_USUARIOS_URL: http://localhost:8000
+      VITE_API_CLINICO_URL: http://localhost:8001
+      VITE_API_IA_URL: http://localhost:8002
+      VITE_API_RADIOGRAFIAS_URL: http://localhost:8003
+      VITE_API_REPORTES_URL: http://localhost:8004
+
+    depends_on:
+      - servicio_usuarios
+      - servicio_clinico
+      - servicio_ia
+      - servicio_radiografias
+      - servicio_reportes
+
+    networks:
+      - osteosarcoma_network
+
+
+# =========================================================
+# VOLUMENES
+# =========================================================
+volumes:
+  postgres_usuarios_data:
+  postgres_clinico_data:
+  postgres_ia_data:
+  postgres_radiografias_data:
+  postgres_reportes_data:
+  rabbitmq_data:
+  frontend_node_modules:
+
+# =========================================================
+# RED INTERNA
+# =========================================================
+networks:
+  osteosarcoma_network:
+    driver: bridge
