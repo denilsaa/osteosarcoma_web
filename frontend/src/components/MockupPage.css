@@ -1,0 +1,69 @@
+.mockup-page {
+  width: 100%;
+}
+
+.mockup-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.mockup-page__eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  color: #3886a8;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mockup-page h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #16283a;
+}
+
+.mockup-page p {
+  margin: 8px 0 0;
+  max-width: 680px;
+  color: #667488;
+}
+
+.mockup-page__action {
+  background: #123b5d;
+  color: white;
+  padding: 11px 17px;
+  border-radius: 9px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.mockup-page__card {
+  background: white;
+  border: 1px solid #e3e9f0;
+  border-radius: 14px;
+  min-height: 420px;
+  padding: 24px;
+}
+
+.mockup-page__placeholder {
+  min-height: 370px;
+  border: 2px dashed #d6dee8;
+  border-radius: 12px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 6px;
+  color: #506074;
+}
+
+.mockup-page__placeholder strong {
+  font-size: 18px;
+}
+
+.mockup-page__placeholder span {
+  color: #8a97a7;
+}

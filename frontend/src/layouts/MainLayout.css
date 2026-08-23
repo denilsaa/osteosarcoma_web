@@ -1,0 +1,155 @@
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  background: #f4f7fb;
+  color: #18212f;
+}
+
+.sidebar {
+  width: 260px;
+  min-height: 100vh;
+  background: #123b5d;
+  color: white;
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.sidebar__brand-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: white;
+  color: #123b5d;
+  font-weight: 800;
+}
+
+.sidebar__brand strong {
+  display: block;
+  font-size: 16px;
+}
+
+.sidebar__brand span {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  opacity: 0.72;
+}
+
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 24px;
+}
+
+.sidebar__nav a,
+.sidebar__bottom a {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  padding: 11px 13px;
+  border-radius: 9px;
+  transition: 0.2s;
+}
+
+.sidebar__nav a:hover,
+.sidebar__bottom a:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.sidebar__nav a.active,
+.sidebar__bottom a.active {
+  background: white;
+  color: #123b5d;
+  font-weight: 600;
+}
+
+.sidebar__bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar__bottom button {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: left;
+  padding: 11px 13px;
+  cursor: pointer;
+  border-radius: 9px;
+  font: inherit;
+}
+
+.sidebar__bottom button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.main-area {
+  flex: 1;
+  min-width: 0;
+}
+
+.topbar {
+  height: 76px;
+  background: white;
+  border-bottom: 1px solid #e6ebf1;
+  padding: 0 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topbar__clinic {
+  color: #627084;
+  font-size: 14px;
+}
+
+.topbar__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #dceef7;
+  color: #123b5d;
+  font-weight: 700;
+}
+
+.topbar__user strong,
+.topbar__user span {
+  display: block;
+}
+
+.topbar__user strong {
+  font-size: 14px;
+}
+
+.topbar__user span {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #7d8998;
+}
+
+.content {
+  padding: 30px;
+}
