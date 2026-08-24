@@ -3,11 +3,9 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  HeartPulse,
   LockKeyhole,
   Mail,
-  ShieldCheck,
-  Sparkles,
-  Stethoscope,
 } from "lucide-react";
 
 import { useState } from "react";
@@ -27,82 +25,52 @@ export function LoginPage() {
 
   return (
     <main className="login-page">
+      {/* =====================================================
+          PANEL VISUAL
+          ===================================================== */}
       <section className="login-visual">
+        <div className="login-visual__background">
+          <img
+            src="/branding/radiografia-login.png"
+            alt=""
+            aria-hidden="true"
+          />
+        </div>
+
+        <div className="login-visual__overlay" />
+        <div className="login-visual__grid" />
+
         <div className="login-visual__glow login-visual__glow--one" />
         <div className="login-visual__glow login-visual__glow--two" />
 
-        <div className="login-visual__orb login-visual__orb--one" />
-        <div className="login-visual__orb login-visual__orb--two" />
-        <div className="login-visual__orb login-visual__orb--three" />
-
-        <div className="login-visual__grid" />
-
         <div className="login-visual__content">
-          <div className="login-visual__badge">
-            <ShieldCheck size={17} />
-            <span>Entorno clínico seguro</span>
-          </div>
-
-          <div className="login-visual__heading">
-            <span className="login-visual__eyebrow">
-              Clínica San Juan de Dios
-            </span>
-
+          <div className="login-visual__copy">
             <h1>
-              Tecnología que acompaña
-              <span> decisiones clínicas.</span>
+              Tecnología al
+              <br />
+              servicio del
+              <span>
+                cuidado
+                <br />
+                oncológico.
+              </span>
             </h1>
 
             <p>
-              Plataforma especializada para la gestión clínica,
-              radiográfica y el apoyo al análisis de imágenes mediante
-              inteligencia artificial.
+              Gestión clínica, radiografías y herramientas de apoyo
+              mediante inteligencia artificial en un solo entorno
+              diseñado para el especialista.
             </p>
-          </div>
-
-          <div className="login-visual__features">
-            <article className="login-visual__feature">
-              <div className="login-visual__feature-icon">
-                <Stethoscope size={21} />
-              </div>
-
-              <div>
-                <strong>Gestión clínica integrada</strong>
-                <span>
-                  Pacientes, casos y radiografías centralizados.
-                </span>
-              </div>
-            </article>
-
-            <article className="login-visual__feature">
-              <div className="login-visual__feature-icon">
-                <Sparkles size={21} />
-              </div>
-
-              <div>
-                <strong>Apoyo mediante IA</strong>
-                <span>
-                  Herramientas orientadas al análisis radiográfico.
-                </span>
-              </div>
-            </article>
-          </div>
-
-          <div className="login-visual__status">
-            <div className="login-visual__status-dot" />
-
-            <span>Sistema operativo</span>
-
-            <div className="login-visual__status-separator" />
-
-            <span>Acceso institucional</span>
           </div>
         </div>
       </section>
 
+      {/* =====================================================
+          PANEL DE ACCESO
+          ===================================================== */}
       <section className="login-access">
-        <div className="login-access__decor login-access__decor--one" />
-        <div className="login-access__decor login-access__decor--two" />
+        <div className="login-access__glow login-access__glow--top" />
+        <div className="login-access__glow login-access__glow--bottom" />
 
         <div className="login-card">
           <div className="login-card__logo">
@@ -114,15 +82,15 @@ export function LoginPage() {
 
           <div className="login-card__heading">
             <div className="login-card__tag">
-              <CheckCircle2 size={14} />
+              <HeartPulse size={14} />
               <span>Portal clínico</span>
             </div>
 
             <h2>Bienvenido</h2>
 
             <p>
-              Ingrese sus credenciales institucionales para acceder
-              al sistema.
+              Ingrese sus credenciales institucionales para acceder al
+              sistema.
             </p>
           </div>
 
@@ -207,23 +175,27 @@ export function LoginPage() {
               className="login-form__submit"
             >
               <span>Ingresar al sistema</span>
-
               <ArrowRight size={18} />
             </button>
           </form>
 
           <div className="login-card__security">
-            <ShieldCheck size={16} />
+            <div className="login-card__security-icon">
+              <CheckCircle2 size={15} />
+            </div>
 
-            <span>
-              Acceso exclusivo para personal autorizado
-            </span>
+            <div>
+              <strong>Acceso protegido</strong>
+              <span>
+                Exclusivo para personal autorizado de la clínica.
+              </span>
+            </div>
           </div>
         </div>
 
         <footer className="login-access__footer">
           <span>Clínica San Juan de Dios</span>
-          <span>•</span>
+          <span className="login-access__footer-dot" />
           <span>Sistema de apoyo clínico</span>
         </footer>
       </section>
