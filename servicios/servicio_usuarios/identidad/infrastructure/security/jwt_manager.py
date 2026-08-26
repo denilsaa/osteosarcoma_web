@@ -161,3 +161,15 @@ class JWTManager:
             raise Exception(
                 "Token inválido"
             )
+    def decodificar_token(
+        self,
+        token
+    ):
+        """
+        Decodifica un JWT y devuelve
+        su payload.
+        """
+
+        return self.validar_token(
+            token
+        )

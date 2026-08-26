@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
-    "unsafe-development-key",
+    "osteosarcoma_microservicio_seguridad_jwt_2026_clave_super_segura"
 )
 
 DEBUG = os.environ.get(
