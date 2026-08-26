@@ -4,12 +4,10 @@ from identidad.models import (
 )
 
 
-
 class RolRepository:
     """
     Maneja roles y asignaciones.
     """
-
 
     def obtener_por_codigo(
         self,
@@ -40,4 +38,22 @@ class RolRepository:
 
             asignado_por=asignado_por,
 
+        )
+
+
+    def obtener_usuarios_por_rol(
+        self,
+        codigo_rol
+    ):
+
+        return (
+            UsuarioRol.objects
+            .filter(
+                rol__codigo=codigo_rol,
+                activo=True
+            )
+            .select_related(
+                "usuario",
+                "rol"
+            )
         )
