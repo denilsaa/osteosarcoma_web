@@ -73,18 +73,51 @@ ASGI_APPLICATION = "config.asgi.application"
 # BASE DE DATOS
 # ==========================================================
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ["DB_NAME"],
-        "USER": os.environ["DB_USER"],
-        "PASSWORD": os.environ["DB_PASSWORD"],
-        "HOST": os.environ["DB_HOST"],
-        "PORT": os.environ.get("DB_PORT", "5432"),
-        "CONN_MAX_AGE": 60,
-    }
-}
+# ==========================================================
+# BASE DE DATOS
+# ==========================================================
 
+DATABASES = {
+
+    "default": {
+
+        "ENGINE":
+            "django.db.backends.postgresql",
+
+
+        "NAME":
+            os.environ.get(
+                "DB_NAME"
+            ),
+
+
+        "USER":
+            os.environ.get(
+                "DB_USER"
+            ),
+
+
+        "PASSWORD":
+            os.environ.get(
+                "DB_PASSWORD"
+            ),
+
+
+        "HOST":
+            os.environ.get(
+                "DB_HOST"
+            ),
+
+
+        "PORT":
+            os.environ.get(
+                "DB_PORT",
+                "5432"
+            ),
+
+    }
+
+}
 
 # ==========================================================
 # INTERNACIONALIZACIÓN
@@ -117,3 +150,15 @@ REST_FRAMEWORK = {
 # ==========================================================
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ==========================================================
+# SEGURIDAD DE CONTRASEÑAS
+# ==========================================================
+
+PASSWORD_HASHERS = [
+
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+
+]

@@ -4,27 +4,53 @@ services:
   # BASE DE DATOS - USUARIOS
   # =========================================================
   postgres_usuarios:
+
     image: postgres:17
+
     container_name: osteosarcoma_postgres_usuarios
+
     restart: unless-stopped
+
+
     environment:
+
       POSTGRES_DB: ${POSTGRES_USUARIOS_DB}
+
       POSTGRES_USER: ${POSTGRES_USUARIOS_USER}
+
       POSTGRES_PASSWORD: ${POSTGRES_USUARIOS_PASSWORD}
+
+
     ports:
+
       - "5432:5432"
+
+
     volumes:
+
       - postgres_usuarios_data:/var/lib/postgresql/data
+
+      - ./servicios/servicio_usuarios/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+
     healthcheck:
+
       test:
+
         [
           "CMD-SHELL",
           "pg_isready -U ${POSTGRES_USUARIOS_USER} -d ${POSTGRES_USUARIOS_DB}"
         ]
+
       interval: 5s
+
       timeout: 5s
+
       retries: 10
+
+
     networks:
+
       - osteosarcoma_network
 
 
@@ -32,34 +58,56 @@ services:
   # SERVICIO - USUARIOS
   # =========================================================
   servicio_usuarios:
+
     build:
+
       context: ./servicios/servicio_usuarios
+
       dockerfile: Dockerfile
 
+
     container_name: osteosarcoma_servicio_usuarios
+
     restart: unless-stopped
 
+
     environment:
+
       DJANGO_SECRET_KEY: ${USUARIOS_DJANGO_SECRET_KEY}
+
       DJANGO_DEBUG: ${USUARIOS_DJANGO_DEBUG}
 
+
       DB_NAME: ${POSTGRES_USUARIOS_DB}
+
       DB_USER: ${POSTGRES_USUARIOS_APP_USER}
+
       DB_PASSWORD: ${POSTGRES_USUARIOS_APP_PASSWORD}
+
       DB_HOST: postgres_usuarios
+
       DB_PORT: 5432
 
+
     ports:
+
       - "8000:8000"
 
+
     volumes:
+
       - ./servicios/servicio_usuarios:/app
 
+
     depends_on:
+
       postgres_usuarios:
+
         condition: service_healthy
 
+
     networks:
+
       - osteosarcoma_network
 
 
