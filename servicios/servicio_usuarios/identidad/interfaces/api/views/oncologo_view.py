@@ -3,30 +3,21 @@ from rest_framework.response import Response
 from rest_framework import status
 
 
-from identidad.infrastructure.permissions.role_permissions import (
-    IsJefeOncologia
-)
-
-
 from identidad.application.use_cases.crear_oncologo import (
     CrearOncologoUseCase
 )
-
 
 from identidad.application.use_cases.listar_oncologos import (
     ListarOncologosUseCase
 )
 
-
 from identidad.application.use_cases.obtener_oncologo import (
     ObtenerOncologoUseCase
 )
 
-
 from identidad.application.use_cases.editar_oncologo import (
     EditarOncologoUseCase
 )
-
 
 
 from identidad.interfaces.api.serializers.oncologo_serializer import (
@@ -35,28 +26,45 @@ from identidad.interfaces.api.serializers.oncologo_serializer import (
 )
 
 
+from identidad.infrastructure.permissions.oncologo_permissions import (
+    PuedeListarOncologos,
+    PuedeCrearOncologos,
+    PuedeEditarOncologos
+)
+
+
 
 
 
 class OncologoListCreateAPIView(APIView):
-
     """
-    Gestión de oncólogos.
-    Solo permitido para Jefe de Oncología.
+    Endpoint para listar y crear oncólogos.
     """
 
 
-    permission_classes = [
-        IsJefeOncologia
-    ]
+
+    def get_permissions(self):
+
+        if self.request.method == "GET":
+
+            return [
+                PuedeListarOncologos()
+            ]
+
+
+        if self.request.method == "POST":
+
+            return [
+                PuedeCrearOncologos()
+            ]
+
+
+        return []
 
 
 
-    def get(
-        self,
-        request
-    ):
 
+    def get(self, request):
 
         try:
 
@@ -67,17 +75,12 @@ class OncologoListCreateAPIView(APIView):
 
 
             return Response(
-
                 resultado,
-
                 status=status.HTTP_200_OK
-
             )
 
 
-
         except Exception as error:
-
 
             return Response(
 
@@ -86,25 +89,17 @@ class OncologoListCreateAPIView(APIView):
                 },
 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
-
             )
 
 
 
 
 
-
-
-    def post(
-        self,
-        request
-    ):
-
+    def post(self, request):
 
         serializer = CrearOncologoSerializer(
             data=request.data
         )
-
 
 
         serializer.is_valid(
@@ -112,39 +107,28 @@ class OncologoListCreateAPIView(APIView):
         )
 
 
-
         try:
-
 
             usuario = (
                 CrearOncologoUseCase()
                 .ejecutar(
-
                     serializer.validated_data
-
                 )
             )
-
 
 
             return Response(
 
                 {
-
                     "mensaje":
                     "Oncólogo creado correctamente",
 
-
                     "id_usuario":
-                    str(
-                        usuario.id_usuario
-                    )
+                    str(usuario.id_usuario)
 
                 },
 
-
                 status=status.HTTP_201_CREATED
-
             )
 
 
@@ -159,7 +143,6 @@ class OncologoListCreateAPIView(APIView):
                 },
 
                 status=status.HTTP_400_BAD_REQUEST
-
             )
 
 
@@ -169,19 +152,26 @@ class OncologoListCreateAPIView(APIView):
 
 
 
-
 class OncologoDetailAPIView(APIView):
-
     """
-    Consulta y edición de un oncólogo.
-    Solo permitido para Jefe de Oncología.
+    Endpoint para consultar y editar
+    un oncólogo específico.
     """
 
 
 
-    permission_classes = [
-        IsJefeOncologia
-    ]
+    def get_permissions(self):
+
+
+        if self.request.method == "PUT":
+
+            return [
+                PuedeEditarOncologos()
+            ]
+
+
+        return []
+
 
 
 
@@ -201,13 +191,10 @@ class OncologoDetailAPIView(APIView):
                 ObtenerOncologoUseCase()
 
                 .ejecutar(
-
                     usuario_id
-
                 )
 
             )
-
 
 
             return Response(
@@ -215,7 +202,6 @@ class OncologoDetailAPIView(APIView):
                 resultado,
 
                 status=status.HTTP_200_OK
-
             )
 
 
@@ -230,7 +216,6 @@ class OncologoDetailAPIView(APIView):
                 },
 
                 status=status.HTTP_404_NOT_FOUND
-
             )
 
 
@@ -251,7 +236,6 @@ class OncologoDetailAPIView(APIView):
         )
 
 
-
         serializer.is_valid(
             raise_exception=True
         )
@@ -270,7 +254,6 @@ class OncologoDetailAPIView(APIView):
             )
 
 
-
             return Response(
 
                 {
@@ -279,7 +262,6 @@ class OncologoDetailAPIView(APIView):
                 },
 
                 status=status.HTTP_200_OK
-
             )
 
 
@@ -294,5 +276,4 @@ class OncologoDetailAPIView(APIView):
                 },
 
                 status=status.HTTP_400_BAD_REQUEST
-
             )
