@@ -139,11 +139,24 @@ USE_TZ = True
 # Todavía NO usamos autenticación propia de Django.
 # Más adelante implementaremos JWT de nuestro dominio.
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
-    "DEFAULT_PERMISSION_CLASSES": [],
-    "UNAUTHENTICATED_USER": None,
-}
 
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+
+        "identidad.infrastructure.security.jwt_authentication.JWTAuthentication",
+
+    ],
+
+
+    "DEFAULT_PERMISSION_CLASSES": [
+
+        "rest_framework.permissions.IsAuthenticated",
+
+    ],
+
+
+    "UNAUTHENTICATED_USER": None,
+
+}
 
 # ==========================================================
 # MODELOS
