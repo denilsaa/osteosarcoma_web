@@ -1,0 +1,1517 @@
+.oncologists-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  width: 100%;
+  max-width: 1420px;
+
+  margin: 0 auto;
+}
+
+
+.oncologists-header {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 24px;
+}
+
+
+.oncologists-header__eyebrow {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #0783a8;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+
+  text-transform: uppercase;
+}
+
+
+.oncologists-header h1 {
+  margin: 0;
+
+  color: #142735;
+
+  font-size: 29px;
+  line-height: 1.15;
+}
+
+
+.oncologists-header p {
+  margin: 9px 0 0;
+
+  color: #738897;
+
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+
+.oncologists-primary-button,
+.oncologists-secondary-button {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  min-height: 42px;
+
+  padding: 0 17px;
+
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+
+.oncologists-primary-button {
+  border: 1px solid #0d6082;
+
+  background: #0d5475;
+
+  color: #ffffff;
+}
+
+
+.oncologists-primary-button:hover:not(:disabled) {
+  background: #0b678b;
+
+  transform: translateY(-1px);
+}
+
+
+.oncologists-secondary-button {
+  border: 1px solid #d8e3e9;
+
+  background: #ffffff;
+
+  color: #526b7a;
+}
+
+
+.oncologists-secondary-button:hover:not(:disabled) {
+  border-color: #b9ccd6;
+
+  background: #f7fafb;
+}
+
+
+.oncologists-primary-button:disabled,
+.oncologists-secondary-button:disabled {
+  cursor: wait;
+
+  opacity: 0.6;
+}
+
+
+.oncologists-card {
+  overflow: hidden;
+
+  border: 1px solid #dfe8ed;
+
+  border-radius: 18px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 14px 40px
+    rgba(15, 57, 76, 0.045);
+}
+
+
+.oncologists-toolbar {
+  display: grid;
+
+  grid-template-columns:
+    minmax(300px, 1fr)
+    190px
+    44px;
+
+  gap: 12px;
+
+  padding: 20px 22px;
+
+  border-bottom: 1px solid #edf2f4;
+}
+
+
+.oncologists-search {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  height: 44px;
+
+  padding: 0 14px;
+
+  border: 1px solid #d8e4ea;
+
+  border-radius: 11px;
+
+  background: #fbfdfe;
+
+  color: #8ca1ad;
+}
+
+
+.oncologists-search:focus-within {
+  border-color: #47aeca;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(19, 147, 181, 0.08);
+
+  background: #ffffff;
+}
+
+
+.oncologists-search input {
+  width: 100%;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: #233d4b;
+
+  font: inherit;
+  font-size: 13px;
+}
+
+
+.oncologists-search input::placeholder {
+  color: #9badb7;
+}
+
+
+.oncologists-filter {
+  height: 44px;
+
+  padding: 0 12px;
+
+  border: 1px solid #d8e4ea;
+
+  border-radius: 11px;
+
+  outline: none;
+
+  background: #ffffff;
+
+  color: #526b7a;
+
+  font: inherit;
+  font-size: 13px;
+}
+
+
+.oncologists-refresh-button {
+  display: grid;
+
+  width: 44px;
+  height: 44px;
+
+  place-items: center;
+
+  border: 1px solid #d8e4ea;
+
+  border-radius: 11px;
+
+  background: #ffffff;
+
+  color: #60808f;
+
+  cursor: pointer;
+}
+
+
+.oncologists-refresh-button:hover {
+  background: #f4f9fb;
+
+  color: #087fa3;
+}
+
+
+.oncologists-summary {
+  display: flex;
+
+  align-items: center;
+
+  min-height: 56px;
+
+  padding: 0 22px;
+
+  background: #fbfdfe;
+}
+
+
+.oncologists-summary div {
+  display: flex;
+
+  align-items: baseline;
+
+  gap: 7px;
+}
+
+
+.oncologists-summary strong {
+  color: #173649;
+
+  font-size: 17px;
+}
+
+
+.oncologists-summary span {
+  color: #8b9da7;
+
+  font-size: 12px;
+}
+
+
+.oncologists-table-wrapper {
+  overflow-x: auto;
+}
+
+
+.oncologists-table {
+  width: 100%;
+
+  border-collapse: collapse;
+}
+
+
+.oncologists-table th {
+  padding: 13px 18px;
+
+  border-bottom: 1px solid #e9eff2;
+
+  background: #f7fafb;
+
+  color: #7a909d;
+
+  text-align: left;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  letter-spacing: 0.04em;
+
+  text-transform: uppercase;
+}
+
+
+.oncologists-table td {
+  padding: 15px 18px;
+
+  border-bottom: 1px solid #edf2f4;
+
+  color: #48606e;
+
+  font-size: 13px;
+
+  vertical-align: middle;
+}
+
+
+.oncologists-table tbody tr:hover {
+  background: #fbfdfe;
+}
+
+
+.oncologists-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+
+.oncologists-person {
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+}
+
+
+.oncologists-avatar,
+.oncologists-detail-profile__avatar {
+  display: grid;
+
+  flex: 0 0 auto;
+
+  place-items: center;
+
+  border-radius: 11px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #087f95,
+      #0d9bab
+    );
+
+  color: #ffffff;
+
+  font-size: 12px;
+  font-weight: 800;
+}
+
+
+.oncologists-avatar {
+  width: 38px;
+  height: 38px;
+}
+
+
+.oncologists-person strong,
+.oncologists-person span {
+  display: block;
+}
+
+
+.oncologists-person strong {
+  color: #253e4d;
+
+  font-size: 13px;
+}
+
+
+.oncologists-person span {
+  margin-top: 3px;
+
+  color: #8b9da8;
+
+  font-size: 11px;
+}
+
+
+.oncologists-status {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  padding: 6px 10px;
+
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 750;
+}
+
+
+.oncologists-status > span {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+}
+
+
+.oncologists-status--active {
+  background: #edf9f2;
+
+  color: #238151;
+}
+
+
+.oncologists-status--active > span {
+  background: #29a867;
+}
+
+
+.oncologists-status--inactive {
+  background: #f5f6f7;
+
+  color: #7e8d94;
+}
+
+
+.oncologists-status--inactive > span {
+  background: #98a5ab;
+}
+
+
+.oncologists-actions {
+  display: flex;
+
+  gap: 7px;
+}
+
+
+.oncologists-actions button {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 7px 10px;
+
+  border: 1px solid #d9e4e9;
+
+  border-radius: 8px;
+
+  background: #ffffff;
+
+  color: #50707f;
+
+  cursor: pointer;
+
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+
+.oncologists-actions button:hover {
+  border-color: #98cbd8;
+
+  background: #f4fbfc;
+
+  color: #087e9f;
+}
+
+
+.oncologists-loading,
+.oncologists-empty {
+  display: flex;
+
+  min-height: 300px;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-direction: column;
+
+  gap: 9px;
+
+  color: #8298a5;
+}
+
+
+.oncologists-empty strong {
+  margin-top: 5px;
+
+  color: #4e6775;
+}
+
+
+.oncologists-empty span {
+  max-width: 390px;
+
+  text-align: center;
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+
+.oncologists-spin {
+  animation:
+    oncologists-spin
+    0.8s linear infinite;
+}
+
+
+@keyframes oncologists-spin {
+
+  to {
+    transform: rotate(360deg);
+  }
+
+}
+
+
+.oncologists-alert {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 9px;
+
+  padding: 12px 14px;
+
+  border-radius: 11px;
+
+  font-size: 12px;
+  font-weight: 650;
+}
+
+
+.oncologists-alert--error {
+  border: 1px solid #f0c4c4;
+
+  background: #fff5f5;
+
+  color: #b84343;
+}
+
+
+.oncologists-alert--success {
+  border: 1px solid #bde6ce;
+
+  background: #f1fbf5;
+
+  color: #23794e;
+}
+
+
+.oncologists-access-denied {
+  display: flex;
+
+  min-height: 460px;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-direction: column;
+
+  padding: 50px;
+
+  border: 1px solid #e0e8ec;
+
+  border-radius: 18px;
+
+  background: #ffffff;
+
+  text-align: center;
+}
+
+
+.oncologists-access-denied__icon {
+  display: grid;
+
+  width: 58px;
+  height: 58px;
+
+  margin-bottom: 15px;
+
+  place-items: center;
+
+  border-radius: 17px;
+
+  background: #fff2f2;
+
+  color: #be5353;
+}
+
+
+.oncologists-access-denied h1 {
+  margin: 0;
+
+  color: #2a4351;
+}
+
+
+.oncologists-access-denied p {
+  max-width: 520px;
+
+  margin: 11px 0 22px;
+
+  color: #7c909c;
+
+  line-height: 1.6;
+}
+
+
+.oncologists-access-denied button {
+  padding: 10px 16px;
+
+  border: 0;
+
+  border-radius: 9px;
+
+  background: #0b6888;
+
+  color: #ffffff;
+
+  cursor: pointer;
+
+  font: inherit;
+  font-weight: 700;
+}
+
+
+.oncologists-modal-backdrop {
+  position: fixed;
+  z-index: 100;
+
+  inset: 0;
+
+  display: grid;
+
+  place-items: center;
+
+  padding: 30px;
+
+  background:
+    rgba(9, 30, 41, 0.45);
+
+  backdrop-filter:
+    blur(3px);
+}
+
+
+.oncologists-modal {
+  width: min(
+    850px,
+    100%
+  );
+
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+  border-radius: 19px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 25px 80px
+    rgba(5, 27, 38, 0.25);
+}
+
+
+.oncologists-modal--loading {
+  display: flex;
+
+  width: auto;
+
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 24px;
+
+  color: #557281;
+
+  font-size: 13px;
+}
+
+
+.oncologists-modal__header {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 22px 24px;
+
+  border-bottom: 1px solid #edf1f3;
+}
+
+
+.oncologists-modal__header span {
+  color: #7e95a2;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  letter-spacing: 0.07em;
+
+  text-transform: uppercase;
+}
+
+
+.oncologists-modal__header h2 {
+  margin: 5px 0 0;
+
+  color: #203c4c;
+
+  font-size: 21px;
+}
+
+
+.oncologists-modal__close {
+  display: grid;
+
+  width: 36px;
+  height: 36px;
+
+  place-items: center;
+
+  border: 1px solid #e0e8ec;
+
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  color: #78909d;
+
+  cursor: pointer;
+}
+
+
+.oncologists-modal > .oncologists-alert {
+  margin:
+    18px 24px 0;
+}
+
+
+.oncologists-detail-profile {
+  display: flex;
+
+  align-items: center;
+
+  gap: 13px;
+
+  margin: 22px 24px 0;
+
+  padding: 17px;
+
+  border-radius: 14px;
+
+  background: #f7fafb;
+}
+
+
+.oncologists-detail-profile__avatar {
+  width: 48px;
+  height: 48px;
+}
+
+
+.oncologists-detail-profile > div:nth-child(2) {
+  flex: 1;
+}
+
+
+.oncologists-detail-profile strong,
+.oncologists-detail-profile span {
+  display: block;
+}
+
+
+.oncologists-detail-profile strong {
+  color: #294453;
+
+  font-size: 14px;
+}
+
+
+.oncologists-detail-profile > div:nth-child(2) span {
+  margin-top: 3px;
+
+  color: #899da8;
+
+  font-size: 12px;
+}
+
+
+.oncologists-detail-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 12px;
+
+  padding: 20px 24px;
+}
+
+
+.oncologists-detail-grid > div {
+  display: grid;
+
+  grid-template-columns:
+    22px 1fr;
+
+  column-gap: 8px;
+
+  padding: 14px;
+
+  border: 1px solid #e5ecef;
+
+  border-radius: 12px;
+
+  color: #1982a1;
+}
+
+
+.oncologists-detail-grid span,
+.oncologists-detail-grid strong {
+  grid-column: 2;
+}
+
+
+.oncologists-detail-grid span {
+  color: #8ca0aa;
+
+  font-size: 10px;
+  font-weight: 750;
+}
+
+
+.oncologists-detail-grid strong {
+  margin-top: 4px;
+
+  color: #415c6a;
+
+  font-size: 12px;
+}
+
+
+.oncologists-modal__footer {
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  padding: 17px 24px 22px;
+
+  border-top: 1px solid #edf1f3;
+}
+
+
+.oncologists-edit-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 15px;
+
+  padding: 22px 24px;
+}
+
+
+.oncologists-edit-grid label,
+.oncologist-form-grid label {
+  display: flex;
+
+  min-width: 0;
+
+  flex-direction: column;
+
+  gap: 7px;
+
+  color: #405966;
+
+  font-size: 11px;
+  font-weight: 750;
+}
+
+
+.oncologists-edit-grid input,
+.oncologist-form-grid input {
+  width: 100%;
+  height: 43px;
+
+  box-sizing: border-box;
+
+  padding: 0 12px;
+
+  border: 1px solid #d7e2e7;
+
+  border-radius: 9px;
+
+  outline: none;
+
+  background: #ffffff;
+
+  color: #2d4755;
+
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+
+.oncologists-edit-grid input:focus,
+.oncologist-form-grid input:focus {
+  border-color: #43a9c4;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(29, 151, 183, 0.08);
+}
+
+
+.oncologists-edit-grid small,
+.oncologist-form-grid label > small {
+  color: #c14747;
+
+  font-size: 10px;
+  font-weight: 600;
+}
+
+
+.oncologist-form-back {
+  display: inline-flex;
+
+  width: fit-content;
+
+  align-items: center;
+
+  gap: 7px;
+
+  padding: 0;
+
+  border: 0;
+
+  background: transparent;
+
+  color: #5d7c8b;
+
+  cursor: pointer;
+
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+
+.oncologist-form-back:hover {
+  color: #087fa3;
+}
+
+
+.oncologist-form-card {
+  padding: 25px;
+
+  border: 1px solid #dfe8ed;
+
+  border-radius: 18px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 14px 40px
+    rgba(15, 57, 76, 0.04);
+}
+
+
+.oncologist-form-section-title {
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+
+  margin-bottom: 17px;
+}
+
+
+.oncologist-form-section-title > div {
+  display: grid;
+
+  width: 39px;
+  height: 39px;
+
+  place-items: center;
+
+  border-radius: 10px;
+
+  background: #edf8fb;
+
+  color: #0984a7;
+}
+
+
+.oncologist-form-section-title strong,
+.oncologist-form-section-title small {
+  display: block;
+}
+
+
+.oncologist-form-section-title strong {
+  color: #294552;
+
+  font-size: 14px;
+}
+
+
+.oncologist-form-section-title small {
+  margin-top: 3px;
+
+  color: #899ca7;
+
+  font-size: 11px;
+  font-weight: 500;
+}
+
+
+.oncologist-form-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 16px 18px;
+}
+
+
+.oncologist-form-divider {
+  height: 1px;
+
+  margin: 25px 0;
+
+  background: #edf1f3;
+}
+
+
+.oncologist-password {
+  position: relative;
+}
+
+
+.oncologist-password input {
+  padding-right: 42px;
+}
+
+
+.oncologist-password button {
+  position: absolute;
+
+  top: 50%;
+  right: 8px;
+
+  display: grid;
+
+  width: 30px;
+  height: 30px;
+
+  place-items: center;
+
+  border: 0;
+
+  border-radius: 7px;
+
+  background: transparent;
+
+  color: #91a5af;
+
+  cursor: pointer;
+
+  transform:
+    translateY(-50%);
+}
+
+
+.oncologist-form-note {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 10px;
+
+  margin-top: 24px;
+
+  padding: 14px;
+
+  border: 1px solid #cbe8ef;
+
+  border-radius: 11px;
+
+  background: #f3fbfd;
+
+  color: #1684a2;
+}
+
+
+.oncologist-form-note strong,
+.oncologist-form-note span {
+  display: block;
+}
+
+
+.oncologist-form-note strong {
+  color: #277086;
+
+  font-size: 12px;
+}
+
+
+.oncologist-form-note span {
+  margin-top: 3px;
+
+  color: #678995;
+
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+
+.oncologist-form-footer {
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  margin-top: 25px;
+
+  padding-top: 20px;
+
+  border-top: 1px solid #edf1f3;
+}
+
+
+@media (
+  max-width: 900px
+) {
+
+  .oncologists-header {
+    flex-direction: column;
+  }
+
+
+  .oncologists-toolbar {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .oncologists-refresh-button {
+    width: 100%;
+  }
+
+
+  .oncologists-detail-grid,
+  .oncologists-edit-grid,
+  .oncologist-form-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+}
+
+
+@media (
+  max-width: 620px
+) {
+
+  .oncologists-page {
+    gap: 16px;
+  }
+
+
+  .oncologists-header h1 {
+    font-size: 25px;
+  }
+
+
+  .oncologist-form-card {
+    padding: 18px;
+  }
+
+
+  .oncologists-modal-backdrop {
+    padding: 12px;
+  }
+
+
+  .oncologists-modal__footer,
+  .oncologist-form-footer {
+    flex-direction: column-reverse;
+  }
+
+
+  .oncologists-primary-button,
+  .oncologists-secondary-button {
+    width: 100%;
+  }
+
+}
+
+/* =========================================================
+   MODAL DE CONFIRMACIÓN DE ESTADO
+   ========================================================= */
+
+.oncologists-confirm-modal {
+  position: relative;
+
+  width: min(460px, 100%);
+
+  padding: 30px;
+
+  border-radius: 22px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 30px 90px
+    rgba(11, 38, 52, 0.28);
+
+  text-align: center;
+}
+
+
+.oncologists-confirm-modal__close {
+  position: absolute;
+
+  top: 16px;
+  right: 16px;
+
+  display: grid;
+
+  width: 36px;
+  height: 36px;
+
+  place-items: center;
+
+  border: 1px solid #dfe8ec;
+
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  color: #8498a2;
+
+  cursor: pointer;
+}
+
+
+.oncologists-confirm-modal__close:hover:not(:disabled) {
+  background: #f5f8f9;
+
+  color: #435d69;
+}
+
+
+.oncologists-confirm-modal__icon {
+  display: grid;
+
+  width: 62px;
+  height: 62px;
+
+  margin: 5px auto 18px;
+
+  place-items: center;
+
+  border-radius: 18px;
+}
+
+
+.oncologists-confirm-modal__icon--danger {
+  background: #fff0f0;
+
+  color: #cb5050;
+}
+
+
+.oncologists-confirm-modal__icon--success {
+  background: #edf9f2;
+
+  color: #238052;
+}
+
+
+.oncologists-confirm-modal h2 {
+  margin: 0;
+
+  color: #213c4b;
+
+  font-size: 22px;
+}
+
+
+.oncologists-confirm-modal > p {
+  max-width: 370px;
+
+  margin: 12px auto 0;
+
+  color: #6d838f;
+
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+
+.oncologists-confirm-modal > p strong {
+  color: #304c5a;
+}
+
+
+.oncologists-confirm-modal__notice {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 10px;
+
+  margin-top: 20px;
+
+  padding: 13px 14px;
+
+  border: 1px solid #f0d1d1;
+
+  border-radius: 12px;
+
+  background: #fff8f8;
+
+  color: #a85a5a;
+
+  text-align: left;
+
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+
+.oncologists-confirm-modal__notice svg {
+  flex: 0 0 auto;
+
+  margin-top: 1px;
+}
+
+
+.oncologists-confirm-modal__notice strong {
+  color: #914646;
+}
+
+
+.oncologists-confirm-modal__actions {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 10px;
+
+  margin-top: 24px;
+}
+
+
+.oncologists-confirm-modal__actions
+.oncologists-secondary-button {
+  width: 100%;
+}
+
+
+.oncologists-confirm-button {
+  display: inline-flex;
+
+  min-height: 42px;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  padding: 0 17px;
+
+  border: 0;
+
+  border-radius: 10px;
+
+  color: #ffffff;
+
+  cursor: pointer;
+
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+
+.oncologists-confirm-button--danger {
+  background: #bf4f4f;
+}
+
+
+.oncologists-confirm-button--danger:hover:not(:disabled) {
+  background: #a94242;
+}
+
+
+.oncologists-confirm-button--success {
+  background: #258259;
+}
+
+
+.oncologists-confirm-button--success:hover:not(:disabled) {
+  background: #1f704c;
+}
+
+
+.oncologists-confirm-button:disabled {
+  cursor: wait;
+
+  opacity: 0.6;
+}
+
+
+/* =========================================================
+   BOTONES ACTIVAR / DESACTIVAR EN TABLA
+   ========================================================= */
+
+.oncologists-actions
+.oncologists-action-state {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 6px;
+}
+
+
+.oncologists-actions
+.oncologists-action-state--disable:hover {
+  border-color: #e1aaaa;
+
+  background: #fff5f5;
+
+  color: #b94d4d;
+}
+
+
+.oncologists-actions
+.oncologists-action-state--enable:hover {
+  border-color: #9ed5b6;
+
+  background: #f2fbf6;
+
+  color: #278052;
+}
+
+
+@media (max-width: 520px) {
+
+  .oncologists-confirm-modal {
+    padding:
+      26px 18px
+      20px;
+  }
+
+
+  .oncologists-confirm-modal__actions {
+    grid-template-columns: 1fr;
+  }
+
+}

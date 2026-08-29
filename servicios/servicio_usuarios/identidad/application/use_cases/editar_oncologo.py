@@ -1,29 +1,31 @@
 from django.db import transaction
 
+from identidad.infrastructure.repositories.perfil_repository import (
+    PerfilRepository,
+)
 
 from identidad.infrastructure.repositories.usuario_repository import (
-    UsuarioRepository
+    UsuarioRepository,
 )
-
-from identidad.infrastructure.repositories.perfil_repository import (
-    PerfilRepository
-)
-
 
 
 class EditarOncologoUseCase:
     """
-    Caso de uso para actualizar
-    datos de un oncólogo.
+    Actualiza la información administrativa
+    y profesional de un oncólogo.
     """
 
-    def __init__(self):
+    def __init__(
+        self
+    ):
 
-        self.usuario_repository = UsuarioRepository()
+        self.usuario_repository = (
+            UsuarioRepository()
+        )
 
-        self.perfil_repository = PerfilRepository()
-
-
+        self.perfil_repository = (
+            PerfilRepository()
+        )
 
     @transaction.atomic
     def ejecutar(
@@ -33,19 +35,51 @@ class EditarOncologoUseCase:
     ):
 
         usuario = (
+
             self.usuario_repository
+
             .obtener_por_id(
                 usuario_id
             )
-        )
 
+        )
 
         if not usuario:
 
             raise Exception(
-                "El usuario no existe"
+                "El usuario no existe."
             )
 
+        # ==================================================
+        # VALIDAR ROL ONCÓLOGO
+        # ==================================================
+
+        es_oncologo = (
+
+            usuario
+            .asignaciones_roles
+
+            .filter(
+
+                activo=True,
+
+                rol__codigo="ONCOLOGO",
+
+            )
+
+            .exists()
+
+        )
+
+        if not es_oncologo:
+
+            raise Exception(
+                "La cuenta indicada no pertenece a un oncólogo."
+            )
+
+        # ==================================================
+        # CAMPOS DEL USUARIO
+        # ==================================================
 
         campos_usuario = [
 
@@ -55,31 +89,37 @@ class EditarOncologoUseCase:
 
             "apellido_materno",
 
-            "telefono",
-
             "correo",
+
+            "nombre_usuario",
+
+            "telefono",
 
         ]
 
+        datos_usuario = {}
 
         for campo in campos_usuario:
 
             if campo in datos:
 
-                setattr(
-                    usuario,
-                    campo,
+                datos_usuario[campo] = (
                     datos[campo]
                 )
 
+        if datos_usuario:
 
+            self.usuario_repository.actualizar(
 
-        usuario.save()
+                usuario,
 
+                datos_usuario,
 
+            )
 
-        perfil_datos = {}
-
+        # ==================================================
+        # CAMPOS PROFESIONALES
+        # ==================================================
 
         campos_perfil = [
 
@@ -89,34 +129,58 @@ class EditarOncologoUseCase:
 
             "subespecialidad",
 
-            "cargo",
-
             "telefono_institucional",
 
         ]
 
+        perfil_datos = {}
 
         for campo in campos_perfil:
 
             if campo in datos:
 
-                perfil_datos[campo] = datos[campo]
-
-
+                perfil_datos[campo] = (
+                    datos[campo]
+                )
 
         if perfil_datos:
 
-            perfil = usuario.perfil_profesional
+            perfil = (
 
+                self.perfil_repository
 
-            self.perfil_repository.actualizar(
-
-                perfil,
-
-                perfil_datos
+                .obtener_por_usuario(
+                    usuario
+                )
 
             )
 
+            if perfil:
 
+                self.perfil_repository.actualizar(
+
+                    perfil,
+
+                    perfil_datos,
+
+                )
+
+            else:
+
+                self.perfil_repository.crear(
+
+                    {
+
+                        "usuario":
+                            usuario,
+
+                        "cargo":
+                            "Oncólogo",
+
+                        **perfil_datos,
+
+                    }
+
+                )
 
         return usuario

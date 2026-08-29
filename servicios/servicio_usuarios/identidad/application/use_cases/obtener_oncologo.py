@@ -1,20 +1,21 @@
 from identidad.infrastructure.repositories.usuario_repository import (
-    UsuarioRepository
+    UsuarioRepository,
 )
 
 
 class ObtenerOncologoUseCase:
     """
-    Caso de uso para consultar
-    el detalle de un oncólogo.
+    Consulta el detalle de una cuenta
+    perteneciente realmente al rol ONCOLOGO.
     """
 
+    def __init__(
+        self
+    ):
 
-    def __init__(self):
-
-        self.usuario_repository = UsuarioRepository()
-
-
+        self.usuario_repository = (
+            UsuarioRepository()
+        )
 
     def ejecutar(
         self,
@@ -28,102 +29,188 @@ class ObtenerOncologoUseCase:
             )
         )
 
-
         if not usuario:
 
             raise Exception(
-                "El usuario no existe"
+                "El usuario no existe."
             )
 
+        # ==================================================
+        # COMPROBAR QUE ES ONCÓLOGO
+        # ==================================================
+
+        es_oncologo = (
+
+            usuario
+            .asignaciones_roles
+
+            .filter(
+
+                activo=True,
+
+                rol__codigo="ONCOLOGO",
+
+            )
+
+            .exists()
+
+        )
+
+        if not es_oncologo:
+
+            raise Exception(
+                "La cuenta indicada no pertenece a un oncólogo."
+            )
+
+        # ==================================================
+        # PERFIL PROFESIONAL
+        # ==================================================
 
         try:
 
-            perfil = usuario.perfil_profesional
+            perfil = (
+                usuario
+                .perfil_profesional
+            )
 
         except Exception:
 
             perfil = None
 
+        # ==================================================
+        # ROLES
+        # ==================================================
 
+        roles = list(
 
-        roles = [
+            usuario
+            .asignaciones_roles
 
-            rol.rol.nombre
+            .filter(
+                activo=True
+            )
 
-            for rol in usuario.asignaciones_roles.all()
+            .values_list(
+                "rol__codigo",
+                flat=True,
+            )
 
-            if rol.activo
+        )
 
-        ]
-
-
+        # ==================================================
+        # RESPUESTA
+        # ==================================================
 
         return {
 
             "id_usuario":
-                str(usuario.id_usuario),
-
+                str(
+                    usuario.id_usuario
+                ),
 
             "nombres":
                 usuario.nombres,
 
-
             "apellido_paterno":
                 usuario.apellido_paterno,
-
 
             "apellido_materno":
                 usuario.apellido_materno,
 
+            "nombre_completo":
+                " ".join(
+
+                    parte
+
+                    for parte in [
+
+                        usuario.nombres,
+
+                        usuario.apellido_paterno,
+
+                        usuario.apellido_materno,
+
+                    ]
+
+                    if parte
+
+                ),
 
             "correo":
                 usuario.correo,
 
-
             "nombre_usuario":
                 usuario.nombre_usuario,
-
 
             "telefono":
                 usuario.telefono,
 
-
             "estado":
-                usuario.estado_usuario.nombre,
+                usuario
+                .estado_usuario
+                .codigo,
 
+            "estado_nombre":
+                usuario
+                .estado_usuario
+                .nombre,
 
             "perfil": {
 
                 "matricula_profesional":
-                    perfil.matricula_profesional
-                    if perfil
-                    else None,
+                    (
+                        perfil
+                        .matricula_profesional
 
+                        if perfil
+                        else None
+                    ),
 
                 "especialidad":
-                    perfil.especialidad
-                    if perfil
-                    else None,
+                    (
+                        perfil.especialidad
 
+                        if perfil
+                        else None
+                    ),
 
                 "subespecialidad":
-                    perfil.subespecialidad
-                    if perfil
-                    else None,
+                    (
+                        perfil.subespecialidad
 
+                        if perfil
+                        else None
+                    ),
 
                 "cargo":
-                    perfil.cargo
-                    if perfil
-                    else None,
+                    (
+                        perfil.cargo
+
+                        if perfil
+                        else None
+                    ),
+
+                "telefono_institucional":
+                    (
+                        perfil
+                        .telefono_institucional
+
+                        if perfil
+                        else None
+                    ),
 
             },
 
-
-            "roles": roles,
-
+            "roles":
+                roles,
 
             "fecha_creacion":
                 usuario.fecha_creacion,
+
+            "fecha_actualizacion":
+                usuario.fecha_actualizacion,
+
+            "ultimo_acceso":
+                usuario.ultimo_acceso,
 
         }

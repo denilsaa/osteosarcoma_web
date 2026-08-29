@@ -2,8 +2,9 @@ from django.urls import path
 
 
 from identidad.interfaces.api.views.oncologo_view import (
-    OncologoListCreateAPIView,
     OncologoDetailAPIView,
+    OncologoEstadoAPIView,
+    OncologoListCreateAPIView,
 )
 
 
@@ -14,45 +15,45 @@ from identidad.interfaces.api.views.auth_view import (
 )
 
 
-
 urlpatterns = [
 
-    # ==========================
+    # ======================================================
     # GESTIÓN DE ONCÓLOGOS
-    # ==========================
+    # ======================================================
 
     path(
         "oncologos/",
-        OncologoListCreateAPIView.as_view()
+        OncologoListCreateAPIView.as_view(),
     ),
-
 
     path(
         "oncologos/<uuid:usuario_id>/",
-        OncologoDetailAPIView.as_view()
+        OncologoDetailAPIView.as_view(),
+    ),
+
+    path(
+        "oncologos/<uuid:usuario_id>/estado/",
+        OncologoEstadoAPIView.as_view(),
     ),
 
 
-
-    # ==========================
-    # AUTENTICACIÓN JWT
-    # ==========================
+    # ======================================================
+    # AUTENTICACIÓN
+    # ======================================================
 
     path(
         "auth/login/",
-        LoginView.as_view()
+        LoginView.as_view(),
     ),
-
 
     path(
         "auth/logout/",
-        LogoutView.as_view()
+        LogoutView.as_view(),
     ),
-
 
     path(
         "auth/refresh/",
-        RefreshView.as_view()
+        RefreshView.as_view(),
     ),
 
 ]

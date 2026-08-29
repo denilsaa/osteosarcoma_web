@@ -10,7 +10,6 @@ import {
   ScanLine,
   Search,
   Settings,
-  ShieldCheck,
   Sparkles,
   Stethoscope,
   UserRound,
@@ -91,19 +90,11 @@ const mainMenu: MenuItem[] = [
 
 
 const adminMenu: MenuItem[] = [
-
   {
-    label: "Usuarios",
+    label: "Oncólogos",
     path: "/usuarios",
     icon: UserRound,
   },
-
-  {
-    label: "Auditoría",
-    path: "/auditoria",
-    icon: ShieldCheck,
-  },
-
 ];
 
 
