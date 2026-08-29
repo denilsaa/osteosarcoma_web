@@ -24,13 +24,17 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "servicio_usuarios",
 ]
-
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 
 # ==========================================================
 # APLICACIONES
 # ==========================================================
 
 INSTALLED_APPS = [
+    "corsheaders",
     "rest_framework",
     "identidad",
 ]
@@ -42,6 +46,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
 
