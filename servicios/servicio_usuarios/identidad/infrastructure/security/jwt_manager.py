@@ -1,3 +1,4 @@
+import os
 import uuid
 
 from datetime import (
@@ -17,22 +18,62 @@ class JWTManager:
     tokens JWT del microservicio de identidad.
 
     El access token queda relacionado con una
-    sesión almacenada en la tabla sesiones
-    mediante el claim 'sid'.
+    sesión almacenada en PostgreSQL mediante
+    el claim 'sid'.
+
+    La duración de los tokens se obtiene desde
+    variables de entorno para facilitar pruebas,
+    demostraciones y configuración por ambiente.
     """
 
     def __init__(self):
 
-        self.secret_key = settings.SECRET_KEY
+        self.secret_key = (
+            settings.SECRET_KEY
+        )
 
         self.algorithm = "HS256"
 
-        self.access_expiration = timedelta(
-            minutes=15
+        # ==================================================
+        # CONFIGURACIÓN DE EXPIRACIÓN
+        # ==================================================
+
+        access_minutes = int(
+            os.environ.get(
+                "JWT_ACCESS_MINUTES",
+                "15",
+            )
         )
 
-        self.refresh_expiration = timedelta(
-            days=7
+        refresh_days = int(
+            os.environ.get(
+                "JWT_REFRESH_DAYS",
+                "7",
+            )
+        )
+
+        if access_minutes <= 0:
+
+            raise ValueError(
+                "JWT_ACCESS_MINUTES debe ser mayor a 0"
+            )
+
+        if refresh_days <= 0:
+
+            raise ValueError(
+                "JWT_REFRESH_DAYS debe ser mayor a 0"
+            )
+
+        self.access_expiration = (
+            timedelta(
+                minutes=access_minutes
+            )
+        )
+
+        self.refresh_expiration = (
+            timedelta(
+                days=refresh_days
+            )
         )
 
     # ======================================================
@@ -42,7 +83,7 @@ class JWTManager:
     def crear_access_token(
         self,
         usuario,
-        sesion_id
+        sesion_id,
     ):
 
         ahora = datetime.now(
@@ -68,8 +109,8 @@ class JWTManager:
             "correo":
                 usuario.correo,
 
-            # Identificador de la sesión real
-            # almacenada en PostgreSQL.
+            # Identificador de la sesión
+            # persistida en PostgreSQL.
             "sid":
                 str(
                     sesion_id
@@ -89,7 +130,8 @@ class JWTManager:
 
             self.secret_key,
 
-            algorithm=self.algorithm,
+            algorithm=
+                self.algorithm,
 
         )
 
@@ -103,7 +145,9 @@ class JWTManager:
 
             "expires_in":
                 int(
-                    self.access_expiration.total_seconds()
+                    self
+                    .access_expiration
+                    .total_seconds()
                 ),
 
         }
@@ -114,7 +158,7 @@ class JWTManager:
 
     def crear_refresh_token(
         self,
-        usuario
+        usuario,
     ):
 
         ahora = datetime.now(
@@ -141,6 +185,7 @@ class JWTManager:
                     usuario.id_usuario
                 ),
 
+            # Identificador único del refresh.
             "jti":
                 jti,
 
@@ -158,7 +203,8 @@ class JWTManager:
 
             self.secret_key,
 
-            algorithm=self.algorithm,
+            algorithm=
+                self.algorithm,
 
         )
 
@@ -175,7 +221,9 @@ class JWTManager:
 
             "expires_in":
                 int(
-                    self.refresh_expiration.total_seconds()
+                    self
+                    .refresh_expiration
+                    .total_seconds()
                 ),
 
         }
@@ -186,12 +234,12 @@ class JWTManager:
 
     def validar_token(
         self,
-        token
+        token,
     ):
 
         try:
 
-            return jwt.decode(
+            payload = jwt.decode(
 
                 token,
 
@@ -203,10 +251,24 @@ class JWTManager:
 
             )
 
+            return payload
+
         except jwt.ExpiredSignatureError:
 
             raise Exception(
                 "Token expirado"
+            )
+
+        except jwt.InvalidSignatureError:
+
+            raise Exception(
+                "Firma del token inválida"
+            )
+
+        except jwt.DecodeError:
+
+            raise Exception(
+                "Token malformado"
             )
 
         except jwt.InvalidTokenError:
@@ -221,17 +283,24 @@ class JWTManager:
 
     def validar_access_token(
         self,
-        token
+        token,
     ):
 
-        payload = self.validar_token(
-            token
+        payload = (
+            self.validar_token(
+                token
+            )
         )
 
-        if payload.get("type") != "access":
+        if (
+            payload.get("type")
+            !=
+            "access"
+        ):
 
             raise Exception(
-                "El token proporcionado no es un access token"
+                "El token proporcionado "
+                "no es un access token"
             )
 
         if not payload.get(
@@ -247,7 +316,8 @@ class JWTManager:
         ):
 
             raise Exception(
-                "Access token sin identificador de sesión"
+                "Access token sin "
+                "identificador de sesión"
             )
 
         return payload
@@ -258,17 +328,24 @@ class JWTManager:
 
     def validar_refresh_token(
         self,
-        token
+        token,
     ):
 
-        payload = self.validar_token(
-            token
+        payload = (
+            self.validar_token(
+                token
+            )
         )
 
-        if payload.get("type") != "refresh":
+        if (
+            payload.get("type")
+            !=
+            "refresh"
+        ):
 
             raise Exception(
-                "El token proporcionado no es un refresh token"
+                "El token proporcionado "
+                "no es un refresh token"
             )
 
         if not payload.get(
@@ -284,7 +361,8 @@ class JWTManager:
         ):
 
             raise Exception(
-                "Refresh token sin identificador"
+                "Refresh token sin "
+                "identificador"
             )
 
         return payload
@@ -295,7 +373,7 @@ class JWTManager:
 
     def decodificar_token(
         self,
-        token
+        token,
     ):
 
         return self.validar_token(
