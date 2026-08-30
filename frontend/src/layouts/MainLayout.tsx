@@ -5,11 +5,13 @@ import {
   ClipboardList,
   FileText,
   HeartPulse,
+  KeyRound,
   LayoutDashboard,
   LogOut,
   ScanLine,
   Search,
   Settings,
+  ShieldCheck,
   Sparkles,
   Stethoscope,
   UserRound,
@@ -81,7 +83,7 @@ const mainMenu: MenuItem[] = [
   },
 
   {
-    label: "Reportes",
+    label: "Informes",
     path: "/reportes",
     icon: FileText,
   },
@@ -90,11 +92,25 @@ const mainMenu: MenuItem[] = [
 
 
 const adminMenu: MenuItem[] = [
+
   {
     label: "Oncólogos",
     path: "/usuarios",
     icon: UserRound,
   },
+
+  {
+    label: "Recuperaciones",
+    path: "/recuperaciones",
+    icon: KeyRound,
+  },
+
+  {
+    label: "Permisos",
+    path: "/permisos",
+    icon: ShieldCheck,
+  },
+
 ];
 
 
@@ -107,9 +123,7 @@ function getPageTitle(
       "/pacientes",
     )
   ) {
-
     return "Pacientes";
-
   }
 
 
@@ -118,9 +132,7 @@ function getPageTitle(
       "/casos",
     )
   ) {
-
     return "Casos clínicos";
-
   }
 
 
@@ -129,9 +141,7 @@ function getPageTitle(
       "/radiografias",
     )
   ) {
-
     return "Radiografías";
-
   }
 
 
@@ -140,9 +150,7 @@ function getPageTitle(
       "/analisis",
     )
   ) {
-
     return "Análisis IA";
-
   }
 
 
@@ -151,9 +159,7 @@ function getPageTitle(
       "/resultados",
     )
   ) {
-
     return "Resultados";
-
   }
 
 
@@ -162,20 +168,7 @@ function getPageTitle(
       "/reportes",
     )
   ) {
-
-    return "Reportes";
-
-  }
-
-
-  if (
-    pathname.startsWith(
-      "/usuarios",
-    )
-  ) {
-
-    return "Usuarios";
-
+    return "Informes";
   }
 
 
@@ -184,9 +177,34 @@ function getPageTitle(
       "/auditoria",
     )
   ) {
-
     return "Auditoría";
+  }
 
+
+  if (
+    pathname.startsWith(
+      "/usuarios",
+    )
+  ) {
+    return "Gestión de oncólogos";
+  }
+
+
+  if (
+    pathname.startsWith(
+      "/recuperaciones",
+    )
+  ) {
+    return "Recuperaciones";
+  }
+
+
+  if (
+    pathname.startsWith(
+      "/permisos",
+    )
+  ) {
+    return "Administración de permisos";
   }
 
 
@@ -195,14 +213,11 @@ function getPageTitle(
       "/perfil",
     )
   ) {
-
     return "Mi perfil";
-
   }
 
 
   return "Panel clínico";
-
 }
 
 
@@ -235,9 +250,7 @@ function obtenerNombreVisible(
 
 
   if (nombre) {
-
     return nombre;
-
   }
 
 
@@ -251,7 +264,6 @@ function obtenerNombreVisible(
 
 
   return "Usuario";
-
 }
 
 
@@ -266,15 +278,9 @@ export function MainLayout() {
 
 
   const {
-
     usuario,
-
     logout,
-
     tieneRol,
-
-    tienePermiso,
-
   } = useAuth();
 
 
@@ -302,15 +308,6 @@ export function MainLayout() {
     );
 
 
-  const puedeAdministrarUsuarios =
-
-    esJefeOncologia ||
-
-    tienePermiso(
-      "ONCOLOGO_LISTAR",
-    );
-
-
   const rolVisible =
     esJefeOncologia
 
@@ -320,26 +317,17 @@ export function MainLayout() {
 
 
   const iniciales =
-
     nombreUsuario
-
       .split(" ")
-
       .filter(Boolean)
-
       .slice(0, 2)
-
       .map(
         (parte) =>
           parte.charAt(0),
       )
-
       .join("")
-
       .toUpperCase()
-
-      ||
-
+    ||
     "US";
 
 
@@ -353,13 +341,10 @@ export function MainLayout() {
       } finally {
 
         navigate(
-
           "/login",
-
           {
             replace: true,
           },
-
         );
 
       }
@@ -420,10 +405,6 @@ export function MainLayout() {
         </div>
 
 
-        {/* ==================================================
-            MENÚ
-            ================================================== */}
-
         <div className="clinical-sidebar__scroll">
 
 
@@ -462,36 +443,25 @@ export function MainLayout() {
                       className={({
                         isActive,
                       }) =>
-
                         [
-
                           "clinical-sidebar__link",
 
                           isActive
-
                             ? "clinical-sidebar__link--active"
-
                             : "",
-
                         ].join(" ")
-
                       }
 
                     >
 
                       <Icon
-
                         size={19}
-
                         strokeWidth={1.9}
-
                       />
 
 
                       <span>
-
                         {item.label}
-
                       </span>
 
 
@@ -511,9 +481,10 @@ export function MainLayout() {
 
           {/* ==================================================
               ADMINISTRACIÓN
+              SOLO JEFE DE ONCOLOGÍA
               ================================================== */}
 
-          {puedeAdministrarUsuarios && (
+          {esJefeOncologia && (
 
             <div className="clinical-sidebar__section">
 
@@ -546,36 +517,25 @@ export function MainLayout() {
                         className={({
                           isActive,
                         }) =>
-
                           [
-
                             "clinical-sidebar__link",
 
                             isActive
-
                               ? "clinical-sidebar__link--active"
-
                               : "",
-
                           ].join(" ")
-
                         }
 
                       >
 
                         <Icon
-
                           size={19}
-
                           strokeWidth={1.9}
-
                         />
 
 
                         <span>
-
                           {item.label}
-
                         </span>
 
 
@@ -614,15 +574,11 @@ export function MainLayout() {
             <div>
 
               <strong>
-
                 Sistema operativo
-
               </strong>
 
               <span>
-
                 Servicios disponibles
-
               </span>
 
             </div>
@@ -670,16 +626,12 @@ export function MainLayout() {
 
 
               <strong>
-
                 {nombreUsuario}
-
               </strong>
 
 
               <span>
-
                 {rolVisible}
-
               </span>
 
 
@@ -687,11 +639,8 @@ export function MainLayout() {
 
 
             <ChevronDown
-
               className="clinical-sidebar__profile-chevron"
-
               size={17}
-
             />
 
 
@@ -704,7 +653,9 @@ export function MainLayout() {
 
             className="clinical-sidebar__logout"
 
-            onClick={cerrarSesion}
+            onClick={() =>
+              void cerrarSesion()
+            }
 
           >
 
@@ -713,9 +664,7 @@ export function MainLayout() {
             />
 
             <span>
-
               Cerrar sesión
-
             </span>
 
           </button>
@@ -728,7 +677,7 @@ export function MainLayout() {
 
 
       {/* ==================================================
-          CONTENIDO PRINCIPAL
+          CONTENIDO
           ================================================== */}
 
       <div className="clinical-main">
@@ -748,16 +697,12 @@ export function MainLayout() {
 
 
               <span>
-
                 Clínica San Juan de Dios
-
               </span>
 
 
               <strong>
-
                 {pageTitle}
-
               </strong>
 
 
@@ -769,10 +714,6 @@ export function MainLayout() {
 
           <div className="clinical-topbar__right">
 
-
-            {/* ==================================================
-                BUSCADOR GENERAL
-                ================================================== */}
 
             <div className="clinical-topbar__search">
 
@@ -789,17 +730,11 @@ export function MainLayout() {
               />
 
               <span>
-
                 ⌘ K
-
               </span>
 
             </div>
 
-
-            {/* ==================================================
-                ACTIVIDAD
-                ================================================== */}
 
             <button
 
@@ -817,10 +752,6 @@ export function MainLayout() {
 
             </button>
 
-
-            {/* ==================================================
-                NOTIFICACIONES
-                ================================================== */}
 
             <button
 
@@ -844,10 +775,6 @@ export function MainLayout() {
             </button>
 
 
-            {/* ==================================================
-                CONFIGURACIÓN
-                ================================================== */}
-
             <button
 
               type="button"
@@ -867,10 +794,6 @@ export function MainLayout() {
 
             <div className="clinical-topbar__divider" />
 
-
-            {/* ==================================================
-                USUARIO AUTENTICADO
-                ================================================== */}
 
             <button
 
@@ -898,20 +821,13 @@ export function MainLayout() {
 
               <div>
 
-
                 <strong>
-
                   {nombreUsuario}
-
                 </strong>
 
-
                 <span>
-
                   {rolVisible}
-
                 </span>
-
 
               </div>
 
@@ -926,7 +842,7 @@ export function MainLayout() {
 
 
         {/* ==================================================
-            PÁGINA
+            PÁGINA ACTUAL
             ================================================== */}
 
         <main className="clinical-content">

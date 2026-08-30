@@ -1,10 +1,20 @@
 import {
+  AlertCircle,
+  BadgeCheck,
+  BriefcaseMedical,
+  CalendarDays,
   CheckCircle2,
-  Clock3,
-  KeyRound,
-  RefreshCw,
+  Eye,
+  LoaderCircle,
+  LockKeyhole,
+  Mail,
+  Pencil,
+  Phone,
+  Save,
   ShieldCheck,
+  Stethoscope,
   UserRound,
+  X,
 } from "lucide-react";
 
 import {
@@ -14,23 +24,53 @@ import {
 } from "react";
 
 import {
-  useAuth,
-} from "../../auth/AuthProvider";
+  actualizarMiPerfil,
+  obtenerMensajeErrorPerfil,
+  obtenerMiPerfil,
+  type MiPerfil,
+} from "../../api/perfil.api";
 
 import "./PerfilPage.css";
 
 
+interface FormularioPerfil {
+
+  nombres: string;
+
+  apellido_paterno: string;
+
+  apellido_materno: string;
+
+  telefono: string;
+
+}
+
+
+const formularioVacio:
+  FormularioPerfil = {
+
+    nombres: "",
+
+    apellido_paterno: "",
+
+    apellido_materno: "",
+
+    telefono: "",
+
+  };
+
+
 function formatearFecha(
-  fechaIso: string | null,
+  valor?: string | null,
 ): string {
 
-  if (!fechaIso) {
-    return "No disponible";
+  if (!valor) {
+    return "Sin registro";
   }
 
 
   const fecha =
-    new Date(fechaIso);
+    new Date(valor);
 
 
   if (
@@ -39,284 +79,562 @@ function formatearFecha(
     )
   ) {
 
-    return "No disponible";
+    return "Sin registro";
 
   }
 
 
   return new Intl.DateTimeFormat(
-
     "es-BO",
-
     {
-
-      dateStyle:
-        "medium",
-
-      timeStyle:
-        "medium",
-
+      dateStyle: "medium",
+      timeStyle: "short",
     },
-
   ).format(fecha);
 
 }
 
 
-function cuentaRegresiva(
-
-  fechaIso: string | null,
-
-  ahora: number,
-
+function nombreRol(
+  roles: string[],
 ): string {
 
-  if (!fechaIso) {
+  if (
+    roles.includes(
+      "JEFE_ONCOLOGIA",
+    )
+  ) {
 
-    return "No disponible";
+    return "Jefe de Oncología";
 
   }
-
-
-  const diferencia =
-
-    new Date(
-      fechaIso,
-    ).getTime()
-
-    -
-
-    ahora;
 
 
   if (
-    diferencia <= 0
+    roles.includes(
+      "ONCOLOGO",
+    )
   ) {
 
-    return "Vencido";
+    return "Médico oncólogo";
 
   }
 
 
-  const totalSegundos =
-    Math.floor(
-      diferencia / 1000,
-    );
+  return "Personal autorizado";
+
+}
 
 
-  const horas =
-    Math.floor(
-      totalSegundos / 3600,
-    );
+function obtenerIniciales(
+  nombre: string,
+): string {
 
-
-  const minutos =
-    Math.floor(
-      (
-        totalSegundos % 3600
-      ) / 60,
-    );
-
-
-  const segundos =
-    totalSegundos % 60;
-
-
-  if (horas > 0) {
-
-    return (
-      `${horas} h ` +
-      `${minutos} min ` +
-      `${segundos} s`
-    );
-
-  }
-
-
-  return (
-    `${minutos} min ` +
-    `${segundos} s`
-  );
+  return nombre
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(
+      (parte) =>
+        parte.charAt(0),
+    )
+    .join("")
+    .toUpperCase()
+    ||
+    "US";
 
 }
 
 
 export function PerfilPage() {
 
-  const {
-
-    usuario,
-
-    infoSesion,
-
-    eventoSesion,
-
-    renovarSesion,
-
-  } = useAuth();
+  const [
+    perfil,
+    setPerfil,
+  ] = useState<
+    MiPerfil | null
+  >(null);
 
 
   const [
-    ahora,
-    setAhora,
-  ] = useState(
-    Date.now(),
-  );
+    cargando,
+    setCargando,
+  ] = useState(true);
 
 
   const [
-    renovando,
-    setRenovando,
+    editando,
+    setEditando,
   ] = useState(false);
 
 
   const [
-    errorRenovacion,
-    setErrorRenovacion,
+    guardando,
+    setGuardando,
+  ] = useState(false);
+
+
+  const [
+    error,
+    setError,
   ] = useState("");
 
+
+  const [
+    exito,
+    setExito,
+  ] = useState("");
+
+
+  const [
+    erroresFormulario,
+    setErroresFormulario,
+  ] = useState<
+    Record<string, string>
+  >({});
+
+
+  const [
+    formulario,
+    setFormulario,
+  ] = useState<
+    FormularioPerfil
+  >(
+    formularioVacio,
+  );
+
+
+  // ========================================================
+  // CARGAR PERFIL REAL
+  // ========================================================
 
   useEffect(
     () => {
 
-      const intervalo =
-        window.setInterval(
+      const cargarPerfil =
+        async () => {
 
-          () => {
+          try {
 
-            setAhora(
-              Date.now(),
+            setCargando(true);
+
+            setError("");
+
+
+            const response =
+              await obtenerMiPerfil();
+
+
+            setPerfil(
+              response,
             );
 
-          },
+          } catch (errorActual) {
 
-          1000,
+            setError(
+              obtenerMensajeErrorPerfil(
+                errorActual,
+              ),
+            );
 
-        );
+          } finally {
+
+            setCargando(false);
+
+          }
+
+        };
 
 
-      return () => {
-
-        window.clearInterval(
-          intervalo,
-        );
-
-      };
+      void cargarPerfil();
 
     },
     [],
   );
 
 
-  const nombreCompleto =
+  // ========================================================
+  // DATOS DERIVADOS
+  // ========================================================
+
+  const rolVisible =
     useMemo(
-      () => {
-
-        if (!usuario) {
-
-          return "Usuario";
-
-        }
-
-
-        const partes = [
-
-          usuario.nombres,
-
-          usuario
-            .apellido_paterno,
-
-          usuario
-            .apellido_materno,
-
-        ].filter(Boolean);
-
-
-        if (
-          partes.length > 0
-        ) {
-
-          return partes.join(
-            " ",
-          );
-
-        }
-
-
-        return usuario
-          .nombre_usuario;
-
-      },
+      () =>
+        nombreRol(
+          perfil?.roles ?? [],
+        ),
       [
-        usuario,
+        perfil,
       ],
     );
 
 
-  const rolVisible =
-
-    usuario
-      ?.roles
-      ?.includes(
-        "JEFE_ONCOLOGIA",
-      )
-
-      ? "Jefe de Oncología"
-
-      : "Médico Oncólogo";
-
-
-  const accessRestante =
-
-    cuentaRegresiva(
-
-      infoSesion
-        .accessExpiraEn,
-
-      ahora,
-
+  const iniciales =
+    useMemo(
+      () =>
+        obtenerIniciales(
+          perfil?.nombre_completo
+          ??
+          "Usuario",
+        ),
+      [
+        perfil,
+      ],
     );
 
 
-  const renovar =
+  // ========================================================
+  // ABRIR EDICIÓN
+  // ========================================================
+
+  const abrirEdicion =
+    () => {
+
+      if (!perfil) {
+        return;
+      }
+
+
+      setFormulario({
+
+        nombres:
+          perfil.nombres ?? "",
+
+        apellido_paterno:
+          perfil.apellido_paterno
+          ?? "",
+
+        apellido_materno:
+          perfil.apellido_materno
+          ?? "",
+
+        telefono:
+          perfil.telefono
+          ?? "",
+
+      });
+
+
+      setErroresFormulario({});
+
+      setError("");
+
+      setEditando(true);
+
+    };
+
+
+  const cerrarEdicion =
+    () => {
+
+      if (guardando) {
+        return;
+      }
+
+
+      setEditando(false);
+
+      setErroresFormulario({});
+
+      setFormulario(
+        formularioVacio,
+      );
+
+    };
+
+
+  // ========================================================
+  // ACTUALIZAR INPUT
+  // ========================================================
+
+  const actualizarCampo =
+    (
+      campo:
+        keyof FormularioPerfil,
+
+      valor: string,
+    ) => {
+
+      setFormulario(
+        (actual) => ({
+
+          ...actual,
+
+          [campo]:
+            valor,
+
+        }),
+      );
+
+
+      setErroresFormulario(
+        (actual) => {
+
+          const nuevos = {
+            ...actual,
+          };
+
+
+          delete nuevos[campo];
+
+
+          return nuevos;
+
+        },
+      );
+
+    };
+
+
+  // ========================================================
+  // VALIDACIONES VISIBLES
+  // ========================================================
+
+  const validar =
+    (): Record<
+      string,
+      string
+    > => {
+
+      const errores:
+        Record<
+          string,
+          string
+        > = {};
+
+
+      if (
+        formulario
+          .nombres
+          .trim()
+          .length < 2
+      ) {
+
+        errores.nombres =
+          "Ingrese sus nombres.";
+
+      }
+
+
+      if (
+        formulario
+          .apellido_paterno
+          .trim()
+          .length < 2
+      ) {
+
+        errores.apellido_paterno =
+          "Ingrese su apellido paterno.";
+
+      }
+
+
+      if (
+        formulario.telefono.trim()
+      ) {
+
+        const telefonoValido =
+          /^[0-9+\-\s()]{7,25}$/;
+
+
+        if (
+          !telefonoValido.test(
+            formulario.telefono.trim(),
+          )
+        ) {
+
+          errores.telefono =
+            "Ingrese un número de teléfono válido.";
+
+        }
+
+      }
+
+
+      return errores;
+
+    };
+
+
+  // ========================================================
+  // GUARDAR
+  // ========================================================
+
+  const guardar =
     async () => {
+
+      const erroresLocales =
+        validar();
+
+
+      if (
+        Object.keys(
+          erroresLocales,
+        ).length > 0
+      ) {
+
+        setErroresFormulario(
+          erroresLocales,
+        );
+
+        return;
+
+      }
+
 
       try {
 
-        setRenovando(
-          true,
+        setGuardando(true);
+
+        setError("");
+
+        setExito("");
+
+        setErroresFormulario({});
+
+
+        const response =
+          await actualizarMiPerfil(
+            {
+              nombres:
+                formulario
+                  .nombres
+                  .trim(),
+
+              apellido_paterno:
+                formulario
+                  .apellido_paterno
+                  .trim(),
+
+              apellido_materno:
+                formulario
+                  .apellido_materno
+                  .trim()
+                ||
+                null,
+
+              telefono:
+                formulario
+                  .telefono
+                  .trim()
+                ||
+                null,
+            },
+          );
+
+
+        setPerfil(
+          response.perfil,
         );
 
-        setErrorRenovacion(
-          "",
+
+        setEditando(
+          false,
         );
 
 
-        await renovarSesion();
+        setExito(
+          response.mensaje,
+        );
 
-      } catch {
 
-        setErrorRenovacion(
+        window.setTimeout(
+          () => {
 
-          "No fue posible renovar la sesión. Inicie sesión nuevamente.",
+            setExito("");
 
+          },
+          3500,
+        );
+
+      } catch (errorActual) {
+
+        setError(
+          obtenerMensajeErrorPerfil(
+            errorActual,
+          ),
         );
 
       } finally {
 
-        setRenovando(
-          false,
-        );
+        setGuardando(false);
 
       }
 
     };
 
 
+  // ========================================================
+  // LOADING
+  // ========================================================
+
+  if (cargando) {
+
+    return (
+
+      <div className="profile-page">
+
+        <div className="profile-loading">
+
+          <LoaderCircle
+            size={30}
+            className="profile-spin"
+          />
+
+          <strong>
+            Cargando perfil...
+          </strong>
+
+          <span>
+            Consultando información de su cuenta.
+          </span>
+
+        </div>
+
+      </div>
+
+    );
+
+  }
+
+
+  if (!perfil) {
+
+    return (
+
+      <div className="profile-page">
+
+        <div className="profile-error-state">
+
+          <AlertCircle
+            size={30}
+          />
+
+          <strong>
+            No fue posible cargar el perfil
+          </strong>
+
+          <span>
+            {error}
+          </span>
+
+        </div>
+
+      </div>
+
+    );
+
+  }
+
+
   return (
 
     <div className="profile-page">
 
+
+      {/* ====================================================
+          CABECERA
+          ==================================================== */}
 
       <section className="profile-hero">
 
@@ -327,35 +645,82 @@ export function PerfilPage() {
             Cuenta institucional
           </span>
 
-
           <h1>
             Mi perfil
           </h1>
 
-
           <p>
 
-            Consulte la información de su cuenta y
-            el estado de seguridad de la sesión activa.
+            Consulte su información personal
+            y actualice únicamente los datos
+            autorizados.
 
           </p>
 
         </div>
 
 
-        <div className="profile-hero__badge">
+        <button
 
-          <ShieldCheck
-            size={18}
+          type="button"
+
+          className="profile-edit-button"
+
+          onClick={
+            abrirEdicion
+          }
+
+        >
+
+          <Pencil
+            size={17}
           />
 
-          Sesión protegida con JWT
+          Editar mis datos
 
-        </div>
+        </button>
 
 
       </section>
 
+
+      {/* ====================================================
+          MENSAJES
+          ==================================================== */}
+
+      {exito && (
+
+        <div className="profile-alert profile-alert--success">
+
+          <CheckCircle2
+            size={18}
+          />
+
+          {exito}
+
+        </div>
+
+      )}
+
+
+      {error && (
+
+        <div className="profile-alert profile-alert--error">
+
+          <AlertCircle
+            size={18}
+          />
+
+          {error}
+
+        </div>
+
+      )}
+
+
+      {/* ====================================================
+          PERFIL
+          ==================================================== */}
 
       <div className="profile-grid">
 
@@ -373,15 +738,14 @@ export function PerfilPage() {
 
             </div>
 
-
             <div>
 
               <h2>
-                Información de la cuenta
+                Información personal
               </h2>
 
               <p>
-                Usuario autenticado actualmente.
+                Datos asociados a su cuenta.
               </p>
 
             </div>
@@ -391,14 +755,10 @@ export function PerfilPage() {
 
           <div className="profile-account">
 
+
             <div className="profile-account__avatar">
 
-              {nombreCompleto
-                .substring(
-                  0,
-                  2,
-                )
-                .toUpperCase()}
+              {iniciales}
 
             </div>
 
@@ -406,7 +766,7 @@ export function PerfilPage() {
             <div>
 
               <strong>
-                {nombreCompleto}
+                {perfil.nombre_completo}
               </strong>
 
               <span>
@@ -414,6 +774,25 @@ export function PerfilPage() {
               </span>
 
             </div>
+
+
+            <span
+              className={`
+                profile-state
+                ${
+                  perfil.estado === "ACTIVO"
+                    ? "profile-state--active"
+                    : "profile-state--inactive"
+                }
+              `}
+            >
+
+              <span />
+
+              {perfil.estado_nombre}
+
+            </span>
+
 
           </div>
 
@@ -423,14 +802,16 @@ export function PerfilPage() {
 
             <div className="profile-data-item">
 
+              <UserRound
+                size={17}
+              />
+
               <span>
-                Usuario
+                Nombres
               </span>
 
               <strong>
-                {usuario
-                  ?.nombre_usuario ??
-                  "—"}
+                {perfil.nombres}
               </strong>
 
             </div>
@@ -438,34 +819,45 @@ export function PerfilPage() {
 
             <div className="profile-data-item">
 
+              <UserRound
+                size={17}
+              />
+
               <span>
-                Correo
+                Apellidos
               </span>
 
               <strong>
-                {usuario
-                  ?.correo ??
-                  "—"}
+
+                {
+                  [
+                    perfil.apellido_paterno,
+                    perfil.apellido_materno,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")
+                }
+
               </strong>
 
             </div>
 
 
             <div className="profile-data-item">
+
+              <Phone
+                size={17}
+              />
 
               <span>
-                Estado
+                Teléfono personal
               </span>
 
-              <strong className="profile-state">
+              <strong>
 
-                <CheckCircle2
-                  size={15}
-                />
-
-                {usuario
-                  ?.estado ??
-                  "ACTIVO"}
+                {perfil.telefono
+                  ||
+                  "Sin registro"}
 
               </strong>
 
@@ -473,6 +865,116 @@ export function PerfilPage() {
 
 
             <div className="profile-data-item">
+
+              <CalendarDays
+                size={17}
+              />
+
+              <span>
+                Registrado
+              </span>
+
+              <strong>
+
+                {formatearFecha(
+                  perfil.fecha_creacion,
+                )}
+
+              </strong>
+
+            </div>
+
+
+          </div>
+
+
+        </section>
+
+
+        {/* ==================================================
+            INFORMACIÓN INSTITUCIONAL
+            ================================================== */}
+
+        <section className="profile-card">
+
+
+          <div className="profile-card__heading">
+
+            <div className="profile-card__icon">
+
+              <ShieldCheck
+                size={20}
+              />
+
+            </div>
+
+            <div>
+
+              <h2>
+                Información institucional
+              </h2>
+
+              <p>
+                Datos administrados por Jefatura.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div className="profile-institutional-list">
+
+
+            <div>
+
+              <Mail
+                size={18}
+              />
+
+              <span>
+                Correo institucional
+              </span>
+
+              <strong>
+                {perfil.correo}
+              </strong>
+
+              <LockKeyhole
+                size={14}
+                className="profile-lock"
+              />
+
+            </div>
+
+
+            <div>
+
+              <UserRound
+                size={18}
+              />
+
+              <span>
+                Nombre de usuario
+              </span>
+
+              <strong>
+                {perfil.nombre_usuario}
+              </strong>
+
+              <LockKeyhole
+                size={14}
+                className="profile-lock"
+              />
+
+            </div>
+
+
+            <div>
+
+              <Stethoscope
+                size={18}
+              />
 
               <span>
                 Rol
@@ -482,24 +984,9 @@ export function PerfilPage() {
                 {rolVisible}
               </strong>
 
-            </div>
-
-
-          </div>
-
-
-        </section>
-
-
-        <section className="profile-card">
-
-
-          <div className="profile-card__heading">
-
-            <div className="profile-card__icon">
-
-              <KeyRound
-                size={20}
+              <LockKeyhole
+                size={14}
+                className="profile-lock"
               />
 
             </div>
@@ -507,23 +994,171 @@ export function PerfilPage() {
 
             <div>
 
-              <h2>
-                Seguridad de la sesión
-              </h2>
+              <BadgeCheck
+                size={18}
+              />
 
-              <p>
-                Estado del access y refresh token.
-              </p>
+              <span>
+                Matrícula profesional
+              </span>
+
+              <strong>
+
+                {
+                  perfil
+                    .perfil_profesional
+                    .matricula_profesional
+                  ||
+                  "Sin registro"
+                }
+
+              </strong>
+
+              <LockKeyhole
+                size={14}
+                className="profile-lock"
+              />
+
+            </div>
+
+
+            <div>
+
+              <BriefcaseMedical
+                size={18}
+              />
+
+              <span>
+                Especialidad
+              </span>
+
+              <strong>
+
+                {
+                  perfil
+                    .perfil_profesional
+                    .especialidad
+                  ||
+                  "Sin registro"
+                }
+
+              </strong>
+
+              <LockKeyhole
+                size={14}
+                className="profile-lock"
+              />
+
+            </div>
+
+
+            <div>
+
+              <Stethoscope
+                size={18}
+              />
+
+              <span>
+                Cargo
+              </span>
+
+              <strong>
+
+                {
+                  perfil
+                    .perfil_profesional
+                    .cargo
+                  ||
+                  rolVisible
+                }
+
+              </strong>
+
+              <LockKeyhole
+                size={14}
+                className="profile-lock"
+              />
+
+            </div>
+
+
+          </div>
+
+
+          <div className="profile-protected-note">
+
+            <ShieldCheck
+              size={19}
+            />
+
+            <div>
+
+              <strong>
+                Información protegida
+              </strong>
+
+              <span>
+
+                Estos datos no pueden
+                modificarse desde Mi perfil.
+
+              </span>
 
             </div>
 
           </div>
 
 
-          <div className="session-status">
+        </section>
 
-            <span className="session-status__dot" />
 
+      </div>
+
+
+      {/* ====================================================
+          SEGURIDAD
+          ==================================================== */}
+
+      <section className="profile-card">
+
+
+        <div className="profile-card__heading">
+
+          <div className="profile-card__icon">
+
+            <ShieldCheck
+              size={20}
+            />
+
+          </div>
+
+          <div>
+
+            <h2>
+              Seguridad de la cuenta
+            </h2>
+
+            <p>
+              Estado actual del acceso institucional.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div className="profile-security-grid">
+
+
+          <div className="profile-security-status">
+
+            <div className="profile-security-status__icon">
+
+              <CheckCircle2
+                size={23}
+              />
+
+            </div>
 
             <div>
 
@@ -532,12 +1167,30 @@ export function PerfilPage() {
               </strong>
 
               <span>
+                Su sesión se encuentra validada.
+              </span>
 
-                ID:{" "}
+            </div>
 
-                {infoSesion
-                  .idSesion ??
-                  "No disponible"}
+          </div>
+
+
+          <div className="profile-security-info">
+
+            <ShieldCheck
+              size={20}
+            />
+
+            <div>
+
+              <strong>
+                Acceso protegido
+              </strong>
+
+              <span>
+
+                La plataforma valida automáticamente
+                su sesión y sus permisos.
 
               </span>
 
@@ -546,160 +1199,353 @@ export function PerfilPage() {
           </div>
 
 
-          <div className="session-metrics">
+          <div className="profile-security-info">
 
+            <Eye
+              size={20}
+            />
 
-            <div className="session-metric">
-
-              <Clock3
-                size={18}
-              />
-
-
-              <div>
-
-                <span>
-                  Access token vence en
-                </span>
-
-                <strong>
-                  {accessRestante}
-                </strong>
-
-              </div>
-
-            </div>
-
-
-            <div className="session-metric">
-
-              <ShieldCheck
-                size={18}
-              />
-
-
-              <div>
-
-                <span>
-                  Refresh válido hasta
-                </span>
-
-                <strong>
-
-                  {formatearFecha(
-
-                    infoSesion
-                      .refreshExpiraEn,
-
-                  )}
-
-                </strong>
-
-              </div>
-
-            </div>
-
-
-            <div className="session-metric">
-
-              <RefreshCw
-                size={18}
-              />
-
-
-              <div>
-
-                <span>
-                  Última renovación
-                </span>
-
-                <strong>
-
-                  {formatearFecha(
-
-                    infoSesion
-                      .ultimaRenovacion,
-
-                  )}
-
-                </strong>
-
-              </div>
-
-            </div>
-
-
-          </div>
-
-
-          {eventoSesion && (
-
-            <div
-              className={`
-                session-event
-                session-event--${eventoSesion.tipo.toLowerCase()}
-              `}
-            >
+            <div>
 
               <strong>
-                {eventoSesion.mensaje}
+                Último acceso
               </strong>
-
 
               <span>
 
                 {formatearFecha(
-                  eventoSesion.fecha,
+                  perfil.ultimo_acceso,
                 )}
 
               </span>
 
             </div>
 
-          )}
+          </div>
 
 
-          {errorRenovacion && (
-
-            <div className="session-error">
-
-              {errorRenovacion}
-
-            </div>
-
-          )}
+        </div>
 
 
-          <button
+      </section>
 
-            type="button"
 
-            className="session-renew-button"
+      {/* ====================================================
+          MODAL EDICIÓN
+          ==================================================== */}
 
-            onClick={renovar}
+      {editando && (
 
-            disabled={renovando}
+        <div
+          className="profile-modal-backdrop"
+          onMouseDown={
+            cerrarEdicion
+          }
+        >
+
+          <section
+
+            className="profile-modal"
+
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
 
           >
 
-            <RefreshCw
-              size={17}
-            />
+
+            <header className="profile-modal__header">
+
+              <div>
+
+                <span>
+                  Mi perfil
+                </span>
+
+                <h2>
+                  Editar datos personales
+                </h2>
+
+              </div>
 
 
-            {renovando
+              <button
 
-              ? "Renovando sesión..."
+                type="button"
 
-              : "Renovar access token"}
+                onClick={
+                  cerrarEdicion
+                }
 
-          </button>
+                disabled={
+                  guardando
+                }
+
+              >
+
+                <X
+                  size={19}
+                />
+
+              </button>
+
+            </header>
 
 
-        </section>
+            <div className="profile-modal__notice">
+
+              <ShieldCheck
+                size={19}
+              />
+
+              <div>
+
+                <strong>
+                  Datos autorizados
+                </strong>
+
+                <span>
+
+                  Puede modificar únicamente
+                  sus datos personales.
+
+                </span>
+
+              </div>
+
+            </div>
 
 
-      </div>
+            <div className="profile-edit-grid">
+
+
+              <label>
+
+                <span>
+                  Nombres *
+                </span>
+
+                <input
+
+                  value={
+                    formulario.nombres
+                  }
+
+                  onChange={(event) =>
+                    actualizarCampo(
+                      "nombres",
+                      event.target.value,
+                    )
+                  }
+
+                />
+
+                {erroresFormulario.nombres && (
+
+                  <small>
+                    {erroresFormulario.nombres}
+                  </small>
+
+                )}
+
+              </label>
+
+
+              <label>
+
+                <span>
+                  Apellido paterno *
+                </span>
+
+                <input
+
+                  value={
+                    formulario
+                      .apellido_paterno
+                  }
+
+                  onChange={(event) =>
+                    actualizarCampo(
+                      "apellido_paterno",
+                      event.target.value,
+                    )
+                  }
+
+                />
+
+                {erroresFormulario.apellido_paterno && (
+
+                  <small>
+
+                    {
+                      erroresFormulario
+                        .apellido_paterno
+                    }
+
+                  </small>
+
+                )}
+
+              </label>
+
+
+              <label>
+
+                <span>
+                  Apellido materno
+                </span>
+
+                <input
+
+                  value={
+                    formulario
+                      .apellido_materno
+                  }
+
+                  onChange={(event) =>
+                    actualizarCampo(
+                      "apellido_materno",
+                      event.target.value,
+                    )
+                  }
+
+                />
+
+              </label>
+
+
+              <label>
+
+                <span>
+                  Teléfono personal
+                </span>
+
+                <input
+
+                  value={
+                    formulario.telefono
+                  }
+
+                  onChange={(event) =>
+                    actualizarCampo(
+                      "telefono",
+                      event.target.value,
+                    )
+                  }
+
+                  placeholder="Ej. 71234567"
+
+                />
+
+                {erroresFormulario.telefono && (
+
+                  <small>
+                    {erroresFormulario.telefono}
+                  </small>
+
+                )}
+
+              </label>
+
+
+            </div>
+
+
+            <div className="profile-readonly-preview">
+
+              <LockKeyhole
+                size={18}
+              />
+
+              <div>
+
+                <strong>
+                  Datos institucionales bloqueados
+                </strong>
+
+                <span>
+
+                  Correo, usuario, rol, matrícula,
+                  especialidad y cargo solo pueden ser
+                  administrados por personal autorizado.
+
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <footer className="profile-modal__footer">
+
+
+              <button
+
+                type="button"
+
+                className="profile-secondary-button"
+
+                onClick={
+                  cerrarEdicion
+                }
+
+                disabled={
+                  guardando
+                }
+
+              >
+
+                Cancelar
+
+              </button>
+
+
+              <button
+
+                type="button"
+
+                className="profile-primary-button"
+
+                onClick={() =>
+                  void guardar()
+                }
+
+                disabled={
+                  guardando
+                }
+
+              >
+
+                {guardando ? (
+
+                  <LoaderCircle
+                    size={17}
+                    className="profile-spin"
+                  />
+
+                ) : (
+
+                  <Save
+                    size={17}
+                  />
+
+                )}
+
+                {guardando
+                  ? "Guardando..."
+                  : "Guardar cambios"}
+
+              </button>
+
+
+            </footer>
+
+
+          </section>
+
+        </div>
+
+      )}
 
 
     </div>

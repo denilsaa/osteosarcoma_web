@@ -1,20 +1,24 @@
-import {
+﻿import {
+  AlertCircle,
   ArrowRight,
-  CheckCircle2,
   Eye,
   EyeOff,
   HeartPulse,
+  LoaderCircle,
   LockKeyhole,
   Mail,
+  ShieldCheck,
+  Stethoscope,
 } from "lucide-react";
 
 import {
   useState,
-  type FormEvent,
 } from "react";
 
 import {
   Link,
+  Navigate,
+  useLocation,
   useNavigate,
 } from "react-router-dom";
 
@@ -25,43 +29,48 @@ import {
 import "./Auth.css";
 
 
+interface LocationState {
+  from?: string;
+}
+
+
 export function LoginPage() {
 
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
+
+  const location =
+    useLocation();
 
   const {
     login,
+    autenticado,
   } = useAuth();
 
-
-  // ==========================================================
-  // ESTADOS
-  // ==========================================================
 
   const [
     correo,
     setCorreo,
   ] = useState("");
 
+
   const [
     password,
     setPassword,
   ] = useState("");
+
 
   const [
     mostrarPassword,
     setMostrarPassword,
   ] = useState(false);
 
-  const [
-    recordarSesion,
-    setRecordarSesion,
-  ] = useState(false);
 
   const [
     cargando,
     setCargando,
   ] = useState(false);
+
 
   const [
     error,
@@ -69,316 +78,314 @@ export function LoginPage() {
   ] = useState("");
 
 
-  // ==========================================================
-  // LOGIN
-  // ==========================================================
+  if (
+    autenticado
+  ) {
 
-  const iniciarSesion = async (
-    event: FormEvent<HTMLFormElement>,
-  ) => {
+    return (
 
-    event.preventDefault();
+      <Navigate
+        to="/dashboard"
+        replace
+      />
 
-    setError("");
-
-
-    // --------------------------------------------------------
-    // VALIDACIÓN CORREO
-    // --------------------------------------------------------
-
-    if (!correo.trim()) {
-
-      setError(
-        "Ingrese su correo electrónico.",
-      );
-
-      return;
-    }
+    );
+  }
 
 
-    // --------------------------------------------------------
-    // VALIDACIÓN PASSWORD
-    // --------------------------------------------------------
+  const iniciarSesion =
+    async (
+      event:
+        React.FormEvent<
+          HTMLFormElement
+        >,
+    ) => {
 
-    if (!password) {
+      event.preventDefault();
 
-      setError(
-        "Ingrese su contraseña.",
-      );
-
-      return;
-    }
-
-
-    try {
-
-      setCargando(true);
+      setError("");
 
 
-      // ------------------------------------------------------
-      // LLAMADA REAL AL BACKEND
-      // ------------------------------------------------------
+      if (
+        !correo.trim()
+      ) {
 
-      await login(
-        correo.trim(),
-        password,
-      );
+        setError(
+          "Ingrese su correo institucional.",
+        );
 
-
-      // ------------------------------------------------------
-      // LOGIN CORRECTO
-      // ------------------------------------------------------
-
-      navigate(
-        "/dashboard",
-        {
-          replace: true,
-        },
-      );
+        return;
+      }
 
 
-    } catch (error: any) {
+      if (
+        !password
+      ) {
 
-      console.error(
-        "Error al iniciar sesión:",
-        error,
-      );
+        setError(
+          "Ingrese su contraseña.",
+        );
 
-
-      // ------------------------------------------------------
-      // MENSAJE DEL BACKEND
-      // ------------------------------------------------------
-
-      const mensaje =
-        error?.response?.data?.error ||
-        error?.response?.data?.detail ||
-        "Correo o contraseña incorrectos.";
+        return;
+      }
 
 
-      setError(
-        mensaje,
-      );
+      try {
+
+        setCargando(
+          true,
+        );
 
 
-    } finally {
+        await login(
+          correo
+            .trim()
+            .toLowerCase(),
 
-      setCargando(false);
-
-    }
-  };
+          password,
+        );
 
 
-  // ==========================================================
-  // INTERFAZ
-  // ==========================================================
+        const state =
+          location.state as
+            | LocationState
+            | null;
+
+
+        navigate(
+          state?.from
+          ||
+          "/dashboard",
+          {
+            replace: true,
+          },
+        );
+
+      } catch (errorActual) {
+
+        console.error(
+          errorActual,
+        );
+
+        setError(
+          "Correo o contraseña incorrectos. "
+          +
+          "Verifique sus datos e inténtelo nuevamente.",
+        );
+
+      } finally {
+
+        setCargando(
+          false,
+        );
+      }
+    };
+
 
   return (
 
-    <main className="login-page">
+    <div className="login-page">
 
-
-      {/* =====================================================
-          PANEL VISUAL
-          ===================================================== */}
 
       <section className="login-visual">
 
-        <div className="login-visual__background">
-
-          <img
-            src="/branding/radiografia-login.png"
-            alt=""
-            aria-hidden="true"
-          />
-
-        </div>
-
-
         <div className="login-visual__overlay" />
-
-        <div className="login-visual__grid" />
-
-
-        <div
-          className="
-            login-visual__glow
-            login-visual__glow--one
-          "
-        />
-
-
-        <div
-          className="
-            login-visual__glow
-            login-visual__glow--two
-          "
-        />
-
 
         <div className="login-visual__content">
 
-          <div className="login-visual__copy">
+
+          <div className="login-visual__brand">
+
+            <div className="login-visual__brand-icon">
+
+              <HeartPulse
+                size={28}
+              />
+
+            </div>
+
+
+            <div>
+
+              <strong>
+                OSTEOSARCOMA
+              </strong>
+
+              <span>
+                SAN JUAN DE DIOS
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div className="login-visual__message">
+
+            <div className="login-visual__medical-icon">
+
+              <Stethoscope
+                size={34}
+              />
+
+            </div>
+
+
+            <span>
+              Plataforma clínica
+            </span>
+
 
             <h1>
 
-              Tecnología al
-
-              <br />
-
-              servicio del
-
-              <span>
-
-                cuidado
-
-                <br />
-
-                oncológico.
-
-              </span>
+              Apoyo inteligente para
+              la atención oncológica.
 
             </h1>
 
 
             <p>
 
-              Gestión clínica, radiografías y herramientas
-              de apoyo mediante inteligencia artificial en un
-              solo entorno diseñado para el especialista.
+              Gestión clínica segura y
+              herramientas de apoyo para
+              el personal médico de la
+              Clínica San Juan de Dios.
 
             </p>
 
           </div>
+
+
+          <div className="login-visual__security">
+
+            <ShieldCheck
+              size={18}
+            />
+
+            <span>
+
+              Acceso restringido al
+              personal autorizado.
+
+            </span>
+
+          </div>
+
 
         </div>
 
       </section>
 
 
-
-      {/* =====================================================
-          PANEL DE ACCESO
-          ===================================================== */}
-
-      <section className="login-access">
-
-
-        <div
-          className="
-            login-access__glow
-            login-access__glow--top
-          "
-        />
-
-
-        <div
-          className="
-            login-access__glow
-            login-access__glow--bottom
-          "
-        />
+      <section className="login-panel">
 
 
         <div className="login-card">
 
 
-          {/* =================================================
-              LOGO
-              ================================================= */}
+          <div className="login-card__mobile-brand">
 
-          <div className="login-card__logo">
+            <div>
 
-            <img
-              src="/branding/logo-san-juan.png"
-              alt="Clínica San Juan de Dios"
-            />
-
-          </div>
-
-
-
-          {/* =================================================
-              ENCABEZADO
-              ================================================= */}
-
-          <div className="login-card__heading">
-
-
-            <div className="login-card__tag">
-
-              <HeartPulse size={14} />
-
-              <span>
-                Portal clínico
-              </span>
+              <HeartPulse
+                size={23}
+              />
 
             </div>
 
 
-            <h2>
-              Bienvenido
-            </h2>
+            <span>
 
+              <strong>
+                OSTEOSARCOMA
+              </strong>
+
+              <small>
+                SAN JUAN DE DIOS
+              </small>
+
+            </span>
+
+          </div>
+
+
+          <div className="login-card__heading">
+
+            <span>
+              ACCESO INSTITUCIONAL
+            </span>
+
+            <h2>
+              Iniciar sesión
+            </h2>
 
             <p>
 
-              Ingrese sus credenciales institucionales
-              para acceder al sistema.
+              Ingrese sus credenciales
+              institucionales para acceder
+              al sistema.
 
             </p>
 
           </div>
 
 
+          {error && (
 
-          {/* =================================================
-              FORMULARIO
-              ================================================= */}
+            <div
+              className="login-error"
+              role="alert"
+            >
+
+              <AlertCircle
+                size={18}
+              />
+
+              <span>
+                {error}
+              </span>
+
+            </div>
+
+          )}
+
 
           <form
             className="login-form"
-            onSubmit={iniciarSesion}
+            onSubmit={
+              iniciarSesion
+            }
+            noValidate
           >
 
 
-            {/* =================================================
-                CORREO
-                ================================================= */}
+            <label className="login-field">
 
-            <label className="login-form__field">
-
-              <span className="login-form__label">
-
-                Correo o usuario
-
+              <span>
+                Correo institucional
               </span>
 
+              <div className="login-field__control">
 
-              <div className="login-form__control">
-
-                <Mail size={18} />
-
+                <Mail
+                  size={18}
+                />
 
                 <input
-                  type="text"
-                  placeholder="usuario@clinica.com"
-                  autoComplete="username"
-
+                  type="email"
                   value={correo}
-
                   onChange={(event) => {
 
                     setCorreo(
                       event.target.value,
                     );
 
-                    if (error) {
-                      setError("");
-                    }
+                    setError("");
 
                   }}
-
-                  disabled={cargando}
+                  placeholder="nombre@hospital.com"
+                  autoComplete="email"
+                  autoFocus
                 />
 
               </div>
@@ -386,89 +393,66 @@ export function LoginPage() {
             </label>
 
 
+            <label className="login-field">
 
-            {/* =================================================
-                CONTRASEÑA
-                ================================================= */}
-
-            <label className="login-form__field">
-
-              <span className="login-form__label">
-
+              <span>
                 Contraseña
-
               </span>
 
+              <div className="login-field__control">
 
-              <div className="login-form__control">
-
-                <LockKeyhole size={18} />
-
+                <LockKeyhole
+                  size={18}
+                />
 
                 <input
-
                   type={
                     mostrarPassword
                       ? "text"
                       : "password"
                   }
-
-                  placeholder="Ingrese su contraseña"
-
-                  autoComplete="current-password"
-
                   value={password}
-
                   onChange={(event) => {
 
                     setPassword(
                       event.target.value,
                     );
 
-                    if (error) {
-                      setError("");
-                    }
+                    setError("");
 
                   }}
-
-                  disabled={cargando}
-
+                  placeholder="Ingrese su contraseña"
+                  autoComplete="current-password"
                 />
 
 
                 <button
-
                   type="button"
-
-                  className="
-                    login-form__password-toggle
-                  "
-
+                  className="login-password-toggle"
                   onClick={() =>
                     setMostrarPassword(
-                      (valor) => !valor,
+                      (actual) =>
+                        !actual,
                     )
                   }
-
                   aria-label={
                     mostrarPassword
                       ? "Ocultar contraseña"
                       : "Mostrar contraseña"
                   }
-
-                  disabled={cargando}
-
                 >
 
-                  {mostrarPassword ? (
-
-                    <EyeOff size={18} />
-
-                  ) : (
-
-                    <Eye size={18} />
-
-                  )}
+                  {mostrarPassword
+                    ? (
+                      <EyeOff
+                        size={18}
+                      />
+                    )
+                    : (
+                      <Eye
+                        size={18}
+                      />
+                    )}
 
                 </button>
 
@@ -477,72 +461,7 @@ export function LoginPage() {
             </label>
 
 
-
-            {/* =================================================
-                ERROR
-                ================================================= */}
-
-            {error && (
-
-              <div
-                role="alert"
-                style={{
-                  marginTop: "10px",
-                  padding: "12px 14px",
-                  borderRadius: "10px",
-                  background:
-                    "rgba(220, 38, 38, 0.10)",
-                  border:
-                    "1px solid rgba(220, 38, 38, 0.25)",
-                  color: "#b91c1c",
-                  fontSize: "14px",
-                  lineHeight: 1.4,
-                }}
-              >
-
-                {error}
-
-              </div>
-
-            )}
-
-
-
-            {/* =================================================
-                OPCIONES
-                ================================================= */}
-
-            <div className="login-form__options">
-
-
-              <label className="login-form__remember">
-
-                <input
-                  type="checkbox"
-
-                  checked={
-                    recordarSesion
-                  }
-
-                  onChange={(event) =>
-                    setRecordarSesion(
-                      event.target.checked,
-                    )
-                  }
-
-                  disabled={cargando}
-                />
-
-
-                <span>
-
-                  Recordar sesión
-
-                </span>
-
-              </label>
-
-
+            <div className="login-recovery-link">
 
               <Link
                 to="/recuperar-contrasena"
@@ -552,37 +471,38 @@ export function LoginPage() {
 
               </Link>
 
-
             </div>
 
 
-
-            {/* =================================================
-                BOTÓN
-                ================================================= */}
-
             <button
-
               type="submit"
-
-              className="
-                login-form__submit
-              "
-
-              disabled={cargando}
-
+              className="login-submit"
+              disabled={
+                cargando
+              }
             >
+
+              {cargando
+                ? (
+                  <LoaderCircle
+                    size={19}
+                    className="login-spinner"
+                  />
+                )
+                : (
+                  <ArrowRight
+                    size={19}
+                  />
+                )}
+
 
               <span>
 
                 {cargando
                   ? "Verificando..."
-                  : "Ingresar al sistema"}
+                  : "Ingresar"}
 
               </span>
-
-
-              <ArrowRight size={18} />
 
             </button>
 
@@ -590,74 +510,28 @@ export function LoginPage() {
           </form>
 
 
+          <div className="login-card__footer">
 
-          {/* =================================================
-              SEGURIDAD
-              ================================================= */}
+            <ShieldCheck
+              size={15}
+            />
 
-          <div className="login-card__security">
+            <span>
 
+              Sus credenciales se procesan
+              mediante una conexión segura.
 
-            <div className="login-card__security-icon">
-
-              <CheckCircle2 size={15} />
-
-            </div>
-
-
-            <div>
-
-              <strong>
-                Acceso protegido
-              </strong>
-
-
-              <span>
-
-                Exclusivo para personal autorizado
-                de la clínica.
-
-              </span>
-
-            </div>
-
+            </span>
 
           </div>
 
 
         </div>
 
-
-
-        {/* ===================================================
-            FOOTER
-            =================================================== */}
-
-        <footer className="login-access__footer">
-
-          <span>
-            Clínica San Juan de Dios
-          </span>
-
-
-          <span
-            className="
-              login-access__footer-dot
-            "
-          />
-
-
-          <span>
-            Sistema de apoyo clínico
-          </span>
-
-        </footer>
-
-
       </section>
 
 
-    </main>
+    </div>
 
   );
 }

@@ -9,6 +9,14 @@ import {
 } from "react";
 
 import {
+  CheckCircle2,
+  Info,
+  ShieldAlert,
+  TriangleAlert,
+  X,
+} from "lucide-react";
+
+import {
   loginRequest,
   logoutRequest,
   refreshRequest,
@@ -20,17 +28,14 @@ import {
   type UsuarioSesion,
 } from "./tokenStorage";
 
+import "./AuthProvider.css";
+
 
 export type TipoEventoSesion =
-
   | "LOGIN"
-
   | "RENOVADA"
-
   | "VENCIDA"
-
   | "CERRADA"
-
   | "INVALIDA";
 
 
@@ -104,13 +109,8 @@ interface AuthProviderProps {
 
 
 function crearEvento(
-
-  tipo:
-    TipoEventoSesion,
-
-  mensaje:
-    string,
-
+  tipo: TipoEventoSesion,
+  mensaje: string,
 ): EventoSesion {
 
   return {
@@ -176,7 +176,7 @@ export function AuthProvider({
 
 
   // ========================================================
-  // SINCRONIZAR ESTADO
+  // SINCRONIZAR INFORMACIÓN LOCAL
   // ========================================================
 
   const sincronizarSesion =
@@ -206,6 +206,63 @@ export function AuthProvider({
 
 
   // ========================================================
+  // LIMPIAR AVISO
+  // ========================================================
+
+  const limpiarEventoSesion =
+    useCallback(
+      () => {
+
+        setEventoSesion(
+          null,
+        );
+
+      },
+      [],
+    );
+
+
+  // ========================================================
+  // OCULTAR AVISO AUTOMÁTICAMENTE
+  // ========================================================
+
+  useEffect(
+    () => {
+
+      if (!eventoSesion) {
+        return;
+      }
+
+
+      const temporizador =
+        window.setTimeout(
+          () => {
+
+            setEventoSesion(
+              null,
+            );
+
+          },
+          4500,
+        );
+
+
+      return () => {
+
+        window.clearTimeout(
+          temporizador,
+        );
+
+      };
+
+    },
+    [
+      eventoSesion,
+    ],
+  );
+
+
+  // ========================================================
   // LOGIN
   // ========================================================
 
@@ -213,11 +270,8 @@ export function AuthProvider({
     useCallback(
 
       async (
-
         correo: string,
-
         password: string,
-
       ): Promise<void> => {
 
         const data =
@@ -272,7 +326,7 @@ export function AuthProvider({
 
 
   // ========================================================
-  // RENOVAR SESIÓN
+  // RENOVAR SESIÓN MANUAL / INTERNA
   // ========================================================
 
   const renovarSesion =
@@ -281,7 +335,6 @@ export function AuthProvider({
       async (): Promise<void> => {
 
         const refreshToken =
-
           tokenStorage
             .obtenerRefreshToken();
 
@@ -301,7 +354,7 @@ export function AuthProvider({
 
               "INVALIDA",
 
-              "No existe una sesión válida para renovar.",
+              "La sesión ya no es válida. Inicie sesión nuevamente.",
 
             ),
 
@@ -309,7 +362,7 @@ export function AuthProvider({
 
 
           throw new Error(
-            "No existe refresh token.",
+            "No existe una sesión válida.",
           );
 
         }
@@ -318,7 +371,6 @@ export function AuthProvider({
         try {
 
           const data =
-
             await refreshRequest(
               refreshToken,
             );
@@ -349,9 +401,7 @@ export function AuthProvider({
 
               "RENOVADA",
 
-              data.mensaje ??
-
-                "Sesión renovada correctamente.",
+              "La sesión se actualizó correctamente.",
 
             ),
 
@@ -363,7 +413,22 @@ export function AuthProvider({
             .limpiar();
 
 
-          sincronizarSesion();
+          setUsuario(
+            null,
+          );
+
+
+          setInfoSesion(
+
+            tokenStorage
+              .obtenerInfoSesion(),
+
+          );
+
+
+          setAutenticado(
+            false,
+          );
 
 
           setEventoSesion(
@@ -372,18 +437,9 @@ export function AuthProvider({
 
               "INVALIDA",
 
-              "La sesión expiró, fue cerrada o ya no es válida.",
+              "La sesión expiró o dejó de ser válida. Inicie sesión nuevamente.",
 
             ),
-
-          );
-
-
-          sessionStorage.setItem(
-
-            "auth_message",
-
-            "La sesión expiró, fue cerrada o ya no es válida. Inicie sesión nuevamente.",
 
           );
 
@@ -411,7 +467,6 @@ export function AuthProvider({
       async (): Promise<void> => {
 
         const refreshToken =
-
           tokenStorage
             .obtenerRefreshToken();
 
@@ -425,6 +480,11 @@ export function AuthProvider({
             );
 
           }
+
+        } catch {
+
+          // Aunque el servidor ya haya invalidado
+          // la sesión, limpiamos el estado local.
 
         } finally {
 
@@ -462,15 +522,6 @@ export function AuthProvider({
 
           );
 
-
-          sessionStorage.setItem(
-
-            "auth_message",
-
-            "Sesión cerrada correctamente.",
-
-          );
-
         }
 
       },
@@ -500,7 +551,7 @@ export function AuthProvider({
 
               "RENOVADA",
 
-              "El access token venció y la sesión fue renovada automáticamente.",
+              "La sesión venció y fue renovada automáticamente.",
 
             ),
 
@@ -515,7 +566,6 @@ export function AuthProvider({
         ) => {
 
           const customEvent =
-
             event as CustomEvent<{
               mensaje?: string;
             }>;
@@ -525,16 +575,28 @@ export function AuthProvider({
             .limpiar();
 
 
-          sincronizarSesion();
+          setUsuario(
+            null,
+          );
+
+
+          setInfoSesion(
+
+            tokenStorage
+              .obtenerInfoSesion(),
+
+          );
+
+
+          setAutenticado(
+            false,
+          );
 
 
           const mensaje =
-
             customEvent
               .detail
-              ?.mensaje ??
-
-            "La sesión fue cerrada o ya no es válida.";
+              ?.mensaje;
 
 
           setEventoSesion(
@@ -543,18 +605,11 @@ export function AuthProvider({
 
               "INVALIDA",
 
-              mensaje,
+              mensaje
+                ? "La sesión ya no es válida. Inicie sesión nuevamente."
+                : "La sesión ya no es válida. Inicie sesión nuevamente.",
 
             ),
-
-          );
-
-
-          sessionStorage.setItem(
-
-            "auth_message",
-
-            `${mensaje} Inicie sesión nuevamente.`,
 
           );
 
@@ -610,7 +665,7 @@ export function AuthProvider({
 
 
   // ========================================================
-  // DETECTAR EXPIRACIÓN DEL ACCESS TOKEN
+  // DETECTAR VENCIMIENTO DEL ACCESO
   // ========================================================
 
   useEffect(
@@ -623,7 +678,6 @@ export function AuthProvider({
 
 
       const fechaExpiracion =
-
         tokenStorage
           .obtenerInfoSesion()
           .accessExpiraEn;
@@ -635,13 +689,10 @@ export function AuthProvider({
 
 
       const milisegundos =
-
         new Date(
           fechaExpiracion,
         ).getTime()
-
         -
-
         Date.now();
 
 
@@ -655,7 +706,7 @@ export function AuthProvider({
 
             "VENCIDA",
 
-            "El access token venció. Renovando sesión...",
+            "La sesión necesita actualizarse. Espere un momento...",
 
           ),
 
@@ -669,12 +720,10 @@ export function AuthProvider({
 
 
         return;
-
       }
 
 
       const temporizador =
-
         window.setTimeout(
 
           () => {
@@ -685,7 +734,7 @@ export function AuthProvider({
 
                 "VENCIDA",
 
-                "El access token venció. Renovando sesión...",
+                "La sesión necesita actualizarse. Espere un momento...",
 
               ),
 
@@ -715,13 +764,9 @@ export function AuthProvider({
     },
 
     [
-
       autenticado,
-
       infoSesion.accessExpiraEn,
-
       renovarSesion,
-
     ],
 
   );
@@ -787,18 +832,9 @@ export function AuthProvider({
     );
 
 
-  const limpiarEventoSesion =
-    useCallback(
-      () => {
-
-        setEventoSesion(
-          null,
-        );
-
-      },
-      [],
-    );
-
+  // ========================================================
+  // CONTEXTO
+  // ========================================================
 
   const value =
     useMemo(
@@ -828,30 +864,58 @@ export function AuthProvider({
       }),
 
       [
-
         usuario,
-
         autenticado,
-
         infoSesion,
-
         eventoSesion,
-
         login,
-
         logout,
-
         renovarSesion,
-
         tieneRol,
-
         tienePermiso,
-
         limpiarEventoSesion,
-
       ],
 
     );
+
+
+  // ========================================================
+  // ICONO DEL AVISO
+  // ========================================================
+
+  const iconoEvento =
+    eventoSesion?.tipo ===
+      "INVALIDA"
+
+      ? (
+        <ShieldAlert
+          size={20}
+        />
+      )
+
+      : eventoSesion?.tipo ===
+        "VENCIDA"
+
+        ? (
+          <TriangleAlert
+            size={20}
+          />
+        )
+
+        : eventoSesion?.tipo ===
+          "CERRADA"
+
+          ? (
+            <Info
+              size={20}
+            />
+          )
+
+          : (
+            <CheckCircle2
+              size={20}
+            />
+          );
 
 
   return (
@@ -861,6 +925,73 @@ export function AuthProvider({
     >
 
       {children}
+
+
+      {eventoSesion && (
+
+        <div
+          className={`
+            auth-session-notice
+            auth-session-notice--${eventoSesion.tipo.toLowerCase()}
+          `}
+          role="status"
+          aria-live="polite"
+        >
+
+          <div className="auth-session-notice__icon">
+
+            {iconoEvento}
+
+          </div>
+
+
+          <div className="auth-session-notice__content">
+
+            <strong>
+
+              {eventoSesion.tipo === "INVALIDA"
+                ? "Sesión finalizada"
+                : eventoSesion.tipo === "VENCIDA"
+                  ? "Actualizando sesión"
+                  : eventoSesion.tipo === "CERRADA"
+                    ? "Sesión cerrada"
+                    : eventoSesion.tipo === "RENOVADA"
+                      ? "Sesión actualizada"
+                      : "Acceso correcto"}
+
+            </strong>
+
+
+            <span>
+              {eventoSesion.mensaje}
+            </span>
+
+          </div>
+
+
+          <button
+
+            type="button"
+
+            className="auth-session-notice__close"
+
+            onClick={
+              limpiarEventoSesion
+            }
+
+            aria-label="Cerrar aviso"
+
+          >
+
+            <X
+              size={17}
+            />
+
+          </button>
+
+        </div>
+
+      )}
 
     </AuthContext.Provider>
 

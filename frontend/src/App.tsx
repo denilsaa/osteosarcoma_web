@@ -1,19 +1,61 @@
 import {
-  Routes,
-  Route,
   Navigate,
+  Route,
+  Routes,
 } from "react-router-dom";
 
-import { MainLayout } from "./layouts/MainLayout";
-
-import { LoginPage } from "./pages/auth/LoginPage";
 import {
-  RecuperarPasswordPage,
-} from "./pages/auth/RecuperarPasswordPage";
+  ProtectedRoute,
+} from "./auth/ProtectedRoute";
+
+import {
+  MainLayout,
+} from "./layouts/MainLayout";
+
+
+// ==========================================================
+// AUTENTICACIÓN
+// ==========================================================
+
+import {
+  LoginPage,
+} from "./pages/auth/LoginPage";
+
+
+// ==========================================================
+// RECUPERACIÓN
+// ==========================================================
+
+import {
+  RecuperacionPage,
+} from "./pages/recuperacion/RecuperacionPage";
+
+import {
+  RecuperacionesJefePage,
+} from "./pages/recuperacion/RecuperacionesJefePage";
+
+
+// ==========================================================
+// PERMISOS
+// ==========================================================
+
+import {
+  PermisosJefePage,
+} from "./pages/permisos/PermisosJefePage";
+
+
+// ==========================================================
+// DASHBOARD
+// ==========================================================
 
 import {
   DashboardPage,
 } from "./pages/dashboard/DashboardPage";
+
+
+// ==========================================================
+// USUARIOS / ONCÓLOGOS
+// ==========================================================
 
 import {
   UsuariosPage,
@@ -22,6 +64,11 @@ import {
 import {
   NuevoUsuarioPage,
 } from "./pages/usuarios/NuevoUsuarioPage";
+
+
+// ==========================================================
+// PACIENTES
+// ==========================================================
 
 import {
   PacientesPage,
@@ -35,6 +82,11 @@ import {
   PacienteDetallePage,
 } from "./pages/pacientes/PacienteDetallePage";
 
+
+// ==========================================================
+// CASOS CLÍNICOS
+// ==========================================================
+
 import {
   CasosPage,
 } from "./pages/casos/CasosPage";
@@ -47,6 +99,11 @@ import {
   CasoDetallePage,
 } from "./pages/casos/CasoDetallePage";
 
+
+// ==========================================================
+// RADIOGRAFÍAS
+// ==========================================================
+
 import {
   SubirRadiografiaPage,
 } from "./pages/radiografias/SubirRadiografiaPage";
@@ -54,6 +111,11 @@ import {
 import {
   RadiografiaDetallePage,
 } from "./pages/radiografias/RadiografiaDetallePage";
+
+
+// ==========================================================
+// ANÁLISIS IA
+// ==========================================================
 
 import {
   AnalisisPage,
@@ -63,21 +125,32 @@ import {
   ResultadoPage,
 } from "./pages/analisis/ResultadoPage";
 
+
+// ==========================================================
+// INFORMES
+// ==========================================================
+
 import {
   ReportesPage,
 } from "./pages/reportes/ReportesPage";
+
+
+// ==========================================================
+// AUDITORÍA
+// ==========================================================
 
 import {
   AuditoriaPage,
 } from "./pages/auditoria/AuditoriaPage";
 
+
+// ==========================================================
+// PERFIL
+// ==========================================================
+
 import {
   PerfilPage,
 } from "./pages/perfil/PerfilPage";
-
-import {
-  ProtectedRoute,
-} from "./auth/ProtectedRoute";
 
 
 function App() {
@@ -86,8 +159,9 @@ function App() {
 
     <Routes>
 
+
       {/* ==================================================
-          RUTAS PÚBLICAS
+          RUTA INICIAL
           ================================================== */}
 
       <Route
@@ -100,15 +174,40 @@ function App() {
         }
       />
 
+
+      {/* ==================================================
+          RUTAS PÚBLICAS
+          ================================================== */}
+
       <Route
         path="/login"
-        element={<LoginPage />}
+        element={
+          <LoginPage />
+        }
       />
+
+
+      {/* ==================================================
+          RECUPERACIÓN DE CONTRASEÑA
+          ================================================== */}
 
       <Route
         path="/recuperar-contrasena"
         element={
-          <RecuperarPasswordPage />
+          <RecuperacionPage />
+        }
+      />
+
+
+      {/* Alias */}
+
+      <Route
+        path="/recuperar"
+        element={
+          <Navigate
+            to="/recuperar-contrasena"
+            replace
+          />
         }
       />
 
@@ -117,11 +216,23 @@ function App() {
           RUTAS PROTEGIDAS
           ================================================== */}
 
-      <Route element={<ProtectedRoute />}>
+      <Route
+        element={
+          <ProtectedRoute />
+        }
+      >
+
 
         <Route
-          element={<MainLayout />}
+          element={
+            <MainLayout />
+          }
         >
+
+
+          {/* ================================================
+              DASHBOARD
+              ================================================ */}
 
           <Route
             path="/dashboard"
@@ -130,12 +241,18 @@ function App() {
             }
           />
 
+
+          {/* ================================================
+              GESTIÓN DE ONCÓLOGOS
+              ================================================ */}
+
           <Route
             path="/usuarios"
             element={
               <UsuariosPage />
             }
           />
+
 
           <Route
             path="/usuarios/nuevo"
@@ -144,12 +261,44 @@ function App() {
             }
           />
 
+
+          {/* ================================================
+              RECUPERACIONES
+              SOLO JEFE A NIVEL BACKEND
+              ================================================ */}
+
+          <Route
+            path="/recuperaciones"
+            element={
+              <RecuperacionesJefePage />
+            }
+          />
+
+
+          {/* ================================================
+              ADMINISTRACIÓN DE PERMISOS
+              SOLO JEFE A NIVEL BACKEND
+              ================================================ */}
+
+          <Route
+            path="/permisos"
+            element={
+              <PermisosJefePage />
+            }
+          />
+
+
+          {/* ================================================
+              PACIENTES
+              ================================================ */}
+
           <Route
             path="/pacientes"
             element={
               <PacientesPage />
             }
           />
+
 
           <Route
             path="/pacientes/nuevo"
@@ -158,12 +307,18 @@ function App() {
             }
           />
 
+
           <Route
             path="/pacientes/:id"
             element={
               <PacienteDetallePage />
             }
           />
+
+
+          {/* ================================================
+              CASOS CLÍNICOS
+              ================================================ */}
 
           <Route
             path="/casos"
@@ -172,12 +327,14 @@ function App() {
             }
           />
 
+
           <Route
             path="/casos/nuevo"
             element={
               <NuevoCasoPage />
             }
           />
+
 
           <Route
             path="/casos/:id"
@@ -186,12 +343,18 @@ function App() {
             }
           />
 
+
+          {/* ================================================
+              RADIOGRAFÍAS
+              ================================================ */}
+
           <Route
             path="/radiografias/subir"
             element={
               <SubirRadiografiaPage />
             }
           />
+
 
           <Route
             path="/radiografias/:id"
@@ -200,12 +363,18 @@ function App() {
             }
           />
 
+
+          {/* ================================================
+              ANÁLISIS IA
+              ================================================ */}
+
           <Route
             path="/analisis"
             element={
               <AnalisisPage />
             }
           />
+
 
           <Route
             path="/resultados/:id"
@@ -214,12 +383,22 @@ function App() {
             }
           />
 
+
+          {/* ================================================
+              INFORMES
+              ================================================ */}
+
           <Route
             path="/reportes"
             element={
               <ReportesPage />
             }
           />
+
+
+          {/* ================================================
+              AUDITORÍA
+              ================================================ */}
 
           <Route
             path="/auditoria"
@@ -228,6 +407,11 @@ function App() {
             }
           />
 
+
+          {/* ================================================
+              MI PERFIL
+              ================================================ */}
+
           <Route
             path="/perfil"
             element={
@@ -235,13 +419,15 @@ function App() {
             }
           />
 
+
         </Route>
+
 
       </Route>
 
 
       {/* ==================================================
-          CUALQUIER RUTA DESCONOCIDA
+          RUTA DESCONOCIDA
           ================================================== */}
 
       <Route
@@ -254,10 +440,12 @@ function App() {
         }
       />
 
+
     </Routes>
 
   );
 
 }
+
 
 export default App;

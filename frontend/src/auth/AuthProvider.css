@@ -1,0 +1,197 @@
+.auth-session-notice {
+  position: fixed;
+
+  z-index: 9999;
+
+  top: 22px;
+  right: 22px;
+
+  display: grid;
+
+  grid-template-columns:
+    42px
+    minmax(0, 1fr)
+    32px;
+
+  width: min(
+    390px,
+    calc(100vw - 32px)
+  );
+
+  align-items: center;
+
+  gap: 11px;
+
+  padding: 13px 12px;
+
+  border: 1px solid #dce7eb;
+
+  border-radius: 15px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 18px 50px
+    rgba(17, 49, 65, 0.16);
+
+  animation:
+    auth-notice-enter
+    0.22s ease-out;
+}
+
+
+.auth-session-notice__icon {
+  display: grid;
+
+  width: 40px;
+  height: 40px;
+
+  place-items: center;
+
+  border-radius: 11px;
+}
+
+
+.auth-session-notice__content {
+  min-width: 0;
+}
+
+
+.auth-session-notice__content strong,
+.auth-session-notice__content span {
+  display: block;
+}
+
+
+.auth-session-notice__content strong {
+  color: #294553;
+
+  font-size: 13px;
+}
+
+
+.auth-session-notice__content span {
+  margin-top: 3px;
+
+  color: #708590;
+
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+
+.auth-session-notice__close {
+  display: grid;
+
+  width: 30px;
+  height: 30px;
+
+  place-items: center;
+
+  border: 0;
+
+  border-radius: 8px;
+
+  background: transparent;
+
+  color: #93a4ad;
+
+  cursor: pointer;
+}
+
+
+.auth-session-notice__close:hover {
+  background: #f3f6f7;
+
+  color: #526a76;
+}
+
+
+/* LOGIN / RENOVADA */
+
+.auth-session-notice--login,
+.auth-session-notice--renovada {
+  border-color: #bfe5cf;
+}
+
+
+.auth-session-notice--login
+.auth-session-notice__icon,
+.auth-session-notice--renovada
+.auth-session-notice__icon {
+  background: #edf9f2;
+
+  color: #288154;
+}
+
+
+/* VENCIMIENTO */
+
+.auth-session-notice--vencida {
+  border-color: #efd8a9;
+}
+
+
+.auth-session-notice--vencida
+.auth-session-notice__icon {
+  background: #fff8e9;
+
+  color: #b7791f;
+}
+
+
+/* INVALIDA */
+
+.auth-session-notice--invalida {
+  border-color: #efc3c3;
+}
+
+
+.auth-session-notice--invalida
+.auth-session-notice__icon {
+  background: #fff0f0;
+
+  color: #be4e4e;
+}
+
+
+/* CERRADA */
+
+.auth-session-notice--cerrada
+.auth-session-notice__icon {
+  background: #eef7fa;
+
+  color: #27809c;
+}
+
+
+@keyframes auth-notice-enter {
+
+  from {
+    opacity: 0;
+
+    transform:
+      translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateY(0);
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .auth-session-notice {
+    top: 14px;
+    right: 16px;
+    left: 16px;
+
+    width: auto;
+  }
+
+}
