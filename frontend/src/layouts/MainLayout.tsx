@@ -3,7 +3,6 @@ import {
   Bell,
   ChevronDown,
   ClipboardList,
-  FileText,
   HeartPulse,
   KeyRound,
   LayoutDashboard,
@@ -82,12 +81,6 @@ const mainMenu: MenuItem[] = [
     icon: Sparkles,
   },
 
-  {
-    label: "Informes",
-    path: "/reportes",
-    icon: FileText,
-  },
-
 ];
 
 
@@ -109,6 +102,12 @@ const adminMenu: MenuItem[] = [
     label: "Permisos",
     path: "/permisos",
     icon: ShieldCheck,
+  },
+
+  {
+    label: "Auditoría",
+    path: "/auditoria",
+    icon: Activity,
   },
 
 ];
@@ -162,14 +161,6 @@ function getPageTitle(
     return "Resultados";
   }
 
-
-  if (
-    pathname.startsWith(
-      "/reportes",
-    )
-  ) {
-    return "Informes";
-  }
 
 
   if (

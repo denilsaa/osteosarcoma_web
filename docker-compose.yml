@@ -4,53 +4,33 @@ services:
   # BASE DE DATOS - USUARIOS
   # =========================================================
   postgres_usuarios:
-
     image: postgres:17
-
     container_name: osteosarcoma_postgres_usuarios
-
     restart: unless-stopped
 
-
     environment:
-
       POSTGRES_DB: ${POSTGRES_USUARIOS_DB}
-
       POSTGRES_USER: ${POSTGRES_USUARIOS_USER}
-
       POSTGRES_PASSWORD: ${POSTGRES_USUARIOS_PASSWORD}
 
-
     ports:
-
       - "5432:5432"
 
-
     volumes:
-
       - postgres_usuarios_data:/var/lib/postgresql/data
-
       - ./servicios/servicio_usuarios/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
 
-
     healthcheck:
-
       test:
-
         [
           "CMD-SHELL",
           "pg_isready -U ${POSTGRES_USUARIOS_USER} -d ${POSTGRES_USUARIOS_DB}"
         ]
-
       interval: 5s
-
       timeout: 5s
-
       retries: 10
 
-
     networks:
-
       - osteosarcoma_network
 
 
@@ -58,56 +38,34 @@ services:
   # SERVICIO - USUARIOS
   # =========================================================
   servicio_usuarios:
-
     build:
-
       context: ./servicios/servicio_usuarios
-
       dockerfile: Dockerfile
 
-
     container_name: osteosarcoma_servicio_usuarios
-
     restart: unless-stopped
 
-
     environment:
-
       DJANGO_SECRET_KEY: ${USUARIOS_DJANGO_SECRET_KEY}
-
       DJANGO_DEBUG: ${USUARIOS_DJANGO_DEBUG}
 
-
       DB_NAME: ${POSTGRES_USUARIOS_DB}
-
       DB_USER: ${POSTGRES_USUARIOS_APP_USER}
-
       DB_PASSWORD: ${POSTGRES_USUARIOS_APP_PASSWORD}
-
       DB_HOST: postgres_usuarios
-
       DB_PORT: 5432
 
-
     ports:
-
       - "8000:8000"
 
-
     volumes:
-
       - ./servicios/servicio_usuarios:/app
 
-
     depends_on:
-
       postgres_usuarios:
-
         condition: service_healthy
 
-
     networks:
-
       - osteosarcoma_network
 
 
@@ -124,11 +82,18 @@ services:
       POSTGRES_USER: ${POSTGRES_CLINICO_USER}
       POSTGRES_PASSWORD: ${POSTGRES_CLINICO_PASSWORD}
 
+      # Usuario restringido utilizado por Django
+      POSTGRES_APP_USER: ${POSTGRES_CLINICO_APP_USER}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_CLINICO_APP_PASSWORD}
+
     ports:
       - "5433:5432"
 
     volumes:
       - postgres_clinico_data:/var/lib/postgresql/data
+
+      # Se ejecuta únicamente al inicializar una BD nueva
+      - ./servicios/servicio_clinico/postgres/01-create-app-user.sh:/docker-entrypoint-initdb.d/01-create-app-user.sh:ro
 
     healthcheck:
       test:
@@ -192,11 +157,18 @@ services:
       POSTGRES_USER: ${POSTGRES_IA_USER}
       POSTGRES_PASSWORD: ${POSTGRES_IA_PASSWORD}
 
+      # Usuario restringido utilizado por Django
+      POSTGRES_APP_USER: ${POSTGRES_IA_APP_USER}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_IA_APP_PASSWORD}
+
     ports:
       - "5434:5432"
 
     volumes:
       - postgres_ia_data:/var/lib/postgresql/data
+
+      # Se ejecuta únicamente al inicializar una BD nueva
+      - ./servicios/servicio_ia/postgres/01-create-app-user.sh:/docker-entrypoint-initdb.d/01-create-app-user.sh:ro
 
     healthcheck:
       test:
@@ -247,6 +219,7 @@ services:
     depends_on:
       postgres_ia:
         condition: service_healthy
+
       rabbitmq:
         condition: service_healthy
 
@@ -267,11 +240,18 @@ services:
       POSTGRES_USER: ${POSTGRES_RADIOGRAFIAS_USER}
       POSTGRES_PASSWORD: ${POSTGRES_RADIOGRAFIAS_PASSWORD}
 
+      # Usuario restringido utilizado por Laravel
+      POSTGRES_APP_USER: ${POSTGRES_RADIOGRAFIAS_APP_USER}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_RADIOGRAFIAS_APP_PASSWORD}
+
     ports:
       - "5435:5432"
 
     volumes:
       - postgres_radiografias_data:/var/lib/postgresql/data
+
+      # Se ejecuta únicamente al inicializar una BD nueva
+      - ./servicios/servicio_radiografias/postgres/01-create-app-user.sh:/docker-entrypoint-initdb.d/01-create-app-user.sh:ro
 
     healthcheck:
       test:
@@ -324,29 +304,33 @@ services:
 
 
   # =========================================================
-  # BASE DE DATOS - REPORTES
+  # BASE DE DATOS - AUDITORIA
   # =========================================================
-  postgres_reportes:
+  postgres_auditoria:
     image: postgres:17
-    container_name: osteosarcoma_postgres_reportes
+    container_name: osteosarcoma_postgres_auditoria
     restart: unless-stopped
 
     environment:
-      POSTGRES_DB: ${POSTGRES_REPORTES_DB}
-      POSTGRES_USER: ${POSTGRES_REPORTES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_REPORTES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_AUDITORIA_DB}
+      POSTGRES_USER: ${POSTGRES_AUDITORIA_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_AUDITORIA_PASSWORD}
+
+      POSTGRES_APP_USER: ${POSTGRES_AUDITORIA_APP_USER}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_AUDITORIA_APP_PASSWORD}
 
     ports:
       - "5436:5432"
 
     volumes:
-      - postgres_reportes_data:/var/lib/postgresql/data
+      - postgres_auditoria_data:/var/lib/postgresql/data
+      - ./servicios/servicio_auditoria/postgres/01-create-app-user.sh:/docker-entrypoint-initdb.d/01-create-app-user.sh:ro
 
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_REPORTES_USER} -d ${POSTGRES_REPORTES_DB}"
+          "pg_isready -U ${POSTGRES_AUDITORIA_USER} -d ${POSTGRES_AUDITORIA_DB}"
         ]
       interval: 5s
       timeout: 5s
@@ -357,35 +341,35 @@ services:
 
 
   # =========================================================
-  # SERVICIO - REPORTES
+  # SERVICIO - AUDITORIA
   # =========================================================
-  servicio_reportes:
+  servicio_auditoria:
     build:
-      context: ./servicios/servicio_reportes
+      context: ./servicios/servicio_auditoria
       dockerfile: Dockerfile
 
-    container_name: osteosarcoma_servicio_reportes
+    container_name: osteosarcoma_servicio_auditoria
     restart: unless-stopped
 
     environment:
-      APP_ENV: ${REPORTES_APP_ENV}
-      APP_DEBUG: ${REPORTES_APP_DEBUG}
+      APP_ENV: ${AUDITORIA_APP_ENV}
+      APP_DEBUG: ${AUDITORIA_APP_DEBUG}
 
       DB_CONNECTION: pgsql
-      DB_HOST: postgres_reportes
+      DB_HOST: postgres_auditoria
       DB_PORT: 5432
-      DB_DATABASE: ${POSTGRES_REPORTES_DB}
-      DB_USERNAME: ${POSTGRES_REPORTES_APP_USER}
-      DB_PASSWORD: ${POSTGRES_REPORTES_APP_PASSWORD}
+      DB_DATABASE: ${POSTGRES_AUDITORIA_DB}
+      DB_USERNAME: ${POSTGRES_AUDITORIA_APP_USER}
+      DB_PASSWORD: ${POSTGRES_AUDITORIA_APP_PASSWORD}
 
     ports:
       - "8004:8000"
 
     volumes:
-      - ./servicios/servicio_reportes:/app
+      - ./servicios/servicio_auditoria:/app
 
     depends_on:
-      postgres_reportes:
+      postgres_auditoria:
         condition: service_healthy
 
     networks:
@@ -412,13 +396,19 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
 
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      test:
+        [
+          "CMD",
+          "rabbitmq-diagnostics",
+          "ping"
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
 
     networks:
       - osteosarcoma_network
+
 
   # =========================================================
   # FRONTEND - REACT
@@ -443,34 +433,43 @@ services:
       VITE_API_CLINICO_URL: http://localhost:8001
       VITE_API_IA_URL: http://localhost:8002
       VITE_API_RADIOGRAFIAS_URL: http://localhost:8003
-      VITE_API_REPORTES_URL: http://localhost:8004
+      VITE_API_AUDITORIA_URL: http://localhost:8004
 
     depends_on:
       - servicio_usuarios
       - servicio_clinico
       - servicio_ia
       - servicio_radiografias
-      - servicio_reportes
+      - servicio_auditoria
 
     networks:
       - osteosarcoma_network
 
 
 # =========================================================
-# VOLUMENES
+# VOLUMENES PERSISTENTES
 # =========================================================
 volumes:
+
   postgres_usuarios_data:
+
   postgres_clinico_data:
+
   postgres_ia_data:
+
   postgres_radiografias_data:
-  postgres_reportes_data:
+
+  postgres_auditoria_data:
+
   rabbitmq_data:
+
   frontend_node_modules:
+
 
 # =========================================================
 # RED INTERNA
 # =========================================================
 networks:
+
   osteosarcoma_network:
     driver: bridge

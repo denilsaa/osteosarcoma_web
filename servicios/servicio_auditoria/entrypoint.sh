@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-echo "Esperando PostgreSQL reportes..."
+echo "Esperando PostgreSQL auditoría..."
 
 php -r '
 $host = getenv("DB_HOST");
@@ -19,9 +19,8 @@ for ($i = 1; $i <= 30; $i++) {
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
         );
 
-        echo "PostgreSQL reportes disponible.\n";
+        echo "PostgreSQL auditoría disponible.\n";
         exit(0);
-
     } catch (Throwable $e) {
         echo "Intento $i/30: {$e->getMessage()}\n";
         sleep(2);
@@ -31,6 +30,11 @@ for ($i = 1; $i <= 30; $i++) {
 exit(1);
 '
 
-echo "Iniciando servicio_reportes..."
+echo "Ejecutando migraciones de Auditoría..."
+php artisan migrate --force
 
+echo "Cargando catálogos de Auditoría..."
+php artisan db:seed --force
+
+echo "Iniciando servicio_auditoria..."
 exec php artisan serve --host=0.0.0.0 --port=8000
