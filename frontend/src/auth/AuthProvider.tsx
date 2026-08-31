@@ -395,18 +395,6 @@ export function AuthProvider({
           );
 
 
-          setEventoSesion(
-
-            crearEvento(
-
-              "RENOVADA",
-
-              "La sesión se actualizó correctamente.",
-
-            ),
-
-          );
-
         } catch (error) {
 
           tokenStorage
@@ -545,17 +533,6 @@ export function AuthProvider({
           sincronizarSesion();
 
 
-          setEventoSesion(
-
-            crearEvento(
-
-              "RENOVADA",
-
-              "La sesión venció y fue renovada automáticamente.",
-
-            ),
-
-          );
 
         };
 

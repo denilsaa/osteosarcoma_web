@@ -1,14 +1,13 @@
 ﻿import {
   AlertCircle,
   ArrowRight,
+  CheckCircle2,
   Eye,
   EyeOff,
   HeartPulse,
   LoaderCircle,
   LockKeyhole,
   Mail,
-  ShieldCheck,
-  Stethoscope,
 } from "lucide-react";
 
 import {
@@ -35,7 +34,6 @@ interface LocationState {
 
 
 export function LoginPage() {
-
   const navigate =
     useNavigate();
 
@@ -47,30 +45,25 @@ export function LoginPage() {
     autenticado,
   } = useAuth();
 
-
   const [
     correo,
     setCorreo,
   ] = useState("");
-
 
   const [
     password,
     setPassword,
   ] = useState("");
 
-
   const [
     mostrarPassword,
     setMostrarPassword,
   ] = useState(false);
 
-
   const [
     cargando,
     setCargando,
   ] = useState(false);
-
 
   const [
     error,
@@ -78,38 +71,30 @@ export function LoginPage() {
   ] = useState("");
 
 
-  if (
-    autenticado
-  ) {
-
+  if (autenticado) {
     return (
-
       <Navigate
         to="/dashboard"
         replace
       />
-
     );
   }
 
 
   const iniciarSesion =
     async (
-      event:
-        React.FormEvent<
-          HTMLFormElement
-        >,
+      event: React.FormEvent<HTMLFormElement>,
     ) => {
-
       event.preventDefault();
 
       setError("");
 
+      const correoNormalizado =
+        correo
+          .trim()
+          .toLowerCase();
 
-      if (
-        !correo.trim()
-      ) {
-
+      if (!correoNormalizado) {
         setError(
           "Ingrese su correo institucional.",
         );
@@ -117,11 +102,22 @@ export function LoginPage() {
         return;
       }
 
+      const formatoCorreo =
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
       if (
-        !password
+        !formatoCorreo.test(
+          correoNormalizado,
+        )
       ) {
+        setError(
+          "Ingrese un correo institucional válido.",
+        );
 
+        return;
+      }
+
+      if (!password) {
         setError(
           "Ingrese su contraseña.",
         );
@@ -129,226 +125,131 @@ export function LoginPage() {
         return;
       }
 
-
       try {
-
-        setCargando(
-          true,
-        );
-
+        setCargando(true);
 
         await login(
-          correo
-            .trim()
-            .toLowerCase(),
-
+          correoNormalizado,
           password,
         );
-
 
         const state =
           location.state as
             | LocationState
             | null;
 
-
         navigate(
           state?.from
-          ||
-          "/dashboard",
+          || "/dashboard",
           {
             replace: true,
           },
         );
-
       } catch (errorActual) {
-
         console.error(
           errorActual,
         );
 
         setError(
-          "Correo o contraseña incorrectos. "
-          +
-          "Verifique sus datos e inténtelo nuevamente.",
+          "Correo o contraseña incorrectos. Verifique sus datos e inténtelo nuevamente.",
         );
-
       } finally {
-
-        setCargando(
-          false,
-        );
+        setCargando(false);
       }
     };
 
 
   return (
-
-    <div className="login-page">
-
-
+    <main className="login-page">
+      {/* =====================================================
+          PANEL VISUAL - DISEÑO DEL LOGIN ANTERIOR
+          ===================================================== */}
       <section className="login-visual">
-
-        <div className="login-visual__overlay" />
-
-        <div className="login-visual__content">
-
-
-          <div className="login-visual__brand">
-
-            <div className="login-visual__brand-icon">
-
-              <HeartPulse
-                size={28}
-              />
-
-            </div>
-
-
-            <div>
-
-              <strong>
-                OSTEOSARCOMA
-              </strong>
-
-              <span>
-                SAN JUAN DE DIOS
-              </span>
-
-            </div>
-
-          </div>
-
-
-          <div className="login-visual__message">
-
-            <div className="login-visual__medical-icon">
-
-              <Stethoscope
-                size={34}
-              />
-
-            </div>
-
-
-            <span>
-              Plataforma clínica
-            </span>
-
-
-            <h1>
-
-              Apoyo inteligente para
-              la atención oncológica.
-
-            </h1>
-
-
-            <p>
-
-              Gestión clínica segura y
-              herramientas de apoyo para
-              el personal médico de la
-              Clínica San Juan de Dios.
-
-            </p>
-
-          </div>
-
-
-          <div className="login-visual__security">
-
-            <ShieldCheck
-              size={18}
-            />
-
-            <span>
-
-              Acceso restringido al
-              personal autorizado.
-
-            </span>
-
-          </div>
-
-
+        <div className="login-visual__background">
+          <img
+            src="/branding/radiografia-login.png"
+            alt=""
+            aria-hidden="true"
+          />
         </div>
 
+        <div className="login-visual__overlay" />
+        <div className="login-visual__grid" />
+
+        <div className="login-visual__glow login-visual__glow--one" />
+        <div className="login-visual__glow login-visual__glow--two" />
+
+        <div className="login-visual__content">
+          <div className="login-visual__copy">
+            <h1>
+              Tecnología al
+              <br />
+              servicio del
+              <span>
+                cuidado
+                <br />
+                oncológico.
+              </span>
+            </h1>
+
+            <p>
+              Gestión clínica, radiografías y herramientas de apoyo
+              mediante inteligencia artificial en un solo entorno
+              diseñado para el especialista.
+            </p>
+          </div>
+        </div>
       </section>
 
-
-      <section className="login-panel">
-
+      {/* =====================================================
+          PANEL DE ACCESO - FUNCIONALIDAD ACTUAL
+          ===================================================== */}
+      <section className="login-access">
+        <div className="login-access__glow login-access__glow--top" />
+        <div className="login-access__glow login-access__glow--bottom" />
 
         <div className="login-card">
-
-
-          <div className="login-card__mobile-brand">
-
-            <div>
-
-              <HeartPulse
-                size={23}
-              />
-
-            </div>
-
-
-            <span>
-
-              <strong>
-                OSTEOSARCOMA
-              </strong>
-
-              <small>
-                SAN JUAN DE DIOS
-              </small>
-
-            </span>
-
+          <div className="login-card__logo">
+            <img
+              src="/branding/logo-san-juan.png"
+              alt="Clínica San Juan de Dios"
+            />
           </div>
 
-
           <div className="login-card__heading">
+            <div className="login-card__tag">
+              <HeartPulse
+                size={14}
+              />
 
-            <span>
-              ACCESO INSTITUCIONAL
-            </span>
+              <span>
+                Portal clínico
+              </span>
+            </div>
 
             <h2>
-              Iniciar sesión
+              Bienvenido
             </h2>
 
             <p>
-
-              Ingrese sus credenciales
-              institucionales para acceder
-              al sistema.
-
+              Ingrese sus credenciales institucionales para acceder al sistema.
             </p>
-
           </div>
 
-
           {error && (
-
             <div
-              className="login-error"
+              className="login-form__error"
               role="alert"
             >
-
               <AlertCircle
-                size={18}
+                size={17}
               />
 
               <span>
                 {error}
               </span>
-
             </div>
-
           )}
-
 
           <form
             className="login-form"
@@ -357,16 +258,12 @@ export function LoginPage() {
             }
             noValidate
           >
-
-
-            <label className="login-field">
-
-              <span>
+            <label className="login-form__field">
+              <span className="login-form__label">
                 Correo institucional
               </span>
 
-              <div className="login-field__control">
-
+              <div className="login-form__control">
                 <Mail
                   size={18}
                 />
@@ -375,32 +272,26 @@ export function LoginPage() {
                   type="email"
                   value={correo}
                   onChange={(event) => {
-
                     setCorreo(
                       event.target.value,
                     );
 
                     setError("");
-
                   }}
                   placeholder="nombre@hospital.com"
                   autoComplete="email"
                   autoFocus
+                  disabled={cargando}
                 />
-
               </div>
-
             </label>
 
-
-            <label className="login-field">
-
-              <span>
+            <label className="login-form__field">
+              <span className="login-form__label">
                 Contraseña
               </span>
 
-              <div className="login-field__control">
-
+              <div className="login-form__control">
                 <LockKeyhole
                   size={18}
                 />
@@ -413,26 +304,23 @@ export function LoginPage() {
                   }
                   value={password}
                   onChange={(event) => {
-
                     setPassword(
                       event.target.value,
                     );
 
                     setError("");
-
                   }}
                   placeholder="Ingrese su contraseña"
                   autoComplete="current-password"
+                  disabled={cargando}
                 />
-
 
                 <button
                   type="button"
-                  className="login-password-toggle"
+                  className="login-form__password-toggle"
                   onClick={() =>
                     setMostrarPassword(
-                      (actual) =>
-                        !actual,
+                      (valor) => !valor,
                     )
                   }
                   aria-label={
@@ -440,8 +328,8 @@ export function LoginPage() {
                       ? "Ocultar contraseña"
                       : "Mostrar contraseña"
                   }
+                  disabled={cargando}
                 >
-
                   {mostrarPassword
                     ? (
                       <EyeOff
@@ -453,85 +341,78 @@ export function LoginPage() {
                         size={18}
                       />
                     )}
-
                 </button>
-
               </div>
-
             </label>
 
-
-            <div className="login-recovery-link">
-
-              <Link
-                to="/recuperar-contrasena"
-              >
-
+            <div className="login-form__options login-form__options--end">
+              <Link to="/recuperar-contrasena">
                 ¿Olvidó su contraseña?
-
               </Link>
-
             </div>
-
 
             <button
               type="submit"
-              className="login-submit"
-              disabled={
-                cargando
-              }
+              className="login-form__submit"
+              disabled={cargando}
             >
-
-              {cargando
-                ? (
-                  <LoaderCircle
-                    size={19}
-                    className="login-spinner"
-                  />
-                )
-                : (
-                  <ArrowRight
-                    size={19}
-                  />
-                )}
-
-
-              <span>
-
+              <span
+                className="login-form__submit-icon"
+                aria-hidden="true"
+              >
                 {cargando
-                  ? "Verificando..."
-                  : "Ingresar"}
-
+                  ? (
+                    <LoaderCircle
+                      size={18}
+                      className="login-form__spinner"
+                    />
+                  )
+                  : (
+                    <ArrowRight
+                      size={18}
+                    />
+                  )}
               </span>
 
+              <span>
+                {cargando
+                  ? "Verificando..."
+                  : "Ingresar al sistema"}
+              </span>
             </button>
-
-
           </form>
 
+          <div className="login-card__security">
+            <div className="login-card__security-icon">
+              <CheckCircle2
+                size={15}
+              />
+            </div>
 
-          <div className="login-card__footer">
+            <div>
+              <strong>
+                Acceso protegido
+              </strong>
 
-            <ShieldCheck
-              size={15}
-            />
-
-            <span>
-
-              Sus credenciales se procesan
-              mediante una conexión segura.
-
-            </span>
-
+              <span>
+                Exclusivo para personal autorizado de la clínica.
+              </span>
+            </div>
           </div>
-
-
         </div>
 
+        <footer className="login-access__footer">
+          <span>
+            Clínica San Juan de Dios
+          </span>
+
+          <span className="login-access__footer-dot" />
+
+          <span>
+            Sistema de apoyo clínico
+          </span>
+        </footer>
       </section>
-
-
-    </div>
-
+    </main>
   );
 }

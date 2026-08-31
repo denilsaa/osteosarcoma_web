@@ -1515,3 +1515,94 @@
   }
 
 }
+
+/* =========================================================
+   VALIDACIONES VISIBLES - REGISTRO DE ONCÓLOGO
+   Agregar al FINAL de UsuariosPage.css
+   ========================================================= */
+
+.oncologist-form-grid input[aria-invalid="true"] {
+  border-color: #d65a5a;
+  background: #fffafa;
+  box-shadow: 0 0 0 3px rgba(214, 90, 90, 0.08);
+}
+
+.oncologist-form-grid label > small.oncologist-field-help {
+  color: #8297a2;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.oncologist-form-grid label > small.oncologist-field-success {
+  color: #26875d;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.oncologist-password-field {
+  align-self: start;
+}
+
+.oncologist-password-rules {
+  margin-top: 4px;
+  padding: 12px;
+  border: 1px solid #e0e9ed;
+  border-radius: 10px;
+  background: #f8fbfc;
+}
+
+.oncologist-password-rules__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.oncologist-password-rules__header strong {
+  color: #496571;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.oncologist-password-rules__header > span {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #eef2f4;
+  color: #8598a1;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.oncologist-password-rules__header > span.is-valid {
+  background: #e8f7ef;
+  color: #26875d;
+}
+
+.oncologist-password-rules__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.oncologist-password-rules__grid > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #8a9ca5;
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.oncologist-password-rules__grid > span.is-valid {
+  color: #26875d;
+}
+
+.oncologists-button-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
