@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   Info,
   ShieldAlert,
-  TriangleAlert,
   X,
 } from "lucide-react";
 
@@ -20,6 +19,8 @@ import {
   loginRequest,
   logoutRequest,
   refreshRequest,
+  verificarSegundoFactorRequest,
+  type InicioLoginResponse,
 } from "../api/auth.api";
 
 import {
@@ -27,6 +28,10 @@ import {
   type InfoSesionLocal,
   type UsuarioSesion,
 } from "./tokenStorage";
+
+import {
+  segundoFactorStorage,
+} from "./segundoFactorStorage";
 
 import "./AuthProvider.css";
 
@@ -40,71 +45,50 @@ export type TipoEventoSesion =
 
 
 export interface EventoSesion {
-
   tipo: TipoEventoSesion;
-
   mensaje: string;
-
   fecha: string;
-
 }
 
 
 interface AuthContextType {
-
-  usuario:
-    UsuarioSesion | null;
-
-  autenticado:
-    boolean;
-
-  infoSesion:
-    InfoSesionLocal;
-
-  eventoSesion:
-    EventoSesion | null;
-
+  usuario: UsuarioSesion | null;
+  autenticado: boolean;
+  infoSesion: InfoSesionLocal;
+  eventoSesion: EventoSesion | null;
 
   login: (
     correo: string,
     password: string,
+  ) => Promise<InicioLoginResponse>;
+
+  verificarSegundoFactor: (
+    codigo: string,
   ) => Promise<void>;
 
-
-  logout:
-    () => Promise<void>;
-
-
-  renovarSesion:
-    () => Promise<void>;
-
+  logout: () => Promise<void>;
+  renovarSesion: () => Promise<void>;
 
   tieneRol: (
     codigoRol: string,
   ) => boolean;
 
-
   tienePermiso: (
     codigoPermiso: string,
   ) => boolean;
 
-
-  limpiarEventoSesion:
-    () => void;
-
+  limpiarEventoSesion: () => void;
 }
 
 
 const AuthContext =
-  createContext<
-    AuthContextType | undefined
-  >(undefined);
+  createContext<AuthContextType | undefined>(
+    undefined,
+  );
 
 
 interface AuthProviderProps {
-
   children: ReactNode;
-
 }
 
 
@@ -112,891 +96,569 @@ function crearEvento(
   tipo: TipoEventoSesion,
   mensaje: string,
 ): EventoSesion {
-
   return {
-
     tipo,
-
     mensaje,
-
-    fecha:
-      new Date()
-        .toISOString(),
-
+    fecha: new Date().toISOString(),
   };
-
 }
 
 
 export function AuthProvider({
   children,
 }: AuthProviderProps) {
-
-
   const [
     usuario,
     setUsuario,
-  ] = useState<
-    UsuarioSesion | null
-  >(
-    () =>
-      tokenStorage
-        .obtenerUsuario(),
+  ] = useState<UsuarioSesion | null>(
+    () => tokenStorage.obtenerUsuario(),
   );
-
 
   const [
     autenticado,
     setAutenticado,
   ] = useState<boolean>(
-    () =>
-      tokenStorage
-        .tieneSesion(),
+    () => tokenStorage.tieneSesion(),
   );
-
 
   const [
     infoSesion,
     setInfoSesion,
-  ] = useState<
-    InfoSesionLocal
-  >(
-    () =>
-      tokenStorage
-        .obtenerInfoSesion(),
+  ] = useState<InfoSesionLocal>(
+    () => tokenStorage.obtenerInfoSesion(),
   );
-
 
   const [
     eventoSesion,
     setEventoSesion,
-  ] = useState<
-    EventoSesion | null
-  >(null);
+  ] = useState<EventoSesion | null>(
+    null,
+  );
 
-
-  // ========================================================
-  // SINCRONIZAR INFORMACIÓN LOCAL
-  // ========================================================
 
   const sincronizarSesion =
     useCallback(
       () => {
-
         setUsuario(
-          tokenStorage
-            .obtenerUsuario(),
+          tokenStorage.obtenerUsuario(),
         );
-
 
         setInfoSesion(
-          tokenStorage
-            .obtenerInfoSesion(),
+          tokenStorage.obtenerInfoSesion(),
         );
-
 
         setAutenticado(
-          tokenStorage
-            .tieneSesion(),
+          tokenStorage.tieneSesion(),
         );
-
       },
       [],
     );
 
-
-  // ========================================================
-  // LIMPIAR AVISO
-  // ========================================================
 
   const limpiarEventoSesion =
     useCallback(
       () => {
+        setEventoSesion(null);
+      },
+      [],
+    );
 
-        setEventoSesion(
-          null,
+
+  useEffect(
+    () => {
+      if (!eventoSesion) {
+        return;
+      }
+
+      if (
+        eventoSesion.tipo === "RENOVADA"
+        || eventoSesion.tipo === "VENCIDA"
+      ) {
+        return;
+      }
+
+      const temporizador =
+        window.setTimeout(
+          () => {
+            setEventoSesion(null);
+          },
+          4200,
         );
 
+      return () => {
+        window.clearTimeout(
+          temporizador,
+        );
+      };
+    },
+    [eventoSesion],
+  );
+
+
+  // ========================================================
+  // PRIMER FACTOR: CORREO + CONTRASEÑA
+  // NO SE GUARDA JWT TODAVÍA
+  // ========================================================
+
+  const login =
+    useCallback(
+      async (
+        correo: string,
+        password: string,
+      ): Promise<InicioLoginResponse> => {
+        tokenStorage.limpiar();
+        segundoFactorStorage.limpiar();
+
+        const data =
+          await loginRequest({
+            correo,
+            password,
+          });
+
+        segundoFactorStorage.guardar(
+          data,
+        );
+
+        setUsuario(null);
+        setAutenticado(false);
+        setInfoSesion(
+          tokenStorage.obtenerInfoSesion(),
+        );
+
+        return data;
       },
       [],
     );
 
 
   // ========================================================
-  // OCULTAR AVISO AUTOMÁTICAMENTE
+  // SEGUNDO FACTOR: OTP
+  // AQUÍ RECIÉN SE CREA LA SESIÓN LOCAL
   // ========================================================
 
-  useEffect(
-    () => {
-
-      if (!eventoSesion) {
-        return;
-      }
-
-
-      const temporizador =
-        window.setTimeout(
-          () => {
-
-            setEventoSesion(
-              null,
-            );
-
-          },
-          4500,
-        );
-
-
-      return () => {
-
-        window.clearTimeout(
-          temporizador,
-        );
-
-      };
-
-    },
-    [
-      eventoSesion,
-    ],
-  );
-
-
-  // ========================================================
-  // LOGIN
-  // ========================================================
-
-  const login =
+  const verificarSegundoFactor =
     useCallback(
-
       async (
-        correo: string,
-        password: string,
+        codigo: string,
       ): Promise<void> => {
+        const pendiente =
+          segundoFactorStorage.obtener();
+
+        if (!pendiente) {
+          throw new Error(
+            "No existe una verificación pendiente. Inicie sesión nuevamente.",
+          );
+        }
 
         const data =
-          await loginRequest({
-
-            correo,
-
-            password,
-
+          await verificarSegundoFactorRequest({
+            desafio_id: pendiente.desafioId,
+            codigo,
           });
 
+        tokenStorage.guardarSesion(
+          data,
+        );
 
-        tokenStorage
-          .guardarSesion(
-            data,
-          );
-
+        segundoFactorStorage.limpiar();
 
         setUsuario(
           data.usuario,
         );
 
-
         setInfoSesion(
-          tokenStorage
-            .obtenerInfoSesion(),
+          tokenStorage.obtenerInfoSesion(),
         );
 
-
-        setAutenticado(
-          true,
-        );
-
+        setAutenticado(true);
 
         setEventoSesion(
-
           crearEvento(
-
             "LOGIN",
-
-            "Sesión iniciada correctamente.",
-
+            "Identidad verificada. Sesión iniciada correctamente.",
           ),
-
         );
-
       },
-
       [],
-
     );
 
 
-  // ========================================================
-  // RENOVAR SESIÓN MANUAL / INTERNA
-  // ========================================================
-
   const renovarSesion =
     useCallback(
-
       async (): Promise<void> => {
-
         const refreshToken =
-          tokenStorage
-            .obtenerRefreshToken();
-
+          tokenStorage.obtenerRefreshToken();
 
         if (!refreshToken) {
-
-          tokenStorage
-            .limpiar();
-
-
+          tokenStorage.limpiar();
           sincronizarSesion();
 
-
           setEventoSesion(
-
             crearEvento(
-
               "INVALIDA",
-
               "La sesión ya no es válida. Inicie sesión nuevamente.",
-
             ),
-
           );
-
 
           throw new Error(
             "No existe una sesión válida.",
           );
-
         }
 
-
         try {
-
           const data =
             await refreshRequest(
               refreshToken,
             );
 
-
-          tokenStorage
-            .actualizarAccessToken(
-              data,
-            );
-
-
-          setInfoSesion(
-
-            tokenStorage
-              .obtenerInfoSesion(),
-
+          tokenStorage.actualizarAccessToken(
+            data,
           );
-
-
-          setAutenticado(
-            true,
-          );
-
-
-        } catch (error) {
-
-          tokenStorage
-            .limpiar();
-
 
           setUsuario(
-            null,
+            tokenStorage.obtenerUsuario(),
           );
-
 
           setInfoSesion(
-
-            tokenStorage
-              .obtenerInfoSesion(),
-
+            tokenStorage.obtenerInfoSesion(),
           );
 
+          setAutenticado(true);
+        } catch (error) {
+          tokenStorage.limpiar();
 
-          setAutenticado(
-            false,
+          setUsuario(null);
+
+          setInfoSesion(
+            tokenStorage.obtenerInfoSesion(),
           );
 
+          setAutenticado(false);
 
           setEventoSesion(
-
             crearEvento(
-
               "INVALIDA",
-
               "La sesión expiró o dejó de ser válida. Inicie sesión nuevamente.",
-
             ),
-
           );
 
-
           throw error;
-
         }
-
       },
-
-      [
-        sincronizarSesion,
-      ],
-
+      [sincronizarSesion],
     );
 
-
-  // ========================================================
-  // LOGOUT
-  // ========================================================
 
   const logout =
     useCallback(
-
       async (): Promise<void> => {
-
         const refreshToken =
-          tokenStorage
-            .obtenerRefreshToken();
-
+          tokenStorage.obtenerRefreshToken();
 
         try {
-
           if (refreshToken) {
-
             await logoutRequest(
               refreshToken,
             );
-
           }
-
         } catch {
-
-          // Aunque el servidor ya haya invalidado
-          // la sesión, limpiamos el estado local.
-
+          // Siempre limpiamos el estado local.
         } finally {
+          tokenStorage.limpiar();
+          segundoFactorStorage.limpiar();
 
-          tokenStorage
-            .limpiar();
-
-
-          setUsuario(
-            null,
-          );
-
+          setUsuario(null);
 
           setInfoSesion(
-
-            tokenStorage
-              .obtenerInfoSesion(),
-
+            tokenStorage.obtenerInfoSesion(),
           );
 
-
-          setAutenticado(
-            false,
-          );
-
+          setAutenticado(false);
 
           setEventoSesion(
-
             crearEvento(
-
               "CERRADA",
-
               "Sesión cerrada correctamente.",
-
             ),
-
           );
-
         }
-
       },
-
       [],
-
     );
 
 
-  // ========================================================
-  // EVENTOS GENERADOS POR AXIOS
-  // ========================================================
-
   useEffect(
     () => {
-
-
       const manejarRenovacion =
         () => {
-
           sincronizarSesion();
-
-
-
         };
-
 
       const manejarInvalidacion =
         (
           event: Event,
         ) => {
-
           const customEvent =
             event as CustomEvent<{
               mensaje?: string;
             }>;
 
+          tokenStorage.limpiar();
 
-          tokenStorage
-            .limpiar();
-
-
-          setUsuario(
-            null,
-          );
-
+          setUsuario(null);
 
           setInfoSesion(
-
-            tokenStorage
-              .obtenerInfoSesion(),
-
+            tokenStorage.obtenerInfoSesion(),
           );
 
-
-          setAutenticado(
-            false,
-          );
-
-
-          const mensaje =
-            customEvent
-              .detail
-              ?.mensaje;
-
+          setAutenticado(false);
 
           setEventoSesion(
-
             crearEvento(
-
               "INVALIDA",
-
-              mensaje
-                ? "La sesión ya no es válida. Inicie sesión nuevamente."
-                : "La sesión ya no es válida. Inicie sesión nuevamente.",
-
+              customEvent.detail?.mensaje
+                || "La sesión ya no es válida. Inicie sesión nuevamente.",
             ),
-
           );
-
         };
 
-
       window.addEventListener(
-
         "auth:session-renewed",
-
         manejarRenovacion,
-
       );
-
 
       window.addEventListener(
-
         "auth:session-invalidated",
-
         manejarInvalidacion,
-
       );
-
 
       return () => {
-
         window.removeEventListener(
-
           "auth:session-renewed",
-
           manejarRenovacion,
-
         );
-
 
         window.removeEventListener(
-
           "auth:session-invalidated",
-
           manejarInvalidacion,
-
         );
-
       };
-
     },
-
-    [
-      sincronizarSesion,
-    ],
-
+    [sincronizarSesion],
   );
 
 
-  // ========================================================
-  // DETECTAR VENCIMIENTO DEL ACCESO
-  // ========================================================
-
   useEffect(
     () => {
-
-
       if (!autenticado) {
         return;
       }
-
 
       const fechaExpiracion =
         tokenStorage
           .obtenerInfoSesion()
           .accessExpiraEn;
 
-
       if (!fechaExpiracion) {
         return;
       }
-
 
       const milisegundos =
         new Date(
           fechaExpiracion,
         ).getTime()
-        -
-        Date.now();
+        - Date.now();
 
-
-      if (
-        milisegundos <= 0
-      ) {
-
-        setEventoSesion(
-
-          crearEvento(
-
-            "VENCIDA",
-
-            "La sesión necesita actualizarse. Espere un momento...",
-
-          ),
-
-        );
-
-
+      if (milisegundos <= 0) {
         void renovarSesion()
           .catch(
             () => undefined,
           );
 
-
         return;
       }
 
-
       const temporizador =
         window.setTimeout(
-
           () => {
-
-            setEventoSesion(
-
-              crearEvento(
-
-                "VENCIDA",
-
-                "La sesión necesita actualizarse. Espere un momento...",
-
-              ),
-
-            );
-
-
             void renovarSesion()
               .catch(
                 () => undefined,
               );
-
           },
-
           milisegundos + 250,
-
         );
 
-
       return () => {
-
         window.clearTimeout(
           temporizador,
         );
-
       };
-
     },
-
     [
       autenticado,
       infoSesion.accessExpiraEn,
       renovarSesion,
     ],
-
   );
 
 
-  // ========================================================
-  // ROLES
-  // ========================================================
-
   const tieneRol =
     useCallback(
-
       (
         codigoRol: string,
       ): boolean => {
-
         return Boolean(
-
           usuario
             ?.roles
             ?.includes(
               codigoRol,
             ),
-
         );
-
       },
-
-      [
-        usuario,
-      ],
-
+      [usuario],
     );
 
 
-  // ========================================================
-  // PERMISOS
-  // ========================================================
-
   const tienePermiso =
     useCallback(
-
       (
         codigoPermiso: string,
       ): boolean => {
-
         return Boolean(
-
           usuario
             ?.permisos
             ?.includes(
               codigoPermiso,
             ),
-
         );
-
       },
-
-      [
-        usuario,
-      ],
-
+      [usuario],
     );
 
-
-  // ========================================================
-  // CONTEXTO
-  // ========================================================
 
   const value =
     useMemo(
-
       () => ({
-
         usuario,
-
         autenticado,
-
         infoSesion,
-
         eventoSesion,
-
         login,
-
+        verificarSegundoFactor,
         logout,
-
         renovarSesion,
-
         tieneRol,
-
         tienePermiso,
-
         limpiarEventoSesion,
-
       }),
-
       [
         usuario,
         autenticado,
         infoSesion,
         eventoSesion,
         login,
+        verificarSegundoFactor,
         logout,
         renovarSesion,
         tieneRol,
         tienePermiso,
         limpiarEventoSesion,
       ],
-
     );
 
 
-  // ========================================================
-  // ICONO DEL AVISO
-  // ========================================================
+  const mostrarAviso =
+    Boolean(
+      eventoSesion
+      && eventoSesion.tipo !== "RENOVADA"
+      && eventoSesion.tipo !== "VENCIDA",
+    );
 
   const iconoEvento =
-    eventoSesion?.tipo ===
-      "INVALIDA"
-
+    eventoSesion?.tipo === "INVALIDA"
       ? (
-        <ShieldAlert
-          size={20}
-        />
+        <ShieldAlert size={20} />
       )
-
-      : eventoSesion?.tipo ===
-        "VENCIDA"
-
+      : eventoSesion?.tipo === "CERRADA"
         ? (
-          <TriangleAlert
-            size={20}
-          />
+          <Info size={20} />
         )
-
-        : eventoSesion?.tipo ===
-          "CERRADA"
-
-          ? (
-            <Info
-              size={20}
-            />
-          )
-
-          : (
-            <CheckCircle2
-              size={20}
-            />
-          );
+        : (
+          <CheckCircle2 size={20} />
+        );
 
 
   return (
-
     <AuthContext.Provider
       value={value}
     >
-
       {children}
 
-
-      {eventoSesion && (
-
+      {mostrarAviso && eventoSesion && (
         <div
           className={`
             auth-session-notice
             auth-session-notice--${eventoSesion.tipo.toLowerCase()}
           `}
-          role="status"
-          aria-live="polite"
+          role={
+            eventoSesion.tipo === "INVALIDA"
+              ? "alert"
+              : "status"
+          }
+          aria-live={
+            eventoSesion.tipo === "INVALIDA"
+              ? "assertive"
+              : "polite"
+          }
         >
-
           <div className="auth-session-notice__icon">
-
             {iconoEvento}
-
           </div>
 
-
           <div className="auth-session-notice__content">
-
             <strong>
-
               {eventoSesion.tipo === "INVALIDA"
                 ? "Sesión finalizada"
-                : eventoSesion.tipo === "VENCIDA"
-                  ? "Actualizando sesión"
-                  : eventoSesion.tipo === "CERRADA"
-                    ? "Sesión cerrada"
-                    : eventoSesion.tipo === "RENOVADA"
-                      ? "Sesión actualizada"
-                      : "Acceso correcto"}
-
+                : eventoSesion.tipo === "CERRADA"
+                  ? "Sesión cerrada"
+                  : "Acceso correcto"}
             </strong>
-
 
             <span>
               {eventoSesion.mensaje}
             </span>
-
           </div>
 
-
           <button
-
             type="button"
-
             className="auth-session-notice__close"
-
             onClick={
               limpiarEventoSesion
             }
-
             aria-label="Cerrar aviso"
-
           >
-
-            <X
-              size={17}
-            />
-
+            <X size={17} />
           </button>
-
         </div>
-
       )}
-
     </AuthContext.Provider>
-
   );
-
 }
 
 
 export function useAuth():
   AuthContextType {
-
   const context =
     useContext(
       AuthContext,
     );
 
-
   if (!context) {
-
     throw new Error(
-
       "useAuth debe utilizarse dentro de AuthProvider",
-
     );
-
   }
 
-
   return context;
-
 }

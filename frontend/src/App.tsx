@@ -21,6 +21,10 @@ import {
   LoginPage,
 } from "./pages/auth/LoginPage";
 
+import {
+  VerificarSegundoFactorPage,
+} from "./pages/auth/VerificarSegundoFactorPage";
+
 
 // ==========================================================
 // RECUPERACIÓN
@@ -179,6 +183,14 @@ function App() {
         path="/login"
         element={
           <LoginPage />
+        }
+      />
+
+
+      <Route
+        path="/verificar-acceso"
+        element={
+          <VerificarSegundoFactorPage />
         }
       />
 

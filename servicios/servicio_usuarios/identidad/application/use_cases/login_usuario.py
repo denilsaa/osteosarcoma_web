@@ -1,390 +1,160 @@
-﻿from django.utils import timezone
+import hashlib
+import hmac
+import secrets
+from datetime import timedelta
 
+from django.conf import settings
+from django.db import transaction
+from django.utils import timezone
 
-from identidad.infrastructure.repositories.usuario_repository import (
-    UsuarioRepository
-)
-
+from identidad.application.services.email_service import EmailService
 from identidad.infrastructure.repositories.credencial_repository import (
-    CredencialRepository
+    CredencialRepository,
 )
+from identidad.infrastructure.repositories.usuario_repository import (
+    UsuarioRepository,
+)
+from identidad.infrastructure.security.password_hasher import PasswordHasher
+from identidad.models import DesafioSegundoFactor
 
-from identidad.infrastructure.repositories.sesion_repository import (
-    SesionRepository
-)
 
-from identidad.infrastructure.security.password_hasher import (
-    PasswordHasher
-)
+def generar_codigo_otp():
+    return f"{secrets.randbelow(1_000_000):06d}"
 
-from identidad.infrastructure.security.jwt_manager import (
-    JWTManager
-)
+
+def hash_codigo_otp(desafio_id, codigo):
+    mensaje = f"{desafio_id}:{codigo}".encode("utf-8")
+    secreto = settings.SECRET_KEY.encode("utf-8")
+    return hmac.new(secreto, mensaje, hashlib.sha256).hexdigest()
+
+
+def enmascarar_correo(correo):
+    local, dominio = correo.split("@", 1)
+    if len(local) <= 2:
+        local_mascara = local[:1] + "•"
+    else:
+        local_mascara = local[0] + ("•" * min(len(local) - 1, 8))
+    return f"{local_mascara}@{dominio}"
 
 
 class LoginUseCase:
     """
-    Caso de uso encargado del inicio de sesiÃ³n.
+    Primer factor de autenticación.
 
-    Flujo:
-    1. Validar usuario.
-    2. Validar credencial.
-    3. Crear refresh.
-    4. Registrar sesiÃ³n.
-    5. Crear access ligado a la sesiÃ³n.
+    Valida correo + contraseña, pero NO emite JWT.
+    Si son correctos, crea un desafío OTP y lo envía al correo
+    institucional registrado del usuario.
     """
 
     def __init__(self):
+        self.usuario_repository = UsuarioRepository()
+        self.credencial_repository = CredencialRepository()
+        self.password_hasher = PasswordHasher()
 
-        self.usuario_repository = (
-            UsuarioRepository()
-        )
-
-        self.credencial_repository = (
-            CredencialRepository()
-        )
-
-        self.sesion_repository = (
-            SesionRepository()
-        )
-
-        self.password_hasher = (
-            PasswordHasher()
-        )
-
-        self.jwt_manager = (
-            JWTManager()
-        )
-
+    @transaction.atomic
     def ejecutar(
         self,
         correo,
         password,
         ip_origen=None,
-        user_agent=None
+        user_agent=None,
     ):
-
-        # ==================================================
-        # USUARIO
-        # ==================================================
-
-        usuario = (
-            self.usuario_repository
-            .obtener_por_correo(
-                correo
-            )
-        )
+        usuario = self.usuario_repository.obtener_por_correo(correo)
 
         if not usuario:
+            raise Exception("Credenciales inválidas")
 
-            raise Exception(
-                "Credenciales invÃ¡lidas"
-            )
+        if not usuario.estado_usuario.es_operativo:
+            raise Exception("Usuario deshabilitado")
 
-        # ==================================================
-        # ESTADO
-        # ==================================================
-
-        if (
-            not
-            usuario.estado_usuario.es_operativo
-        ):
-
-            raise Exception(
-                "Usuario deshabilitado"
-            )
-
-        # ==================================================
-        # CREDENCIAL
-        # ==================================================
-
-        credencial = (
-            self.credencial_repository
-            .obtener_por_usuario(
-                usuario
-            )
-        )
-
+        credencial = self.credencial_repository.obtener_por_usuario(usuario)
         if not credencial:
+            raise Exception("Credencial no encontrada")
 
-            raise Exception(
-                "Credencial no encontrada"
-            )
+        ahora = timezone.now()
 
-        # ==================================================
-        # BLOQUEO TEMPORAL
-        # ==================================================
+        if credencial.bloqueado_hasta and credencial.bloqueado_hasta > ahora:
+            raise Exception("La cuenta se encuentra temporalmente bloqueada")
 
-        if (
-            credencial.bloqueado_hasta
-            and
-            credencial.bloqueado_hasta
-            >
-            timezone.now()
-        ):
-
-            raise Exception(
-                "La cuenta se encuentra temporalmente bloqueada"
-            )
-
-        # ==================================================
-        # PASSWORD
-        # ==================================================
-
-        password_correcto = (
-            self.password_hasher
-            .verificar_password(
-
-                password,
-
-                credencial.password_hash,
-
-            )
+        password_correcto = self.password_hasher.verificar_password(
+            password,
+            credencial.password_hash,
         )
 
         if not password_correcto:
+            max_intentos_password = int(
+                getattr(settings, "LOGIN_MAX_FAILED_ATTEMPTS", 5)
+            )
+            minutos_bloqueo = int(
+                getattr(settings, "LOGIN_LOCK_MINUTES", 15)
+            )
 
+            credencial.intentos_fallidos += 1
+
+            if credencial.intentos_fallidos >= max_intentos_password:
+                credencial.bloqueado_hasta = ahora + timedelta(
+                    minutes=minutos_bloqueo
+                )
+
+            credencial.save(
+                update_fields=[
+                    "intentos_fallidos",
+                    "bloqueado_hasta",
+                    "fecha_actualizacion",
+                ]
+            )
+
+            raise Exception("Credenciales inválidas")
+
+        # Elimina desafíos anteriores no utilizados para que solo exista
+        # un código activo por usuario.
+        DesafioSegundoFactor.objects.filter(
+            usuario=usuario,
+            utilizado=False,
+        ).delete()
+
+        minutos_vigencia = int(
+            getattr(settings, "OTP_CODE_MINUTES", 5)
+        )
+
+        codigo = generar_codigo_otp()
+
+        desafio = DesafioSegundoFactor.objects.create(
+            usuario=usuario,
+            codigo_hash="PENDIENTE",
+            fecha_expiracion=ahora + timedelta(minutes=minutos_vigencia),
+            fecha_ultimo_envio=ahora,
+            ip_origen=ip_origen,
+            user_agent=user_agent,
+        )
+
+        desafio.codigo_hash = hash_codigo_otp(
+            desafio.id_desafio,
+            codigo,
+        )
+        desafio.save(update_fields=["codigo_hash"])
+
+        try:
+            EmailService().enviar_codigo_doble_factor(
+                usuario=usuario,
+                codigo=codigo,
+                minutos_vigencia=minutos_vigencia,
+            )
+        except Exception as error:
             raise Exception(
-                "Credenciales invÃ¡lidas"
-            )
-
-        # ==================================================
-        # REFRESH TOKEN
-        # ==================================================
-
-        refresh_data = (
-            self.jwt_manager
-            .crear_refresh_token(
-                usuario
-            )
-        )
-
-        refresh_token = (
-            refresh_data[
-                "token"
-            ]
-        )
-
-        jti = (
-            refresh_data[
-                "jti"
-            ]
-        )
-
-        fecha_expiracion = (
-            refresh_data[
-                "expira"
-            ]
-        )
-
-        # ==================================================
-        # HASH DEL REFRESH
-        # ==================================================
-
-        refresh_hash = (
-            self.password_hasher
-            .generar_hash(
-                refresh_token
-            )
-        )
-
-        # ==================================================
-        # CREAR SESIÃ“N
-        # ==================================================
-
-        sesion = (
-            self.sesion_repository
-            .crear(
-                {
-
-                    "usuario":
-                        usuario,
-
-                    "jti_refresh":
-                        jti,
-
-                    "refresh_token_hash":
-                        refresh_hash,
-
-                    "ip_origen":
-                        ip_origen,
-
-                    "user_agent":
-                        user_agent,
-
-                    "fecha_expiracion":
-                        fecha_expiracion,
-
-                }
-            )
-        )
-
-        # ==================================================
-        # ACCESS TOKEN VINCULADO A LA SESIÃ“N
-        # ==================================================
-
-        access_data = (
-            self.jwt_manager
-            .crear_access_token(
-
-                usuario,
-
-                sesion.id_sesion,
-
-            )
-        )
-
-        # ==================================================
-        # ÃšLTIMO ACCESO
-        # ==================================================
-
-        usuario.ultimo_acceso = (
-            timezone.now()
-        )
-
-        usuario.save(
-            update_fields=[
-                "ultimo_acceso"
-            ]
-        )
-
-        # ==================================================
-        # ROLES
-        # ==================================================
-
-        asignaciones = (
-            usuario
-            .asignaciones_roles
-            .filter(
-
-                activo=True,
-
-                rol__activo=True,
-
-            )
-        )
-
-        roles = list(
-
-            asignaciones
-            .values_list(
-
-                "rol__codigo",
-
-                flat=True,
-
-            )
-            .distinct()
-
-        )
-
-        # ==================================================
-        # PERMISOS
-        # ==================================================
-
-        permisos = list(
-
-            asignaciones
-            .filter(
-
-                rol__permisos_asignados__permiso__activo=True
-
-            )
-            .values_list(
-
-                "rol__permisos_asignados__"
-                "permiso__codigo",
-
-                flat=True,
-
-            )
-            .distinct()
-
-        )
-
-        # ==================================================
-        # RESPUESTA
-        # ==================================================
+                "No fue posible enviar el código de verificación al correo institucional."
+            ) from error
 
         return {
-
-            "access_token":
-                access_data[
-                    "token"
-                ],
-
-            "refresh_token":
-                refresh_token,
-
-            "access_expires_in":
-                access_data[
-                    "expires_in"
-                ],
-
-            "access_expires_at":
-                access_data[
-                    "expira"
-                ].isoformat(),
-
-            "refresh_expires_in":
-                refresh_data[
-                    "expires_in"
-                ],
-
-            "refresh_expires_at":
-                refresh_data[
-                    "expira"
-                ].isoformat(),
-
-            "sesion": {
-
-                "id_sesion":
-                    str(
-                        sesion.id_sesion
-                    ),
-
-                "estado":
-                    "ACTIVA",
-
-            },
-
-            "usuario": {
-
-                "id_usuario":
-                    str(
-                        usuario.id_usuario
-                    ),
-
-                "nombre_usuario":
-                    usuario.nombre_usuario,
-
-                "correo":
-                    usuario.correo,
-
-                "nombres":
-                    usuario.nombres,
-
-                "apellido_paterno":
-                    usuario.apellido_paterno,
-
-                "apellido_materno":
-                    usuario.apellido_materno,
-
-                "telefono":
-                    usuario.telefono,
-
-                "estado":
-                    usuario.estado_usuario.codigo,
-
-                "debe_cambiar_password":
-                    credencial.debe_cambiar_password,
-
-                "roles":
-                    roles,
-
-                "permisos":
-                    permisos,
-
-            },
-
+            "requiere_segundo_factor": True,
+            "desafio_id": str(desafio.id_desafio),
+            "correo_enmascarado": enmascarar_correo(usuario.correo),
+            "expira_en_segundos": minutos_vigencia * 60,
+            "reenvio_disponible_en": int(
+                getattr(settings, "OTP_RESEND_SECONDS", 60)
+            ),
+            "mensaje": (
+                "Credenciales correctas. Ingrese el código enviado "
+                "a su correo institucional para completar el acceso."
+            ),
         }

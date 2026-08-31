@@ -238,3 +238,50 @@ RECOVERY_LINK_MINUTES = int(
         "15",
     )
 )
+
+
+# ==========================================================
+# SEGUNDO FACTOR DE AUTENTICACIÓN POR CORREO
+# ==========================================================
+
+OTP_CODE_MINUTES = int(
+    os.environ.get(
+        "OTP_CODE_MINUTES",
+        "5",
+    )
+)
+
+OTP_MAX_ATTEMPTS = int(
+    os.environ.get(
+        "OTP_MAX_ATTEMPTS",
+        "5",
+    )
+)
+
+OTP_RESEND_SECONDS = int(
+    os.environ.get(
+        "OTP_RESEND_SECONDS",
+        "60",
+    )
+)
+
+OTP_MAX_RESENDS = int(
+    os.environ.get(
+        "OTP_MAX_RESENDS",
+        "3",
+    )
+)
+
+LOGIN_MAX_FAILED_ATTEMPTS = int(
+    os.environ.get(
+        "LOGIN_MAX_FAILED_ATTEMPTS",
+        "5",
+    )
+)
+
+LOGIN_LOCK_MINUTES = int(
+    os.environ.get(
+        "LOGIN_LOCK_MINUTES",
+        "15",
+    )
+)

@@ -9,6 +9,8 @@ from identidad.interfaces.api.views.auth_view import (
     LoginView,
     LogoutView,
     RefreshView,
+    VerificarSegundoFactorView,
+    ReenviarSegundoFactorView,
 )
 
 
@@ -73,6 +75,16 @@ urlpatterns = [
     path(
         "auth/refresh/",
         RefreshView.as_view(),
+    ),
+
+    path(
+        "auth/segundo-factor/verificar/",
+        VerificarSegundoFactorView.as_view(),
+    ),
+
+    path(
+        "auth/segundo-factor/reenviar/",
+        ReenviarSegundoFactorView.as_view(),
     ),
 
 

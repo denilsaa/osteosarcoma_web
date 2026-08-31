@@ -1,4 +1,4 @@
-﻿import {
+import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
@@ -139,10 +139,14 @@ export function LoginPage() {
             | null;
 
         navigate(
-          state?.from
-          || "/dashboard",
+          "/verificar-acceso",
           {
             replace: true,
+            state: {
+              from:
+                state?.from
+                || "/dashboard",
+            },
           },
         );
       } catch (errorActual) {
