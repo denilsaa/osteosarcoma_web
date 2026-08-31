@@ -31,6 +31,10 @@ import {
 } from "./pages/recuperacion/RecuperacionPage";
 
 import {
+  CambiarPasswordRecuperacionPage,
+} from "./pages/recuperacion/CambiarPasswordRecuperacionPage";
+
+import {
   RecuperacionesJefePage,
 } from "./pages/recuperacion/RecuperacionesJefePage";
 
@@ -187,6 +191,14 @@ function App() {
         path="/recuperar-contrasena"
         element={
           <RecuperacionPage />
+        }
+      />
+
+
+      <Route
+        path="/recuperar-contrasena/cambiar"
+        element={
+          <CambiarPasswordRecuperacionPage />
         }
       />
 

@@ -68,7 +68,9 @@ class SolicitudRecuperacion(models.Model):
 
     token_recuperacion = models.CharField(
         max_length=255,
-        unique=True
+        unique=True,
+        null=True,
+        blank=True,
     )
 
 
