@@ -51,7 +51,8 @@ services:
 
       JWT_ACCESS_MINUTES: ${JWT_ACCESS_MINUTES:-15}
       JWT_REFRESH_DAYS: ${JWT_REFRESH_DAYS:-7}
-
+      AUDITORIA_URL: http://servicio_auditoria:8000
+      AUDITORIA_TIMEOUT_SECONDS: 5
       EMAIL_BACKEND: ${USUARIOS_EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
       EMAIL_HOST: ${USUARIOS_EMAIL_HOST:-smtp.gmail.com}
       EMAIL_PORT: ${USUARIOS_EMAIL_PORT:-587}
