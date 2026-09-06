@@ -1,22 +1,85 @@
 FROM php:8.3-cli
 
+
+# ==========================================================
+# DEPENDENCIAS DEL SISTEMA
+# ==========================================================
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git \
         unzip \
         curl \
         libpq-dev \
-    && docker-php-ext-install pdo_pgsql \
+    && docker-php-ext-install \
+        pdo_pgsql \
+        sockets \
     && rm -rf /var/lib/apt/lists/*
+
+
+# ==========================================================
+# COMPOSER
+# ==========================================================
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+
+# ==========================================================
+# DIRECTORIO DE TRABAJO
+# ==========================================================
+
 WORKDIR /app
+
+
+# ==========================================================
+# ARCHIVOS COMPOSER
+# ==========================================================
+
+COPY composer.json composer.lock ./
+
+
+# ==========================================================
+# DEPENDENCIAS PHP
+# ==========================================================
+
+RUN composer install \
+    --no-interaction \
+    --prefer-dist \
+    --no-scripts \
+    --optimize-autoloader
+
+
+# ==========================================================
+# CÓDIGO DEL MICROSERVICIO
+# ==========================================================
 
 COPY . /app
 
-RUN chmod +x /app/entrypoint.sh
+
+# ==========================================================
+# AUTOLOAD
+# ==========================================================
+
+RUN composer dump-autoload --optimize
+
+
+# ==========================================================
+# PERMISOS
+# ==========================================================
+
+RUN chmod +x /app/entrypoint.sh \
+    && chmod +x /app/entrypoint-worker.sh
+
+
+# ==========================================================
+# PUERTO API
+# ==========================================================
 
 EXPOSE 8000
+
+
+# ==========================================================
+# ENTRYPOINT API POR DEFECTO
+# ==========================================================
 
 ENTRYPOINT ["/app/entrypoint.sh"]

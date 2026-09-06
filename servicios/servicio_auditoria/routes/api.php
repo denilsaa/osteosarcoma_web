@@ -1,9 +1,8 @@
-<?php
+﻿<?php
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Str;
 
 
 /*
@@ -93,11 +92,11 @@ Route::get('/health', function () {
 
 /*
 |--------------------------------------------------------------------------
-| CATÁLOGOS
+| CATÃLOGOS
 |--------------------------------------------------------------------------
 |
-| Devuelve servicios, módulos, acciones y resultados registrados.
-| Posteriormente el frontend utilizará estos datos para sus filtros.
+| Devuelve servicios, mÃ³dulos, acciones y resultados registrados.
+| Posteriormente el frontend utilizarÃ¡ estos datos para sus filtros.
 |
 */
 
@@ -445,7 +444,7 @@ Route::get(
 
         /*
         |--------------------------------------------------------------------------
-        | MÓDULO
+        | MÃ“DULO
         |--------------------------------------------------------------------------
         */
 
@@ -469,7 +468,7 @@ Route::get(
 
         /*
         |--------------------------------------------------------------------------
-        | ACCIÓN
+        | ACCIÃ“N
         |--------------------------------------------------------------------------
         */
 
@@ -614,7 +613,7 @@ Route::get(
 
         /*
         |--------------------------------------------------------------------------
-        | PAGINACIÓN
+        | PAGINACIÃ“N
         |--------------------------------------------------------------------------
         */
 
@@ -668,9 +667,9 @@ Route::get(
 |
 | Este endpoint permite conocer:
 |
-| quién
-| qué hizo
-| cuándo
+| quiÃ©n
+| quÃ© hizo
+| cuÃ¡ndo
 | resultado
 | registro afectado
 | IP
@@ -747,7 +746,7 @@ Route::get(
         if (!$evento) {
             return response()->json([
                 'mensaje' =>
-                    'El evento de auditoría no existe.',
+                    'El evento de auditorÃ­a no existe.',
             ], 404);
         }
 
@@ -784,468 +783,3 @@ Route::get(
 );
 
 
-/*
-|--------------------------------------------------------------------------
-| REGISTRAR EVENTO
-|--------------------------------------------------------------------------
-|
-| Endpoint interno que posteriormente utilizarán:
-|
-| Usuarios
-| Clínico
-| Radiografías
-| IA
-|
-*/
-
-Route::post(
-    '/auditoria/eventos',
-    function (Request $request) {
-
-        /*
-        |--------------------------------------------------------------------------
-        | VALIDACIÓN
-        |--------------------------------------------------------------------------
-        */
-
-        $data = $request->validate([
-
-            'actor_usuario_uuid' => [
-                'nullable',
-                'uuid',
-            ],
-
-            'actor_nombre' => [
-                'nullable',
-                'string',
-                'max:200',
-            ],
-
-            'actor_rol' => [
-                'nullable',
-                'string',
-                'max:120',
-            ],
-
-            'servicio' => [
-                'required',
-                'string',
-                'max:50',
-            ],
-
-            'modulo' => [
-                'required',
-                'string',
-                'max:60',
-            ],
-
-            'accion' => [
-                'required',
-                'string',
-                'max:60',
-            ],
-
-            'resultado' => [
-                'required',
-                'string',
-                'max:30',
-            ],
-
-            'entidad_tipo' => [
-                'nullable',
-                'string',
-                'max:80',
-            ],
-
-            'entidad_id' => [
-                'nullable',
-                'string',
-                'max:120',
-            ],
-
-            'correlation_id' => [
-                'nullable',
-                'uuid',
-            ],
-
-            'direccion_ip' => [
-                'nullable',
-                'ip',
-            ],
-
-            'user_agent' => [
-                'nullable',
-                'string',
-                'max:500',
-            ],
-
-            'descripcion' => [
-                'nullable',
-                'string',
-                'max:1000',
-            ],
-
-            'motivo' => [
-                'nullable',
-                'string',
-                'max:1000',
-            ],
-
-            'detalle_json' => [
-                'nullable',
-                'array',
-            ],
-
-            'cambios' => [
-                'nullable',
-                'array',
-            ],
-
-            'cambios.*.campo' => [
-                'required_with:cambios',
-                'string',
-                'max:120',
-            ],
-
-            'cambios.*.valor_anterior' => [
-                'nullable',
-            ],
-
-            'cambios.*.valor_nuevo' => [
-                'nullable',
-            ],
-        ]);
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | SERVICIO
-        |--------------------------------------------------------------------------
-        */
-
-        $servicio = DB::table(
-            'servicios_auditados'
-        )
-            ->where(
-                'codigo',
-                strtoupper(
-                    trim(
-                        $data['servicio']
-                    )
-                )
-            )
-            ->first();
-
-
-        if (!$servicio) {
-            return response()->json([
-                'mensaje' =>
-                    'Servicio auditado no registrado.',
-            ], 422);
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | MÓDULO
-        |--------------------------------------------------------------------------
-        */
-
-        $modulo = DB::table(
-            'modulos_auditoria'
-        )
-            ->where(
-                'id_servicio',
-                $servicio->id_servicio
-            )
-            ->where(
-                'codigo',
-                strtoupper(
-                    trim(
-                        $data['modulo']
-                    )
-                )
-            )
-            ->first();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | ACCIÓN
-        |--------------------------------------------------------------------------
-        */
-
-        $accion = DB::table(
-            'tipos_accion_auditoria'
-        )
-            ->where(
-                'codigo',
-                strtoupper(
-                    trim(
-                        $data['accion']
-                    )
-                )
-            )
-            ->first();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | RESULTADO
-        |--------------------------------------------------------------------------
-        */
-
-        $resultado = DB::table(
-            'resultados_auditoria'
-        )
-            ->where(
-                'codigo',
-                strtoupper(
-                    trim(
-                        $data['resultado']
-                    )
-                )
-            )
-            ->first();
-
-
-        if (
-            !$modulo ||
-            !$accion ||
-            !$resultado
-        ) {
-            return response()->json([
-                'mensaje' =>
-                    'Módulo, acción o resultado de auditoría no válido.',
-            ], 422);
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | DETALLE DEL EVENTO
-        |--------------------------------------------------------------------------
-        |
-        | Guardamos un snapshot del nombre y rol.
-        |
-        | Esto es importante porque Auditoría tiene una BD independiente
-        | y no posee FK hacia Usuarios.
-        |
-        */
-
-        $detalle =
-            $data['detalle_json']
-            ?? [];
-
-
-        if (
-            !empty(
-                $data['actor_nombre']
-            )
-        ) {
-            $detalle['actor_nombre'] =
-                $data['actor_nombre'];
-        }
-
-
-        if (
-            !empty(
-                $data['actor_rol']
-            )
-        ) {
-            $detalle['actor_rol'] =
-                $data['actor_rol'];
-        }
-
-
-        if (
-            !empty(
-                $data['descripcion']
-            )
-        ) {
-            $detalle['descripcion'] =
-                $data['descripcion'];
-        }
-
-
-        if (
-            !empty(
-                $data['motivo']
-            )
-        ) {
-            $detalle['motivo'] =
-                $data['motivo'];
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | NUEVO UUID
-        |--------------------------------------------------------------------------
-        */
-
-        $idEvento =
-            (string)
-            Str::uuid();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | TRANSACCIÓN
-        |--------------------------------------------------------------------------
-        */
-
-        DB::transaction(
-            function () use (
-                $data,
-                $request,
-                $servicio,
-                $modulo,
-                $accion,
-                $resultado,
-                $detalle,
-                $idEvento
-            ) {
-
-                /*
-                |--------------------------------------------------------------------------
-                | EVENTO PRINCIPAL
-                |--------------------------------------------------------------------------
-                */
-
-                DB::table(
-                    'eventos_auditoria'
-                )->insert([
-
-                    'id_evento' =>
-                        $idEvento,
-
-                    'actor_usuario_uuid' =>
-                        $data[
-                            'actor_usuario_uuid'
-                        ]
-                        ?? null,
-
-                    'id_servicio' =>
-                        $servicio
-                        ->id_servicio,
-
-                    'id_modulo' =>
-                        $modulo
-                        ->id_modulo,
-
-                    'id_tipo_accion' =>
-                        $accion
-                        ->id_tipo_accion,
-
-                    'id_resultado' =>
-                        $resultado
-                        ->id_resultado,
-
-                    'entidad_tipo' =>
-                        $data[
-                            'entidad_tipo'
-                        ]
-                        ?? null,
-
-                    'entidad_id' =>
-                        $data[
-                            'entidad_id'
-                        ]
-                        ?? null,
-
-                    'correlation_id' =>
-                        $data[
-                            'correlation_id'
-                        ]
-                        ?? null,
-
-                    'direccion_ip' =>
-                        $data[
-                            'direccion_ip'
-                        ]
-                        ?? $request->ip(),
-
-                    'user_agent' =>
-                        $data[
-                            'user_agent'
-                        ]
-                        ?? $request
-                        ->userAgent(),
-
-                    'detalle_json' =>
-                        empty($detalle)
-                        ? null
-                        : json_encode(
-                            $detalle,
-                            JSON_UNESCAPED_UNICODE |
-                            JSON_UNESCAPED_SLASHES
-                        ),
-
-                    'fecha_evento' =>
-                        now(),
-                ]);
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | CAMBIOS CAMPO POR CAMPO
-                |--------------------------------------------------------------------------
-                */
-
-                foreach (
-                    (
-                        $data['cambios']
-                        ?? []
-                    )
-                    as $cambio
-                ) {
-
-                    DB::table(
-                        'cambios_auditoria'
-                    )->insert([
-
-                        'id_evento' =>
-                            $idEvento,
-
-                        'campo' =>
-                            $cambio[
-                                'campo'
-                            ],
-
-                        'valor_anterior' =>
-                            auditoriaSerializarValor(
-                                $cambio[
-                                    'valor_anterior'
-                                ]
-                                ?? null
-                            ),
-
-                        'valor_nuevo' =>
-                            auditoriaSerializarValor(
-                                $cambio[
-                                    'valor_nuevo'
-                                ]
-                                ?? null
-                            ),
-                    ]);
-                }
-            }
-        );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | RESPUESTA
-        |--------------------------------------------------------------------------
-        */
-
-        return response()->json([
-            'mensaje' =>
-                'Evento de auditoría registrado correctamente.',
-
-            'id_evento' =>
-                $idEvento,
-        ], 201);
-    }
-);

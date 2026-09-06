@@ -33,7 +33,6 @@ services:
     networks:
       - osteosarcoma_network
 
-
   # =========================================================
   # SERVICIO - USUARIOS
   # =========================================================
@@ -46,13 +45,21 @@ services:
     restart: unless-stopped
 
     environment:
+      # =====================================================
+      # DJANGO
+      # =====================================================
       DJANGO_SECRET_KEY: ${USUARIOS_DJANGO_SECRET_KEY}
       DJANGO_DEBUG: ${USUARIOS_DJANGO_DEBUG}
 
+      # =====================================================
+      # JWT
+      # =====================================================
       JWT_ACCESS_MINUTES: ${JWT_ACCESS_MINUTES:-15}
       JWT_REFRESH_DAYS: ${JWT_REFRESH_DAYS:-7}
-      AUDITORIA_URL: http://servicio_auditoria:8000
-      AUDITORIA_TIMEOUT_SECONDS: 5
+
+      # =====================================================
+      # CORREO
+      # =====================================================
       EMAIL_BACKEND: ${USUARIOS_EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
       EMAIL_HOST: ${USUARIOS_EMAIL_HOST:-smtp.gmail.com}
       EMAIL_PORT: ${USUARIOS_EMAIL_PORT:-587}
@@ -61,20 +68,47 @@ services:
       EMAIL_HOST_USER: ${USUARIOS_EMAIL_HOST_USER}
       EMAIL_HOST_PASSWORD: ${USUARIOS_EMAIL_HOST_PASSWORD}
       DEFAULT_FROM_EMAIL: ${USUARIOS_DEFAULT_FROM_EMAIL}
+
+      # =====================================================
+      # FRONTEND
+      # =====================================================
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:5173}
+
+      # =====================================================
+      # RECUPERACION / SEGURIDAD
+      # =====================================================
       RECOVERY_LINK_MINUTES: ${RECOVERY_LINK_MINUTES:-15}
+
       OTP_CODE_MINUTES: ${OTP_CODE_MINUTES:-5}
       OTP_MAX_ATTEMPTS: ${OTP_MAX_ATTEMPTS:-5}
       OTP_RESEND_SECONDS: ${OTP_RESEND_SECONDS:-60}
       OTP_MAX_RESENDS: ${OTP_MAX_RESENDS:-3}
+
       LOGIN_MAX_FAILED_ATTEMPTS: ${LOGIN_MAX_FAILED_ATTEMPTS:-5}
       LOGIN_LOCK_MINUTES: ${LOGIN_LOCK_MINUTES:-15}
 
+      # =====================================================
+      # POSTGRESQL USUARIOS
+      # =====================================================
       DB_NAME: ${POSTGRES_USUARIOS_DB}
       DB_USER: ${POSTGRES_USUARIOS_APP_USER}
       DB_PASSWORD: ${POSTGRES_USUARIOS_APP_PASSWORD}
       DB_HOST: postgres_usuarios
       DB_PORT: 5432
+
+      # =====================================================
+      # RABBITMQ
+      # =====================================================
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_VHOST: /
+
+      # =====================================================
+      # AUDITORIA ASINCRONA
+      # =====================================================
+      AUDIT_EXCHANGE: osteosarcoma.events
 
     ports:
       - "8000:8000"
@@ -84,6 +118,9 @@ services:
 
     depends_on:
       postgres_usuarios:
+        condition: service_healthy
+
+      rabbitmq:
         condition: service_healthy
 
     networks:
@@ -394,6 +431,135 @@ services:
         condition: service_healthy
 
     networks:
+      - osteosarcoma_network
+
+
+  # =========================================================
+  # WORKER - AUDITORIA / RABBITMQ
+  # =========================================================
+
+  servicio_auditoria_worker:
+
+    build:
+
+      context: ./servicios/servicio_auditoria
+
+      dockerfile: Dockerfile
+
+
+    container_name:
+      osteosarcoma_servicio_auditoria_worker
+
+
+    restart: unless-stopped
+
+
+    entrypoint:
+
+      [
+        "/bin/sh",
+        "/app/entrypoint-worker.sh"
+      ]
+
+
+    environment:
+
+      # =====================================================
+      # LARAVEL
+      # =====================================================
+
+      APP_ENV: local
+
+      APP_DEBUG: "true"
+
+
+      # =====================================================
+      # POSTGRESQL AUDITORIA
+      # =====================================================
+
+      DB_CONNECTION: pgsql
+
+      DB_HOST: postgres_auditoria
+
+      DB_PORT: 5432
+
+      DB_DATABASE: ${POSTGRES_AUDITORIA_DB}
+
+      DB_USERNAME: ${POSTGRES_AUDITORIA_APP_USER}
+
+      DB_PASSWORD: ${POSTGRES_AUDITORIA_APP_PASSWORD}
+
+
+      # =====================================================
+      # RABBITMQ
+      # =====================================================
+
+      RABBITMQ_HOST: rabbitmq
+
+      RABBITMQ_PORT: 5672
+
+      RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
+
+      RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+
+      RABBITMQ_VHOST: /
+
+      RABBITMQ_HEARTBEAT: 30
+
+      RABBITMQ_CONNECTION_TIMEOUT: 3
+
+      RABBITMQ_READ_WRITE_TIMEOUT: 60
+
+
+      # =====================================================
+      # AUDITORIA
+      # =====================================================
+
+      AUDIT_EXCHANGE:
+        osteosarcoma.events
+
+      AUDIT_QUEUE:
+        auditoria.eventos.v1
+
+      AUDIT_BINDING:
+        "*.audit.v1"
+
+      AUDIT_RETRY_EXCHANGE:
+        osteosarcoma.audit.retry
+
+      AUDIT_RETRY_QUEUE:
+        auditoria.eventos.retry.v1
+
+      AUDIT_RETRY_DELAY_MS: 5000
+
+      AUDIT_MAX_RETRIES: 3
+
+      AUDIT_DLX_EXCHANGE:
+        osteosarcoma.audit.dlx
+
+      AUDIT_DLQ:
+        auditoria.eventos.dlq.v1
+
+
+    volumes:
+
+      - ./servicios/servicio_auditoria:/app
+
+
+    depends_on:
+
+      postgres_auditoria:
+
+        condition: service_healthy
+
+
+      rabbitmq:
+
+        condition: service_healthy
+
+
+    networks:
+
       - osteosarcoma_network
 
 

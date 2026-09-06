@@ -1,83 +1,35 @@
-import json
-import logging
-import os
+"""
+Fachada temporal de compatibilidad para Auditoría.
 
-from urllib.error import (
-    HTTPError,
-    URLError,
+IMPORTANTE:
+
+Este módulo YA NO realiza llamadas HTTP a
+servicio_auditoria.
+
+Ahora transforma la llamada existente en un
+AuditEvent y lo publica en RabbitMQ.
+
+Esto permite migrar gradualmente las vistas
+sin romper la funcionalidad existente.
+"""
+
+
+from identidad.domain.events.audit_event import (
+    AuditEvent,
 )
 
-from urllib.request import (
-    Request,
-    urlopen,
-)
-
-
-logger = logging.getLogger(__name__)
-
-
-# ==========================================================
-# CONFIGURACIÓN
-# ==========================================================
-
-AUDITORIA_URL = (
-    os.getenv(
-        "AUDITORIA_URL",
-        ""
-    )
-    .strip()
-    .rstrip("/")
-)
-
-
-AUDITORIA_TIMEOUT_SECONDS = float(
-    os.getenv(
-        "AUDITORIA_TIMEOUT_SECONDS",
-        "5"
-    )
+from identidad.infrastructure.messaging.audit_event_publisher import (
+    AuditEventPublisher,
 )
 
 
 # ==========================================================
-# UTILIDADES
+# PUBLISHER
 # ==========================================================
 
-def _texto(valor):
-    """
-    Convierte valores opcionales en texto limpio.
-    """
-
-    if valor is None:
-        return None
-
-    valor = str(valor).strip()
-
-    return valor or None
-
-
-def _serializar_respuesta(response):
-    """
-    Intenta convertir la respuesta JSON de Auditoría
-    en un diccionario de Python.
-    """
-
-    contenido = response.read().decode(
-        "utf-8"
-    )
-
-    if not contenido:
-        return None
-
-    try:
-        return json.loads(
-            contenido
-        )
-
-    except json.JSONDecodeError:
-        return {
-            "contenido":
-                contenido
-        }
+_publisher = (
+    AuditEventPublisher()
+)
 
 
 # ==========================================================
@@ -110,323 +62,102 @@ def registrar_evento_auditoria(
     cambios=None,
 ):
     """
-    Registra una acción en el microservicio de Auditoría.
+    Publica un evento de auditoría mediante RabbitMQ.
 
-    Este cliente NO lanza excepciones hacia la operación
-    principal cuando Auditoría no está disponible.
-
-    Ejemplo:
-
-        registrar_evento_auditoria(
-            actor_usuario_uuid="...",
-            actor_nombre="Dr. Carlos Pérez",
-            actor_rol="Médico Oncólogo",
-            servicio="CLINICO",
-            modulo="PACIENTES",
-            accion="EDITAR",
-            resultado="EXITOSO",
-        )
-
-    Retorna:
-
-        {
-            "ok": True,
-            "status": 201,
-            "data": {...}
-        }
-
-    o, si Auditoría falla:
-
-        {
-            "ok": False,
-            "error": "..."
-        }
+    Mantiene la misma firma que utilizaban
+    las vistas actuales de servicio_usuarios.
     """
-
-    # ======================================================
-    # AUDITORÍA NO CONFIGURADA
-    # ======================================================
-
-    if not AUDITORIA_URL:
-
-        logger.warning(
-            "AUDITORIA_URL no está configurada."
-        )
-
-        return {
-            "ok": False,
-            "error":
-                "AUDITORIA_URL no configurada",
-        }
-
-
-    # ======================================================
-    # PAYLOAD
-    # ======================================================
-
-    payload = {
-
-        "actor_usuario_uuid":
-            _texto(
-                actor_usuario_uuid
-            ),
-
-        "actor_nombre":
-            _texto(
-                actor_nombre
-            ),
-
-        "actor_rol":
-            _texto(
-                actor_rol
-            ),
-
-        "servicio":
-            _texto(
-                servicio
-            ),
-
-        "modulo":
-            _texto(
-                modulo
-            ),
-
-        "accion":
-            _texto(
-                accion
-            ),
-
-        "resultado":
-            _texto(
-                resultado
-            ),
-
-        "entidad_tipo":
-            _texto(
-                entidad_tipo
-            ),
-
-        "entidad_id":
-            _texto(
-                entidad_id
-            ),
-
-        "correlation_id":
-            _texto(
-                correlation_id
-            ),
-
-        "direccion_ip":
-            _texto(
-                direccion_ip
-            ),
-
-        "user_agent":
-            _texto(
-                user_agent
-            ),
-
-        "descripcion":
-            _texto(
-                descripcion
-            ),
-
-        "motivo":
-            _texto(
-                motivo
-            ),
-
-        "detalle_json":
-            detalle_json
-            if isinstance(
-                detalle_json,
-                dict
-            )
-            else {},
-
-        "cambios":
-            cambios
-            if isinstance(
-                cambios,
-                list
-            )
-            else [],
-    }
-
-
-    # ======================================================
-    # NO ENVIAR NULOS INNECESARIOS
-    # ======================================================
-
-    payload = {
-        clave: valor
-        for clave, valor
-        in payload.items()
-        if valor is not None
-    }
-
-
-    # ======================================================
-    # JSON UTF-8
-    # ======================================================
-
-    cuerpo = json.dumps(
-        payload,
-        ensure_ascii=False,
-        default=str,
-    ).encode(
-        "utf-8"
-    )
-
-
-    # ======================================================
-    # REQUEST
-    # ======================================================
-
-    request = Request(
-
-        url=(
-            f"{AUDITORIA_URL}"
-            "/api/auditoria/eventos"
-        ),
-
-        data=cuerpo,
-
-        headers={
-            "Accept":
-                "application/json",
-
-            "Content-Type":
-                "application/json; charset=utf-8",
-        },
-
-        method="POST",
-    )
-
-
-    # ======================================================
-    # ENVÍO
-    # ======================================================
 
     try:
 
-        with urlopen(
-            request,
-            timeout=(
-                AUDITORIA_TIMEOUT_SECONDS
+        event = AuditEvent.create(
+
+            service=
+                servicio,
+
+            module=
+                modulo,
+
+            action=
+                accion,
+
+            result=
+                resultado,
+
+            actor_user_id=
+                actor_usuario_uuid,
+
+            actor_name=
+                actor_nombre,
+
+            actor_role=
+                actor_rol,
+
+            entity_type=
+                entidad_tipo,
+
+            entity_id=
+                entidad_id,
+
+            correlation_id=
+                correlation_id,
+
+            ip_address=
+                direccion_ip,
+
+            user_agent=
+                user_agent,
+
+            description=
+                descripcion,
+
+            reason=
+                motivo,
+
+            detail=(
+                detalle_json
+                if isinstance(
+                    detalle_json,
+                    dict,
+                )
+                else {}
             ),
-        ) as response:
 
-            status_code = (
-                response.status
-            )
-
-            data = (
-                _serializar_respuesta(
-                    response
+            changes=(
+                cambios
+                if isinstance(
+                    cambios,
+                    list,
                 )
-            )
+                else []
+            ),
 
-            return {
-                "ok":
-                    200
-                    <= status_code
-                    < 300,
-
-                "status":
-                    status_code,
-
-                "data":
-                    data,
-            }
-
-
-    # ======================================================
-    # HTTP 4XX / 5XX
-    # ======================================================
-
-    except HTTPError as error:
-
-        try:
-
-            contenido = (
-                error.read()
-                .decode(
-                    "utf-8"
-                )
-            )
-
-        except Exception:
-
-            contenido = ""
-
-
-        logger.warning(
-            "Auditoría respondió HTTP %s: %s",
-            error.code,
-            contenido,
         )
 
 
-        return {
-            "ok":
-                False,
-
-            "status":
-                error.code,
-
-            "error":
-                contenido
-                or
-                str(
-                    error
-                ),
-        }
-
-
-    # ======================================================
-    # NO SE PUDO CONECTAR
-    # ======================================================
-
-    except URLError as error:
-
-        logger.warning(
-            "No fue posible conectar "
-            "con servicio_auditoria: %s",
-            error,
+        return (
+            _publisher.publish(
+                event
+            )
         )
 
-
-        return {
-            "ok":
-                False,
-
-            "error":
-                str(
-                    error
-                ),
-        }
-
-
-    # ======================================================
-    # TIMEOUT / OTRO ERROR
-    # ======================================================
 
     except Exception as error:
 
-        logger.warning(
-            "Error inesperado al registrar "
-            "evento de Auditoría: %s",
-            error,
-        )
-
+        # Auditoría nunca debe romper
+        # la operación funcional principal.
 
         return {
+
             "ok":
                 False,
+
+            "transport":
+                "rabbitmq",
 
             "error":
                 str(
                     error
                 ),
+
         }

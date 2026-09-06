@@ -1,38 +1,122 @@
-# Variables de entorno
+# ==========================================================
+# VARIABLES DE ENTORNO
+# ==========================================================
+
 .env
 .env.*
 !.env.example
 
-# Python / Django
+
+# ==========================================================
+# BACKUPS / ARCHIVOS TEMPORALES
+# ==========================================================
+
+*.backup
+*.backup.*
+*.backup.py
+*.bak
+*.old
+*.tmp
+*.temp
+
+*backup_antes*
+*_backup*
+*_copia*
+*copy*
+
+
+# ==========================================================
+# PYTHON / DJANGO
+# ==========================================================
+
 __pycache__/
 *.py[cod]
+*$py.class
+
 .venv/
 venv/
+env/
+
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
 *.log
 
-# Laravel / PHP
+
+# ==========================================================
+# LARAVEL / PHP
+# ==========================================================
+
 vendor/
+
 storage/*.key
+storage/logs/*.log
+
 bootstrap/cache/*
 !bootstrap/cache/.gitignore
 
-# React / Node
+database/database.sqlite
+
+
+# ==========================================================
+# REACT / NODE
+# ==========================================================
+
 node_modules/
 dist/
+build/
 .vite/
 
-# IDE / SO
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# ==========================================================
+# IDE / EDITORES
+# ==========================================================
+
 .vscode/
 .idea/
+*.swp
+*.swo
+
+
+# ==========================================================
+# SISTEMA OPERATIVO
+# ==========================================================
+
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# IA / datasets
+
+# ==========================================================
+# INTELIGENCIA ARTIFICIAL / DATASETS
+# ==========================================================
+
 datasets/
 dataset/
 data/
+
 *.h5
 *.keras
 *.pt
 *.pth
 *.onnx
+
+checkpoints/
+runs/
+weights/
+
+
+# ==========================================================
+# ARCHIVOS TEMPORALES DEL PROYECTO
+# ==========================================================
+
+*.zip
+*.rar
+*.7z
