@@ -1,0 +1,267 @@
+.patient-radiographies-card {
+  margin-bottom: 16px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+}
+
+.patient-radiographies-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.patient-radiographies-header__left {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.patient-radiographies-header__icon {
+  display: grid;
+  width: 39px;
+  height: 39px;
+  flex: 0 0 39px;
+  place-items: center;
+  border-radius: 11px;
+  background: #f0f9ff;
+  color: #0284c7;
+}
+
+.patient-radiographies-header h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 0.96rem;
+}
+
+.patient-radiographies-header p {
+  margin: 4px 0 0;
+  color: #94a3b8;
+  font-size: 0.76rem;
+}
+
+.patient-radiographies-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.patient-radiographies-total {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.patient-radiographies-refresh {
+  display: grid;
+  width: 37px;
+  height: 37px;
+  place-items: center;
+  border: 1px solid #dbe3ed;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.patient-radiographies-refresh:hover {
+  color: #0284c7;
+  border-color: #bae6fd;
+}
+
+.patient-radiographies-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.patient-radiography {
+  padding: 17px 18px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.patient-radiography:last-child {
+  border-bottom: 0;
+}
+
+.patient-radiography:hover {
+  background: #fbfdff;
+}
+
+.patient-radiography__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.patient-radiography__title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #334155;
+}
+
+.patient-radiography__title > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.patient-radiography__title strong {
+  color: #1e293b;
+  font-size: 0.83rem;
+}
+
+.patient-radiography__title span {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
+.patient-radiography-case {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.patient-radiography-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.patient-radiography-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
+.patient-radiography-observation {
+  margin-top: 11px;
+  padding: 10px 11px;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.patient-radiography-observation > span {
+  display: block;
+  margin-bottom: 4px;
+  color: #94a3b8;
+  font-size: 0.63rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.patient-radiography-observation p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.patient-radiography-files {
+  display: grid;
+  gap: 7px;
+  margin-top: 11px;
+}
+
+.patient-radiography-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+}
+
+.patient-radiography-file > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.patient-radiography-file strong {
+  overflow: hidden;
+  color: #334155;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.patient-radiography-file span {
+  color: #94a3b8;
+  font-size: 0.64rem;
+}
+
+.patient-radiographies-state,
+.patient-radiographies-empty {
+  display: flex;
+  min-height: 155px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 7px;
+  padding: 25px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.patient-radiographies-state span,
+.patient-radiographies-empty span {
+  font-size: 0.76rem;
+}
+
+.patient-radiographies-empty strong {
+  color: #475569;
+  font-size: 0.84rem;
+}
+
+.patient-radiographies-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 18px;
+  padding: 11px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.76rem;
+}
+
+.patient-radiographies-spin {
+  animation: patient-radiographies-spin 0.85s linear infinite;
+}
+
+@keyframes patient-radiographies-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .patient-radiographies-header {
+    align-items: flex-start;
+  }
+
+  .patient-radiography__top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

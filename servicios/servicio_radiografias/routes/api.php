@@ -1,7 +1,13 @@
 <?php
 
+use App\Http\Controllers\Api\RadiographyController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+
+
+// ==========================================================
+// HEALTH
+// ==========================================================
 
 Route::get('/health', function () {
     try {
@@ -11,8 +17,9 @@ Route::get('/health', function () {
             'servicio' => 'servicio_radiografias',
             'estado' => 'ok',
             'base_datos' => 'conectada',
+            'arquitectura' => 'clean-ddd-ports-adapters',
         ]);
-    } catch (\Throwable $e) {
+    } catch (\Throwable $exception) {
         return response()->json([
             'servicio' => 'servicio_radiografias',
             'estado' => 'error',
@@ -20,3 +27,18 @@ Route::get('/health', function () {
         ], 503);
     }
 });
+
+
+// ==========================================================
+// ESTUDIOS RADIOGRÁFICOS DE UN CASO CLÍNICO
+// ==========================================================
+
+Route::get(
+    '/casos/{casoUuid}/radiografias',
+    [
+        RadiographyController::class,
+        'byCase',
+    ]
+)
+    ->whereUuid('casoUuid')
+    ->name('radiographies.by-case');

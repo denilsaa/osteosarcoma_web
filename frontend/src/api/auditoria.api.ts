@@ -1,12 +1,21 @@
-// ==========================================================
+﻿// ==========================================================
 // CONFIGURACIÓN
 // ==========================================================
 
-const AUDITORIA_API_URL =
+const API_AUDITORIA_URL =
   (
-    import.meta.env.VITE_AUDITORIA_API_URL ||
-    "http://localhost:8004/api"
-  ).replace(/\/$/, "");
+    import.meta.env
+      .VITE_API_AUDITORIA_URL
+    ??
+    "/auditoria-api"
+  ).replace(
+    /\/$/,
+    "",
+  );
+
+
+const AUDITORIA_API_URL =
+  `${API_AUDITORIA_URL}/api`;
 
 
 // ==========================================================
@@ -14,75 +23,113 @@ const AUDITORIA_API_URL =
 // ==========================================================
 
 export type ServicioAuditoria = {
-  codigo: string;
-  nombre: string;
+  codigo:
+    string;
+
+  nombre:
+    string;
 };
 
 
 export type ModuloAuditoria = {
-  servicio: string;
-  codigo: string;
-  nombre: string;
+  servicio:
+    string;
+
+  codigo:
+    string;
+
+  nombre:
+    string;
 };
 
 
 export type AccionAuditoria = {
-  codigo: string;
-  nombre: string;
+  codigo:
+    string;
+
+  nombre:
+    string;
 };
 
 
 export type ResultadoAuditoria = {
-  codigo: string;
-  nombre: string;
+  codigo:
+    string;
+
+  nombre:
+    string;
 };
 
 
 export type CatalogosAuditoria = {
-  servicios: ServicioAuditoria[];
-  modulos: ModuloAuditoria[];
-  acciones: AccionAuditoria[];
-  resultados: ResultadoAuditoria[];
+
+  servicios:
+    ServicioAuditoria[];
+
+  modulos:
+    ModuloAuditoria[];
+
+  acciones:
+    AccionAuditoria[];
+
+  resultados:
+    ResultadoAuditoria[];
+
 };
 
 
 export type DetalleJsonAuditoria = {
-  actor_nombre?: string | null;
-  actor_rol?: string | null;
 
-  descripcion?: string | null;
-  motivo?: string | null;
+  actor_nombre?:
+    string | null;
 
-  [key: string]: unknown;
+  actor_rol?:
+    string | null;
+
+  descripcion?:
+    string | null;
+
+  motivo?:
+    string | null;
+
+  [key: string]:
+    unknown;
+
 };
 
 
 export type EventoAuditoria = {
-  id_evento: string;
+
+  id_evento:
+    string;
 
   actor_usuario_uuid:
     | string
     | null;
 
-  servicio: string;
+  servicio:
+    string;
 
   servicio_nombre?:
     | string
     | null;
 
-  modulo: string;
+  modulo:
+    string;
 
   modulo_nombre?:
     | string
     | null;
 
-  accion: string;
+  accion:
+    string;
 
   accion_nombre?:
     | string
     | null;
 
-  resultado: string;
+  resultado:
+    string;
 
   resultado_nombre?:
     | string
@@ -112,16 +159,22 @@ export type EventoAuditoria = {
     | DetalleJsonAuditoria
     | null;
 
-  fecha_evento: string;
+  fecha_evento:
+    string;
 
-  cantidad_cambios: number;
+  cantidad_cambios:
+    number;
+
 };
 
 
 export type CambioAuditoria = {
-  id_cambio: number;
 
-  campo: string;
+  id_cambio:
+    number;
+
+  campo:
+    string;
 
   valor_anterior:
     | string
@@ -130,31 +183,42 @@ export type CambioAuditoria = {
   valor_nuevo:
     | string
     | null;
+
 };
 
 
 export type DetalleEventoAuditoria = {
-  evento: EventoAuditoria;
-  cambios: CambioAuditoria[];
+
+  evento:
+    EventoAuditoria;
+
+  cambios:
+    CambioAuditoria[];
+
 };
 
 
 export type RespuestaPaginadaAuditoria = {
-  current_page: number;
 
-  data: EventoAuditoria[];
+  current_page:
+    number;
+
+  data:
+    EventoAuditoria[];
 
   from:
     | number
     | null;
 
-  last_page: number;
+  last_page:
+    number;
 
   next_page_url:
     | string
     | null;
 
-  per_page: number;
+  per_page:
+    number;
 
   prev_page_url:
     | string
@@ -164,45 +228,119 @@ export type RespuestaPaginadaAuditoria = {
     | number
     | null;
 
-  total: number;
+  total:
+    number;
+
 };
 
 
 export type FiltrosAuditoria = {
-  page?: number;
-  per_page?: number;
 
-  servicio?: string;
-  modulo?: string;
-  accion?: string;
-  resultado?: string;
+  page?:
+    number;
 
-  entidad?: string;
+  per_page?:
+    number;
+
+  servicio?:
+    string;
+
+  modulo?:
+    string;
+
+  accion?:
+    string;
+
+  resultado?:
+    string;
+
+  entidad?:
+    string;
+
 };
 
 
 // ==========================================================
-// ERROR
+// ERROR DE API
 // ==========================================================
 
 export class AuditoriaApiError
   extends Error {
 
-  status: number;
+  status:
+    number;
+
 
   constructor(
-    message: string,
-    status: number,
+    message:
+      string,
+
+    status:
+      number,
   ) {
 
-    super(message);
+    super(
+      message,
+    );
+
 
     this.name =
       "AuditoriaApiError";
 
+
     this.status =
       status;
+
   }
+
+}
+
+
+// ==========================================================
+// NORMALIZAR RESPUESTAS
+//
+// El servicio de Auditoría actualmente puede responder
+// JSON con content-type text/html.
+// response.json() funciona igualmente si el contenido
+// recibido es JSON válido.
+// ==========================================================
+
+async function parseJsonResponse<T>(
+  response:
+    Response,
+): Promise<T> {
+
+  const text =
+    await response.text();
+
+
+  if (
+    !text.trim()
+  ) {
+
+    throw new AuditoriaApiError(
+      "El servicio de Auditoría devolvió una respuesta vacía.",
+      response.status,
+    );
+
+  }
+
+
+  try {
+
+    return JSON.parse(
+      text,
+    ) as T;
+
+  } catch {
+
+    throw new AuditoriaApiError(
+      "El servicio de Auditoría devolvió una respuesta no válida.",
+      response.status,
+    );
+
+  }
+
 }
 
 
@@ -211,23 +349,30 @@ export class AuditoriaApiError
 // ==========================================================
 
 async function requestJson<T>(
-  ruta: string,
-  signal?: AbortSignal,
+  ruta:
+    string,
+
+  signal?:
+    AbortSignal,
 ): Promise<T> {
 
   const response =
     await fetch(
       `${AUDITORIA_API_URL}${ruta}`,
       {
+
         method:
           "GET",
 
         headers: {
+
           Accept:
             "application/json",
+
         },
 
         signal,
+
       },
     );
 
@@ -242,18 +387,36 @@ async function requestJson<T>(
 
     try {
 
-      const data =
-        await response.json();
+      const text =
+        await response.text();
 
-      mensaje =
-        data?.mensaje ||
-        data?.error ||
-        mensaje;
+
+      if (
+        text.trim()
+      ) {
+
+        const data =
+          JSON.parse(
+            text,
+          ) as {
+            mensaje?: string;
+            error?: string;
+          };
+
+
+        mensaje =
+          data.mensaje
+          ??
+          data.error
+          ??
+          mensaje;
+
+      }
 
     } catch {
 
-      // Se mantiene el mensaje
-      // HTTP genérico.
+      // Conservamos el mensaje HTTP genérico.
+
     }
 
 
@@ -261,12 +424,14 @@ async function requestJson<T>(
       mensaje,
       response.status,
     );
+
   }
 
 
-  return (
-    await response.json()
-  ) as T;
+  return parseJsonResponse<T>(
+    response,
+  );
+
 }
 
 
@@ -275,13 +440,19 @@ async function requestJson<T>(
 // ==========================================================
 
 export async function obtenerCatalogosAuditoria(
-  signal?: AbortSignal,
-): Promise<CatalogosAuditoria> {
+  signal?:
+    AbortSignal,
+): Promise<
+  CatalogosAuditoria
+> {
 
-  return requestJson<CatalogosAuditoria>(
+  return requestJson<
+    CatalogosAuditoria
+  >(
     "/auditoria/catalogos",
     signal,
   );
+
 }
 
 
@@ -290,9 +461,14 @@ export async function obtenerCatalogosAuditoria(
 // ==========================================================
 
 export async function listarEventosAuditoria(
-  filtros: FiltrosAuditoria = {},
-  signal?: AbortSignal,
-): Promise<RespuestaPaginadaAuditoria> {
+  filtros:
+    FiltrosAuditoria = {},
+
+  signal?:
+    AbortSignal,
+): Promise<
+  RespuestaPaginadaAuditoria
+> {
 
   const params =
     new URLSearchParams();
@@ -301,79 +477,108 @@ export async function listarEventosAuditoria(
   if (
     filtros.page
   ) {
+
     params.set(
       "page",
       String(
         filtros.page,
       ),
     );
+
   }
 
 
   if (
     filtros.per_page
   ) {
+
     params.set(
       "per_page",
       String(
         filtros.per_page,
       ),
     );
+
   }
 
 
   if (
-    filtros.servicio?.trim()
+    filtros
+      .servicio
+      ?.trim()
   ) {
 
     params.set(
       "servicio",
-      filtros.servicio.trim(),
+      filtros
+        .servicio
+        .trim(),
     );
+
   }
 
 
   if (
-    filtros.modulo?.trim()
+    filtros
+      .modulo
+      ?.trim()
   ) {
 
     params.set(
       "modulo",
-      filtros.modulo.trim(),
+      filtros
+        .modulo
+        .trim(),
     );
+
   }
 
 
   if (
-    filtros.accion?.trim()
+    filtros
+      .accion
+      ?.trim()
   ) {
 
     params.set(
       "accion",
-      filtros.accion.trim(),
+      filtros
+        .accion
+        .trim(),
     );
+
   }
 
 
   if (
-    filtros.resultado?.trim()
+    filtros
+      .resultado
+      ?.trim()
   ) {
 
     params.set(
       "resultado",
-      filtros.resultado.trim(),
+      filtros
+        .resultado
+        .trim(),
     );
+
   }
 
 
   if (
-    filtros.entidad?.trim()
+    filtros
+      .entidad
+      ?.trim()
   ) {
 
     params.set(
       "entidad",
-      filtros.entidad.trim(),
+      filtros
+        .entidad
+        .trim(),
     );
+
   }
 
 
@@ -381,35 +586,55 @@ export async function listarEventosAuditoria(
     params.toString();
 
 
-  return requestJson<RespuestaPaginadaAuditoria>(
-    `/auditoria/eventos${query ? `?${query}` : ""}`,
+  return requestJson<
+    RespuestaPaginadaAuditoria
+  >(
+    `/auditoria/eventos${
+      query
+        ? `?${query}`
+        : ""
+    }`,
     signal,
   );
+
 }
 
 
 // ==========================================================
-// DETALLE
+// DETALLE DEL EVENTO
 // ==========================================================
 
 export async function obtenerEventoAuditoria(
-  idEvento: string,
-  signal?: AbortSignal,
-): Promise<DetalleEventoAuditoria> {
+  idEvento:
+    string,
 
-  return requestJson<DetalleEventoAuditoria>(
-    `/auditoria/eventos/${encodeURIComponent(idEvento)}`,
+  signal?:
+    AbortSignal,
+): Promise<
+  DetalleEventoAuditoria
+> {
+
+  return requestJson<
+    DetalleEventoAuditoria
+  >(
+    `/auditoria/eventos/${
+      encodeURIComponent(
+        idEvento,
+      )
+    }`,
     signal,
   );
+
 }
 
 
 // ==========================================================
-// MENSAJE ERROR
+// MENSAJE DE ERROR
 // ==========================================================
 
 export function mensajeErrorAuditoria(
-  error: unknown,
+  error:
+    unknown,
 ): string {
 
   if (
@@ -418,6 +643,7 @@ export function mensajeErrorAuditoria(
   ) {
 
     return error.message;
+
   }
 
 
@@ -432,10 +658,12 @@ export function mensajeErrorAuditoria(
     ) {
 
       return "";
+
     }
 
 
     return error.message;
+
   }
 
 
@@ -443,4 +671,5 @@ export function mensajeErrorAuditoria(
     "No fue posible comunicarse " +
     "con el servicio de Auditoría."
   );
+
 }

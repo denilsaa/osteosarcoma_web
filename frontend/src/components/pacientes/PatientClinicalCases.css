@@ -1,0 +1,290 @@
+.patient-cases-card {
+  margin-bottom: 16px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+}
+
+.patient-cases-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.patient-cases-header__left {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.patient-cases-header__icon {
+  display: grid;
+  width: 39px;
+  height: 39px;
+  flex: 0 0 39px;
+  place-items: center;
+  border-radius: 11px;
+  background: #eef8fb;
+  color: #0891b2;
+}
+
+.patient-cases-header h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 0.96rem;
+}
+
+.patient-cases-header p {
+  margin: 4px 0 0;
+  color: #94a3b8;
+  font-size: 0.76rem;
+}
+
+.patient-cases-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.patient-cases-total {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.patient-cases-refresh {
+  display: grid;
+  width: 37px;
+  height: 37px;
+  place-items: center;
+  border: 1px solid #dbe3ed;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.patient-cases-refresh:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.patient-cases-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.patient-case {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 18px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.patient-case:last-child {
+  border-bottom: 0;
+}
+
+.patient-case:hover {
+  background: #fbfdff;
+}
+
+.patient-case__main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.patient-case__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.patient-case-code {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #1e293b;
+}
+
+.patient-case-code strong {
+  font-size: 0.86rem;
+}
+
+.patient-case-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.patient-case-status,
+.patient-case-priority {
+  display: inline-flex;
+  min-height: 23px;
+  align-items: center;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.patient-case-status {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.patient-case-priority--high {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.patient-case-priority--medium {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.patient-case-priority--low {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.patient-case-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.patient-case-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #64748b;
+  font-size: 0.71rem;
+}
+
+.patient-case-reason,
+.patient-case-observation {
+  padding: 10px 11px;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.patient-case-reason > span,
+.patient-case-observation > span {
+  display: block;
+  margin-bottom: 4px;
+  color: #94a3b8;
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.patient-case-reason p,
+.patient-case-observation p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.patient-case-open {
+  display: inline-flex;
+  min-width: 105px;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.patient-case-open:hover {
+  border-color: #0891b2;
+  color: #0891b2;
+}
+
+.patient-cases-state,
+.patient-cases-empty {
+  display: flex;
+  min-height: 155px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 7px;
+  padding: 25px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.patient-cases-state span,
+.patient-cases-empty span {
+  font-size: 0.76rem;
+}
+
+.patient-cases-empty strong {
+  margin-top: 3px;
+  color: #475569;
+  font-size: 0.84rem;
+}
+
+.patient-cases-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 18px;
+  padding: 11px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.76rem;
+}
+
+.patient-cases-spin {
+  animation: patient-cases-spin 0.85s linear infinite;
+}
+
+@keyframes patient-cases-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .patient-case {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .patient-case-open {
+    width: 100%;
+  }
+
+  .patient-cases-header {
+    align-items: flex-start;
+  }
+}

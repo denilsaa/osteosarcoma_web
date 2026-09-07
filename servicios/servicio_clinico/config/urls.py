@@ -1,8 +1,24 @@
-from django.urls import path
+from django.urls import (
+    include,
+    path,
+)
 
-from clinica.views import health_check
+from clinica.interfaces.api.views import (
+    health_view,
+)
 
 
 urlpatterns = [
-    path("api/health/", health_check),
+    path(
+        "api/health/",
+        health_view,
+        name="health",
+    ),
+
+    path(
+        "api/",
+        include(
+            "clinica.interfaces.api.urls"
+        ),
+    ),
 ]
