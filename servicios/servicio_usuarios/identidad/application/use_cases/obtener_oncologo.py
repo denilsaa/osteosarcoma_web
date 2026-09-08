@@ -3,10 +3,21 @@ from identidad.infrastructure.repositories.usuario_repository import (
 )
 
 
+ROLES_ONCOLOGIA = {
+    "ONCOLOGO",
+    "JEFE_ONCOLOGIA",
+}
+
+
 class ObtenerOncologoUseCase:
     """
-    Consulta el detalle de una cuenta
-    perteneciente realmente al rol ONCOLOGO.
+    Consulta el detalle de una cuenta perteneciente
+    al personal de Oncología.
+
+    Se consideran válidos:
+
+    - ONCOLOGO
+    - JEFE_ONCOLOGIA
     """
 
     def __init__(
@@ -36,30 +47,76 @@ class ObtenerOncologoUseCase:
             )
 
         # ==================================================
-        # COMPROBAR QUE ES ONCÓLOGO
+        # ROLES ACTIVOS
         # ==================================================
 
-        es_oncologo = (
-
+        asignaciones = (
             usuario
             .asignaciones_roles
-
             .filter(
-
                 activo=True,
-
-                rol__codigo="ONCOLOGO",
-
+                rol__activo=True,
             )
-
-            .exists()
-
+            .select_related(
+                "rol"
+            )
         )
 
-        if not es_oncologo:
+        roles = list(
+            asignaciones.values_list(
+                "rol__codigo",
+                flat=True,
+            )
+        )
+
+        # ==================================================
+        # VALIDAR QUE PERTENEZCA A ONCOLOGÍA
+        # ==================================================
+
+        pertenece_oncologia = any(
+            rol_codigo
+            in
+            ROLES_ONCOLOGIA
+            for rol_codigo
+            in roles
+        )
+
+        if not pertenece_oncologia:
 
             raise Exception(
-                "La cuenta indicada no pertenece a un oncólogo."
+                "La cuenta indicada no pertenece "
+                "al personal de Oncología."
+            )
+
+        # ==================================================
+        # ROL PRINCIPAL
+        # ==================================================
+        #
+        # Si por datos antiguos un usuario tiene ambos,
+        # priorizamos JEFE_ONCOLOGIA.
+        # ==================================================
+
+        if (
+            "JEFE_ONCOLOGIA"
+            in roles
+        ):
+
+            rol_codigo = (
+                "JEFE_ONCOLOGIA"
+            )
+
+            rol_nombre = (
+                "Jefe de Oncología"
+            )
+
+        else:
+
+            rol_codigo = (
+                "ONCOLOGO"
+            )
+
+            rol_nombre = (
+                "Oncólogo"
             )
 
         # ==================================================
@@ -78,26 +135,6 @@ class ObtenerOncologoUseCase:
             perfil = None
 
         # ==================================================
-        # ROLES
-        # ==================================================
-
-        roles = list(
-
-            usuario
-            .asignaciones_roles
-
-            .filter(
-                activo=True
-            )
-
-            .values_list(
-                "rol__codigo",
-                flat=True,
-            )
-
-        )
-
-        # ==================================================
         # RESPUESTA
         # ==================================================
 
@@ -107,6 +144,10 @@ class ObtenerOncologoUseCase:
                 str(
                     usuario.id_usuario
                 ),
+
+            # ==============================================
+            # DATOS PERSONALES
+            # ==============================================
 
             "nombres":
                 usuario.nombres,
@@ -118,23 +159,30 @@ class ObtenerOncologoUseCase:
                 usuario.apellido_materno,
 
             "nombre_completo":
-                " ".join(
+                usuario.nombre_completo,
 
-                    parte
+            "telefono":
+                usuario.telefono,
 
-                    for parte in [
+            # ==============================================
+            # IDENTIFICACIÓN
+            # ==============================================
 
-                        usuario.nombres,
+            "ci_numero":
+                usuario.ci_numero,
 
-                        usuario.apellido_paterno,
+            "ci_complemento":
+                usuario.ci_complemento,
 
-                        usuario.apellido_materno,
+            "ci_expedido":
+                usuario.ci_expedido,
 
-                    ]
+            "ci_completo":
+                usuario.ci_completo,
 
-                    if parte
-
-                ),
+            # ==============================================
+            # ACCESO
+            # ==============================================
 
             "correo":
                 usuario.correo,
@@ -142,8 +190,9 @@ class ObtenerOncologoUseCase:
             "nombre_usuario":
                 usuario.nombre_usuario,
 
-            "telefono":
-                usuario.telefono,
+            # ==============================================
+            # ESTADO
+            # ==============================================
 
             "estado":
                 usuario
@@ -155,37 +204,58 @@ class ObtenerOncologoUseCase:
                 .estado_usuario
                 .nombre,
 
+            # ==============================================
+            # ROL PRINCIPAL
+            # ==============================================
+
+            "rol_codigo":
+                rol_codigo,
+
+            "rol_nombre":
+                rol_nombre,
+
+            # ==============================================
+            # PERFIL
+            # ==============================================
+
             "perfil": {
 
                 "matricula_profesional":
                     (
                         perfil
                         .matricula_profesional
-
                         if perfil
                         else None
                     ),
 
                 "especialidad":
                     (
-                        perfil.especialidad
-
+                        perfil
+                        .especialidad
                         if perfil
                         else None
                     ),
 
                 "subespecialidad":
                     (
-                        perfil.subespecialidad
+                        perfil
+                        .subespecialidad
+                        if perfil
+                        else None
+                    ),
 
+                "area_clinica":
+                    (
+                        perfil
+                        .area_clinica
                         if perfil
                         else None
                     ),
 
                 "cargo":
                     (
-                        perfil.cargo
-
+                        perfil
+                        .cargo
                         if perfil
                         else None
                     ),
@@ -194,15 +264,22 @@ class ObtenerOncologoUseCase:
                     (
                         perfil
                         .telefono_institucional
-
                         if perfil
                         else None
                     ),
 
             },
 
+            # ==============================================
+            # ROLES ACTIVOS
+            # ==============================================
+
             "roles":
                 roles,
+
+            # ==============================================
+            # FECHAS
+            # ==============================================
 
             "fecha_creacion":
                 usuario.fecha_creacion,

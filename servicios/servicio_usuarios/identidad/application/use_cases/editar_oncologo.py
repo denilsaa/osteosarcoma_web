@@ -1,18 +1,45 @@
 from django.db import transaction
+from django.utils import timezone
 
 from identidad.infrastructure.repositories.perfil_repository import (
     PerfilRepository,
+)
+
+from identidad.infrastructure.repositories.rol_repository import (
+    RolRepository,
 )
 
 from identidad.infrastructure.repositories.usuario_repository import (
     UsuarioRepository,
 )
 
+from identidad.models import UsuarioRol
+
+
+ROLES_ONCOLOGIA = {
+    "ONCOLOGO",
+    "JEFE_ONCOLOGIA",
+}
+
+ESPECIALIDAD_ONCOLOGIA = (
+    "Oncología"
+)
+
+AREA_CLINICA_OSTEOSARCOMA = (
+    "Tumores óseos / Osteosarcoma"
+)
+
 
 class EditarOncologoUseCase:
     """
-    Actualiza la información administrativa
-    y profesional de un oncólogo.
+    Actualiza una cuenta del personal de Oncología.
+
+    Permite trabajar con:
+
+    - ONCOLOGO
+    - JEFE_ONCOLOGIA
+
+    También permite cambiar entre ambos roles.
     """
 
     def __init__(
@@ -27,21 +54,27 @@ class EditarOncologoUseCase:
             PerfilRepository()
         )
 
+        self.rol_repository = (
+            RolRepository()
+        )
+
+    # ======================================================
+    # EJECUTAR
+    # ======================================================
+
     @transaction.atomic
     def ejecutar(
         self,
         usuario_id,
-        datos
+        datos,
+        usuario_editor=None,
     ):
 
         usuario = (
-
             self.usuario_repository
-
             .obtener_por_id(
                 usuario_id
             )
-
         )
 
         if not usuario:
@@ -51,30 +84,26 @@ class EditarOncologoUseCase:
             )
 
         # ==================================================
-        # VALIDAR ROL ONCÓLOGO
+        # VALIDAR QUE SEA PERSONAL DE ONCOLOGÍA
         # ==================================================
 
-        es_oncologo = (
-
+        pertenece_oncologia = (
             usuario
             .asignaciones_roles
-
             .filter(
-
                 activo=True,
-
-                rol__codigo="ONCOLOGO",
-
+                rol__codigo__in=(
+                    ROLES_ONCOLOGIA
+                ),
             )
-
             .exists()
-
         )
 
-        if not es_oncologo:
+        if not pertenece_oncologia:
 
             raise Exception(
-                "La cuenta indicada no pertenece a un oncólogo."
+                "La cuenta indicada no pertenece "
+                "al personal de Oncología."
             )
 
         # ==================================================
@@ -91,9 +120,13 @@ class EditarOncologoUseCase:
 
             "correo",
 
-            "nombre_usuario",
-
             "telefono",
+
+            "ci_numero",
+
+            "ci_complemento",
+
+            "ci_expedido",
 
         ]
 
@@ -103,29 +136,28 @@ class EditarOncologoUseCase:
 
             if campo in datos:
 
-                datos_usuario[campo] = (
-                    datos[campo]
+                datos_usuario[
+                    campo
+                ] = (
+                    datos[
+                        campo
+                    ]
                 )
 
         if datos_usuario:
 
             self.usuario_repository.actualizar(
-
                 usuario,
-
                 datos_usuario,
-
             )
 
         # ==================================================
-        # CAMPOS PROFESIONALES
+        # PERFIL PROFESIONAL
         # ==================================================
 
         campos_perfil = [
 
             "matricula_profesional",
-
-            "especialidad",
 
             "subespecialidad",
 
@@ -133,54 +165,244 @@ class EditarOncologoUseCase:
 
         ]
 
-        perfil_datos = {}
+        datos_perfil = {}
 
         for campo in campos_perfil:
 
             if campo in datos:
 
-                perfil_datos[campo] = (
-                    datos[campo]
+                datos_perfil[
+                    campo
+                ] = (
+                    datos[
+                        campo
+                    ]
                 )
 
-        if perfil_datos:
+        # --------------------------------------------------
+        # VALORES CONTROLADOS
+        # --------------------------------------------------
 
-            perfil = (
+        datos_perfil[
+            "especialidad"
+        ] = (
+            ESPECIALIDAD_ONCOLOGIA
+        )
 
-                self.perfil_repository
+        datos_perfil[
+            "area_clinica"
+        ] = (
+            AREA_CLINICA_OSTEOSARCOMA
+        )
 
-                .obtener_por_usuario(
-                    usuario
+        # ==================================================
+        # ROL
+        # ==================================================
+
+        nuevo_rol_codigo = (
+            datos.get(
+                "rol_codigo"
+            )
+        )
+
+        if nuevo_rol_codigo:
+
+            nuevo_rol_codigo = (
+                str(
+                    nuevo_rol_codigo
                 )
-
+                .strip()
+                .upper()
             )
 
-            if perfil:
+            if (
+                nuevo_rol_codigo
+                not in
+                ROLES_ONCOLOGIA
+            ):
 
-                self.perfil_repository.actualizar(
+                raise Exception(
+                    "El rol seleccionado no es válido."
+                )
 
-                    perfil,
+            if (
+                nuevo_rol_codigo
+                ==
+                "JEFE_ONCOLOGIA"
+            ):
 
-                    perfil_datos,
-
+                datos_perfil[
+                    "cargo"
+                ] = (
+                    "Jefe de Oncología"
                 )
 
             else:
 
-                self.perfil_repository.crear(
-
-                    {
-
-                        "usuario":
-                            usuario,
-
-                        "cargo":
-                            "Oncólogo",
-
-                        **perfil_datos,
-
-                    }
-
+                datos_perfil[
+                    "cargo"
+                ] = (
+                    "Oncólogo"
                 )
 
+        # ==================================================
+        # PERFIL EXISTENTE
+        # ==================================================
+
+        perfil = (
+            self.perfil_repository
+            .obtener_por_usuario(
+                usuario
+            )
+        )
+
+        if perfil:
+
+            self.perfil_repository.actualizar(
+                perfil,
+                datos_perfil,
+            )
+
+        else:
+
+            if (
+                "cargo"
+                not in
+                datos_perfil
+            ):
+
+                datos_perfil[
+                    "cargo"
+                ] = (
+                    "Oncólogo"
+                )
+
+            self.perfil_repository.crear(
+                {
+                    "usuario":
+                        usuario,
+
+                    **datos_perfil,
+                }
+            )
+
+        # ==================================================
+        # CAMBIAR ROL SI FUE SOLICITADO
+        # ==================================================
+
+        if nuevo_rol_codigo:
+
+            self._actualizar_rol(
+                usuario=usuario,
+                nuevo_rol_codigo=(
+                    nuevo_rol_codigo
+                ),
+                usuario_editor=(
+                    usuario_editor
+                ),
+            )
+
         return usuario
+
+    # ======================================================
+    # ACTUALIZAR ROL
+    # ======================================================
+
+    def _actualizar_rol(
+        self,
+        *,
+        usuario,
+        nuevo_rol_codigo,
+        usuario_editor=None,
+    ):
+
+        nuevo_rol = (
+            self.rol_repository
+            .obtener_por_codigo(
+                nuevo_rol_codigo
+            )
+        )
+
+        if not nuevo_rol:
+
+            raise Exception(
+                "El rol seleccionado no existe."
+            )
+
+        if not nuevo_rol.activo:
+
+            raise Exception(
+                "El rol seleccionado está inactivo."
+            )
+
+        # ==================================================
+        # DESACTIVAR OTROS ROLES DE ONCOLOGÍA
+        # ==================================================
+
+        asignaciones = (
+            UsuarioRol.objects
+            .filter(
+                usuario=usuario,
+                rol__codigo__in=(
+                    ROLES_ONCOLOGIA
+                ),
+            )
+            .select_related(
+                "rol"
+            )
+        )
+
+        for asignacion in asignaciones:
+
+            if (
+                asignacion.rol.codigo
+                ==
+                nuevo_rol_codigo
+            ):
+
+                asignacion.activo = True
+
+                asignacion.fecha_fin = None
+
+                asignacion.save(
+                    update_fields=[
+                        "activo",
+                        "fecha_fin",
+                    ]
+                )
+
+            else:
+
+                asignacion.activo = False
+
+                asignacion.fecha_fin = (
+                    timezone.now()
+                )
+
+                asignacion.save(
+                    update_fields=[
+                        "activo",
+                        "fecha_fin",
+                    ]
+                )
+
+        # ==================================================
+        # SI NUNCA TUVO ESE ROL, CREAR ASIGNACIÓN
+        # ==================================================
+
+        existe_asignacion = (
+            UsuarioRol.objects
+            .filter(
+                usuario=usuario,
+                rol=nuevo_rol,
+            )
+            .exists()
+        )
+
+        if not existe_asignacion:
+
+            self.rol_repository.asignar_rol(
+                usuario,
+                nuevo_rol,
+                usuario_editor,
+            )

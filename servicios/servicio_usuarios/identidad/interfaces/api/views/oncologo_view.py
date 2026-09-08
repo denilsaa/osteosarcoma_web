@@ -5,6 +5,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 
+# ==========================================================
+# CASOS DE USO
+# ==========================================================
+
 from identidad.application.use_cases.cambiar_estado_oncologo import (
     CambiarEstadoOncologoUseCase,
 )
@@ -26,10 +30,18 @@ from identidad.application.use_cases.obtener_oncologo import (
 )
 
 
+# ==========================================================
+# AUDITORÍA
+# ==========================================================
+
 from identidad.infrastructure.auditoria_client import (
     registrar_evento_auditoria,
 )
 
+
+# ==========================================================
+# PERMISOS
+# ==========================================================
 
 from identidad.infrastructure.permissions.oncologo_permissions import (
     PuedeActivarUsuarios,
@@ -39,6 +51,10 @@ from identidad.infrastructure.permissions.oncologo_permissions import (
     PuedeListarOncologos,
 )
 
+
+# ==========================================================
+# SERIALIZERS
+# ==========================================================
 
 from identidad.interfaces.api.serializers.estado_oncologo_serializer import (
     CambiarEstadoOncologoSerializer,
@@ -51,20 +67,50 @@ from identidad.interfaces.api.serializers.oncologo_serializer import (
 
 
 # ==========================================================
-# CAMPOS QUE PUEDEN APARECER EN EL HISTORIAL
+# CAMPOS AUDITABLES
 # ==========================================================
 
 CAMPOS_ONCOLOGO_AUDITABLES = [
+
+    # ------------------------------------------------------
+    # DATOS PERSONALES
+    # ------------------------------------------------------
+
     "nombres",
     "apellido_paterno",
     "apellido_materno",
+    "telefono",
+
+    # ------------------------------------------------------
+    # IDENTIFICACIÓN
+    # ------------------------------------------------------
+
+    "ci_numero",
+    "ci_complemento",
+    "ci_expedido",
+
+    # ------------------------------------------------------
+    # ACCESO
+    # ------------------------------------------------------
+
     "correo",
     "nombre_usuario",
-    "telefono",
+
+    # ------------------------------------------------------
+    # PROFESIONAL
+    # ------------------------------------------------------
+
     "matricula_profesional",
     "especialidad",
     "subespecialidad",
+    "area_clinica",
     "telefono_institucional",
+
+    # ------------------------------------------------------
+    # ROL / ESTADO
+    # ------------------------------------------------------
+
+    "rol_codigo",
     "estado",
 ]
 
@@ -73,28 +119,35 @@ CAMPOS_ONCOLOGO_AUDITABLES = [
 # CAMPOS SENSIBLES
 # ==========================================================
 #
-# Nunca deben aparecer en Auditoría.
+# Estos valores nunca deben llegar al servicio Auditoría.
 # ==========================================================
 
 CAMPOS_SENSIBLES = {
     "password",
+    "password_temporal",
     "password_hash",
     "refresh_token",
     "access_token",
     "codigo",
     "codigo_otp",
+    "otp",
+    "token",
 }
 
 
 # ==========================================================
-# UTILIDADES DE REQUEST
+# OBTENER IP
 # ==========================================================
 
+
 def obtener_ip(
-    request
+    request,
 ):
     """
     Obtiene la IP original del cliente.
+
+    Si existe proxy inverso, primero intenta utilizar
+    X-Forwarded-For.
     """
 
     forwarded_for = (
@@ -118,11 +171,16 @@ def obtener_ip(
     )
 
 
+# ==========================================================
+# USER AGENT
+# ==========================================================
+
+
 def obtener_user_agent(
-    request
+    request,
 ):
     """
-    Obtiene el navegador o cliente utilizado.
+    Obtiene navegador o cliente utilizado.
     """
 
     return (
@@ -133,11 +191,12 @@ def obtener_user_agent(
 
 
 # ==========================================================
-# UTILIDADES DEL ACTOR
+# ACTOR UUID
 # ==========================================================
 
+
 def obtener_actor_uuid(
-    request
+    request,
 ):
     """
     Devuelve el UUID del usuario autenticado.
@@ -150,6 +209,7 @@ def obtener_actor_uuid(
     )
 
     if not usuario:
+
         return None
 
     usuario_id = getattr(
@@ -159,6 +219,7 @@ def obtener_actor_uuid(
     )
 
     if not usuario_id:
+
         return None
 
     return str(
@@ -166,12 +227,17 @@ def obtener_actor_uuid(
     )
 
 
+# ==========================================================
+# NOMBRE DEL ACTOR
+# ==========================================================
+
+
 def obtener_nombre_actor(
-    request
+    request,
 ):
     """
-    Obtiene el nombre completo del usuario
-    que está realizando la operación.
+    Devuelve el nombre completo del usuario
+    que ejecuta la operación.
     """
 
     usuario = getattr(
@@ -181,34 +247,48 @@ def obtener_nombre_actor(
     )
 
     if not usuario:
+
         return None
 
     partes = [
+
         getattr(
             usuario,
             "nombres",
             None,
         ),
+
         getattr(
             usuario,
             "apellido_paterno",
             None,
         ),
+
         getattr(
             usuario,
             "apellido_materno",
             None,
         ),
+
     ]
 
     nombre = " ".join(
+
         str(parte).strip()
-        for parte in partes
-        if parte
-        and str(parte).strip()
+
+        for parte
+        in partes
+
+        if (
+            parte
+            and
+            str(parte).strip()
+        )
+
     ).strip()
 
     if nombre:
+
         return nombre
 
     return getattr(
@@ -218,12 +298,19 @@ def obtener_nombre_actor(
     )
 
 
+# ==========================================================
+# ROL PRINCIPAL DEL ACTOR
+# ==========================================================
+
+
 def obtener_rol_actor(
-    request
+    request,
 ):
     """
-    Obtiene el rol activo principal del usuario
-    que realiza la acción.
+    Obtiene el rol principal activo.
+
+    Si por datos antiguos el usuario tiene simultáneamente
+    JEFE_ONCOLOGIA y ONCOLOGO, se prioriza JEFE_ONCOLOGIA.
     """
 
     usuario = getattr(
@@ -233,11 +320,12 @@ def obtener_rol_actor(
     )
 
     if not usuario:
+
         return None
 
     try:
 
-        asignacion = (
+        asignaciones = (
             usuario
             .asignaciones_roles
             .select_related(
@@ -247,6 +335,34 @@ def obtener_rol_actor(
                 activo=True,
                 rol__activo=True,
             )
+        )
+
+        # --------------------------------------------------
+        # PRIORIZAR JEFATURA
+        # --------------------------------------------------
+
+        jefe = (
+            asignaciones
+            .filter(
+                rol__codigo="JEFE_ONCOLOGIA"
+            )
+            .first()
+        )
+
+        if jefe:
+
+            return (
+                jefe.rol.nombre
+                or
+                jefe.rol.codigo
+            )
+
+        # --------------------------------------------------
+        # OTRO ROL ACTIVO
+        # --------------------------------------------------
+
+        asignacion = (
+            asignaciones
             .order_by(
                 "-fecha_asignacion"
             )
@@ -254,6 +370,7 @@ def obtener_rol_actor(
         )
 
         if not asignacion:
+
             return None
 
         return (
@@ -271,12 +388,13 @@ def obtener_rol_actor(
 # SERIALIZAR ERRORES
 # ==========================================================
 
+
 def serializar_errores(
-    errores
+    errores,
 ):
     """
-    Convierte errores del serializer a texto
-    para almacenarlos como motivo.
+    Convierte errores DRF en texto seguro
+    para registrarlos como motivo de auditoría.
     """
 
     try:
@@ -298,30 +416,42 @@ def serializar_errores(
 # LIMPIAR DATOS SENSIBLES
 # ==========================================================
 
+
 def limpiar_datos_sensibles(
-    datos
+    datos,
 ):
     """
-    Devuelve una versión segura del diccionario.
+    Genera una copia segura de un diccionario.
 
-    Password, tokens y códigos nunca salen
-    del microservicio de Usuarios.
+    Contraseñas, tokens y códigos nunca abandonan
+    el microservicio de Usuarios.
     """
 
     if not isinstance(
         datos,
         dict,
     ):
+
         return {}
 
     resultado = {}
 
     for clave, valor in datos.items():
 
+        clave_normalizada = (
+            str(
+                clave
+            )
+            .strip()
+            .lower()
+        )
+
         if (
-            clave.lower()
-            in CAMPOS_SENSIBLES
+            clave_normalizada
+            in
+            CAMPOS_SENSIBLES
         ):
+
             continue
 
         resultado[
@@ -332,18 +462,25 @@ def limpiar_datos_sensibles(
 
 
 # ==========================================================
-# OBTENER SNAPSHOT DE ONCÓLOGO
+# SNAPSHOT DEL PERSONAL DE ONCOLOGÍA
 # ==========================================================
 
+
 def obtener_snapshot_oncologo(
-    usuario_id
+    usuario_id,
 ):
     """
-    Obtiene una fotografía del oncólogo para
-    comparar valor anterior y valor nuevo.
+    Obtiene una fotografía funcional del usuario.
+
+    Se utiliza para calcular:
+
+    valor anterior
+        ->
+    valor nuevo
     """
 
     if not usuario_id:
+
         return None
 
     try:
@@ -359,7 +496,6 @@ def obtener_snapshot_oncologo(
 
         return None
 
-
     perfil = (
         datos.get(
             "perfil"
@@ -367,13 +503,20 @@ def obtener_snapshot_oncologo(
         or {}
     )
 
-
     return {
+
+        # --------------------------------------------------
+        # IDENTIFICADOR
+        # --------------------------------------------------
 
         "id_usuario":
             datos.get(
                 "id_usuario"
             ),
+
+        # --------------------------------------------------
+        # PERSONALES
+        # --------------------------------------------------
 
         "nombres":
             datos.get(
@@ -390,6 +533,34 @@ def obtener_snapshot_oncologo(
                 "apellido_materno"
             ),
 
+        "telefono":
+            datos.get(
+                "telefono"
+            ),
+
+        # --------------------------------------------------
+        # IDENTIFICACIÓN
+        # --------------------------------------------------
+
+        "ci_numero":
+            datos.get(
+                "ci_numero"
+            ),
+
+        "ci_complemento":
+            datos.get(
+                "ci_complemento"
+            ),
+
+        "ci_expedido":
+            datos.get(
+                "ci_expedido"
+            ),
+
+        # --------------------------------------------------
+        # ACCESO
+        # --------------------------------------------------
+
         "correo":
             datos.get(
                 "correo"
@@ -400,10 +571,9 @@ def obtener_snapshot_oncologo(
                 "nombre_usuario"
             ),
 
-        "telefono":
-            datos.get(
-                "telefono"
-            ),
+        # --------------------------------------------------
+        # PROFESIONAL
+        # --------------------------------------------------
 
         "matricula_profesional":
             perfil.get(
@@ -420,10 +590,28 @@ def obtener_snapshot_oncologo(
                 "subespecialidad"
             ),
 
+        "area_clinica":
+            perfil.get(
+                "area_clinica"
+            ),
+
         "telefono_institucional":
             perfil.get(
                 "telefono_institucional"
             ),
+
+        # --------------------------------------------------
+        # ROL
+        # --------------------------------------------------
+
+        "rol_codigo":
+            datos.get(
+                "rol_codigo"
+            ),
+
+        # --------------------------------------------------
+        # ESTADO
+        # --------------------------------------------------
 
         "estado":
             datos.get(
@@ -433,8 +621,9 @@ def obtener_snapshot_oncologo(
 
 
 # ==========================================================
-# CONSTRUIR CAMBIOS ANTERIOR -> NUEVO
+# CONSTRUIR CAMBIOS
 # ==========================================================
+
 
 def construir_cambios(
     anterior,
@@ -443,7 +632,7 @@ def construir_cambios(
 ):
     """
     Devuelve únicamente los campos cuyo valor
-    realmente cambió.
+    cambió realmente.
     """
 
     anterior = (
@@ -456,25 +645,23 @@ def construir_cambios(
         or {}
     )
 
-
     if campos is None:
 
         campos = (
             CAMPOS_ONCOLOGO_AUDITABLES
         )
 
-
     resultado = []
-
 
     for campo in campos:
 
         if (
             campo
-            in CAMPOS_SENSIBLES
+            in
+            CAMPOS_SENSIBLES
         ):
-            continue
 
+            continue
 
         valor_anterior = (
             anterior.get(
@@ -488,14 +675,13 @@ def construir_cambios(
             )
         )
 
-
         if (
             valor_anterior
             ==
             valor_nuevo
         ):
-            continue
 
+            continue
 
         resultado.append(
             {
@@ -510,28 +696,29 @@ def construir_cambios(
             }
         )
 
-
     return resultado
 
 
 # ==========================================================
-# CAMBIOS DURANTE CREACIÓN
+# CAMBIOS DE CREACIÓN
 # ==========================================================
 
+
 def construir_cambios_creacion(
-    snapshot
+    snapshot,
 ):
     """
-    Para una creación, el valor anterior es NULL
-    y el valor nuevo corresponde a los datos creados.
+    Para una creación:
+
+    anterior = NULL
+    nuevo    = valor creado
     """
 
     if not snapshot:
+
         return []
 
-
     cambios = []
-
 
     for campo in (
         CAMPOS_ONCOLOGO_AUDITABLES
@@ -539,10 +726,11 @@ def construir_cambios_creacion(
 
         if (
             campo
-            in CAMPOS_SENSIBLES
+            in
+            CAMPOS_SENSIBLES
         ):
-            continue
 
+            continue
 
         valor = (
             snapshot.get(
@@ -550,10 +738,9 @@ def construir_cambios_creacion(
             )
         )
 
-
         if valor is None:
-            continue
 
+            continue
 
         cambios.append(
             {
@@ -568,13 +755,13 @@ def construir_cambios_creacion(
             }
         )
 
-
     return cambios
 
 
 # ==========================================================
-# REGISTRAR AUDITORÍA ONCÓLOGOS
+# AUDITORÍA DE ONCÓLOGOS
 # ==========================================================
+
 
 def registrar_auditoria_oncologo(
     *,
@@ -588,19 +775,26 @@ def registrar_auditoria_oncologo(
     detalle_json=None,
 ):
     """
-    Función central de Auditoría para Gestión
-    de Oncólogos.
+    Registra eventos globales de Gestión de Oncólogos.
+
+    IMPORTANTE:
+
+    Este evento se envía al servicio global de Auditoría.
+
+    El historial funcional propio del usuario permanece
+    dentro del servicio Usuarios.
     """
 
     detalle = (
         detalle_json.copy()
+
         if isinstance(
             detalle_json,
             dict,
         )
+
         else {}
     )
-
 
     detalle[
         "actor_identificado"
@@ -609,7 +803,6 @@ def registrar_auditoria_oncologo(
             request
         )
     )
-
 
     return registrar_evento_auditoria(
 
@@ -675,15 +868,15 @@ def registrar_auditoria_oncologo(
 
 
 # ==========================================================
-# MIXIN - AUDITAR PERMISOS DENEGADOS
+# MIXIN DE AUDITORÍA DE PERMISOS
 # ==========================================================
+
 
 class AuditoriaPermisosOncologoMixin:
     """
-    Registra también los intentos rechazados
-    por falta de permisos.
+    Registra intentos rechazados por permisos.
 
-    Esto permite diferenciar:
+    Resultados posibles:
 
     EXITOSO
     FALLIDO
@@ -692,7 +885,7 @@ class AuditoriaPermisosOncologoMixin:
 
     def obtener_accion_denegada(
         self,
-        request
+        request,
     ):
 
         metodo = (
@@ -701,16 +894,13 @@ class AuditoriaPermisosOncologoMixin:
             .upper()
         )
 
-
         if metodo == "POST":
+
             return "CREAR"
 
+        if metodo == "PUT":
 
-        if metodo in (
-            "PUT",
-        ):
             return "EDITAR"
-
 
         if metodo == "PATCH":
 
@@ -726,16 +916,20 @@ class AuditoriaPermisosOncologoMixin:
             )
 
             if estado == "ACTIVO":
+
                 return "ACTIVAR"
 
             if estado == "INACTIVO":
+
                 return "DESACTIVAR"
 
             return "EDITAR"
 
-
         return "CONSULTAR"
 
+    # ======================================================
+    # PERMISO DENEGADO
+    # ======================================================
 
     def permission_denied(
         self,
@@ -745,7 +939,6 @@ class AuditoriaPermisosOncologoMixin:
     ):
 
         usuario_id = None
-
 
         try:
 
@@ -758,7 +951,6 @@ class AuditoriaPermisosOncologoMixin:
         except Exception:
 
             usuario_id = None
-
 
         registrar_auditoria_oncologo(
 
@@ -782,13 +974,16 @@ class AuditoriaPermisosOncologoMixin:
             ),
 
             motivo=(
-                str(message)
+                str(
+                    message
+                )
                 if message
                 else
                 "El usuario no posee el permiso requerido."
             ),
 
             detalle_json={
+
                 "metodo_http":
                     request.method,
 
@@ -796,7 +991,6 @@ class AuditoriaPermisosOncologoMixin:
                     True,
             },
         )
-
 
         return super().permission_denied(
             request,
@@ -806,8 +1000,9 @@ class AuditoriaPermisosOncologoMixin:
 
 
 # ==========================================================
-# LISTAR / CREAR ONCÓLOGOS
+# LISTAR / CREAR PERSONAL DE ONCOLOGÍA
 # ==========================================================
+
 
 class OncologoListCreateAPIView(
     AuditoriaPermisosOncologoMixin,
@@ -819,7 +1014,7 @@ class OncologoListCreateAPIView(
     # ======================================================
 
     def get_permissions(
-        self
+        self,
     ):
 
         if (
@@ -832,7 +1027,6 @@ class OncologoListCreateAPIView(
                 PuedeListarOncologos()
             ]
 
-
         if (
             self.request.method
             ==
@@ -843,12 +1037,10 @@ class OncologoListCreateAPIView(
                 PuedeCrearOncologos()
             ]
 
-
         return (
             super()
             .get_permissions()
         )
-
 
     # ======================================================
     # LISTAR
@@ -856,7 +1048,7 @@ class OncologoListCreateAPIView(
 
     def get(
         self,
-        request
+        request,
     ):
 
         try:
@@ -869,7 +1061,6 @@ class OncologoListCreateAPIView(
                 )
             )
 
-
             estado = (
                 request
                 .query_params
@@ -878,15 +1069,22 @@ class OncologoListCreateAPIView(
                 )
             )
 
+            rol = (
+                request
+                .query_params
+                .get(
+                    "rol"
+                )
+            )
 
             resultado = (
                 ListarOncologosUseCase()
                 .ejecutar(
                     buscar=buscar,
                     estado=estado,
+                    rol=rol,
                 )
             )
-
 
             return Response(
                 resultado,
@@ -894,7 +1092,6 @@ class OncologoListCreateAPIView(
                     status.HTTP_200_OK
                 ),
             )
-
 
         except Exception as error:
 
@@ -906,11 +1103,9 @@ class OncologoListCreateAPIView(
                         )
                 },
                 status=(
-                    status
-                    .HTTP_500_INTERNAL_SERVER_ERROR
+                    status.HTTP_400_BAD_REQUEST
                 ),
             )
-
 
     # ======================================================
     # CREAR
@@ -918,7 +1113,7 @@ class OncologoListCreateAPIView(
 
     def post(
         self,
-        request
+        request,
     ):
 
         serializer = (
@@ -927,9 +1122,8 @@ class OncologoListCreateAPIView(
             )
         )
 
-
         # ==================================================
-        # VALIDACIÓN FALLIDA
+        # ERROR DE VALIDACIÓN
         # ==================================================
 
         if not serializer.is_valid():
@@ -944,7 +1138,8 @@ class OncologoListCreateAPIView(
 
                 descripcion=(
                     "No fue posible registrar "
-                    "la cuenta del oncólogo."
+                    "la cuenta del profesional "
+                    "de Oncología."
                 ),
 
                 motivo=(
@@ -954,6 +1149,7 @@ class OncologoListCreateAPIView(
                 ),
 
                 detalle_json={
+
                     "etapa":
                         "VALIDACION",
 
@@ -966,7 +1162,6 @@ class OncologoListCreateAPIView(
                 },
             )
 
-
             return Response(
                 serializer.errors,
                 status=(
@@ -974,11 +1169,10 @@ class OncologoListCreateAPIView(
                 ),
             )
 
-
         try:
 
             # ==============================================
-            # CREACIÓN REAL
+            # CREAR CUENTA
             # ==============================================
 
             usuario = (
@@ -994,14 +1188,12 @@ class OncologoListCreateAPIView(
                 )
             )
 
-
             usuario_id = str(
                 usuario.id_usuario
             )
 
-
             # ==============================================
-            # SNAPSHOT DESPUÉS DE CREAR
+            # SNAPSHOT
             # ==============================================
 
             nuevo = (
@@ -1010,13 +1202,23 @@ class OncologoListCreateAPIView(
                 )
             )
 
-
             cambios = (
                 construir_cambios_creacion(
                     nuevo
                 )
             )
 
+            # ==============================================
+            # ROL CREADO
+            # ==============================================
+
+            rol_codigo = (
+                getattr(
+                    usuario,
+                    "rol_codigo_creado",
+                    None,
+                )
+            )
 
             # ==============================================
             # AUDITORÍA
@@ -1034,19 +1236,26 @@ class OncologoListCreateAPIView(
 
                 descripcion=(
                     "Se registró una nueva "
-                    "cuenta de oncólogo."
+                    "cuenta del personal de Oncología."
                 ),
 
                 cambios=cambios,
 
                 detalle_json={
-                    "oncologo_creado":
-                        (
-                            nuevo.get(
-                                "nombre_usuario"
+
+                    "usuario_generado":
+                        usuario.nombre_usuario,
+
+                    "rol_asignado":
+                        rol_codigo,
+
+                    "correo_credenciales_enviado":
+                        bool(
+                            getattr(
+                                usuario,
+                                "correo_credenciales_enviado",
+                                False,
                             )
-                            if nuevo
-                            else None
                         ),
 
                     "cantidad_cambios":
@@ -1056,20 +1265,54 @@ class OncologoListCreateAPIView(
                 },
             )
 
+            # ==============================================
+            # RESPUESTA
+            # ==============================================
+            #
+            # IMPORTANTE:
+            # La contraseña temporal NO se devuelve.
+            # ==============================================
 
             return Response(
                 {
-                    "mensaje":
-                        "Oncólogo registrado correctamente.",
 
-                    "id_usuario":
-                        usuario_id,
+                    "mensaje": (
+                        "Profesional de Oncología "
+                        "registrado correctamente."
+                    ),
+
+                    "oncologo": {
+
+                        "id_usuario":
+                            usuario_id,
+
+                        "nombre_usuario":
+                            usuario.nombre_usuario,
+
+                        "correo":
+                            usuario.correo,
+
+                        "rol_codigo":
+                            rol_codigo,
+
+                        "nombre_completo":
+                            usuario.nombre_completo,
+
+                    },
+
+                    "correo_credenciales_enviado":
+                        bool(
+                            getattr(
+                                usuario,
+                                "correo_credenciales_enviado",
+                                False,
+                            )
+                        ),
                 },
                 status=(
                     status.HTTP_201_CREATED
                 ),
             )
-
 
         except Exception as error:
 
@@ -1083,7 +1326,8 @@ class OncologoListCreateAPIView(
 
                 descripcion=(
                     "No fue posible registrar "
-                    "la cuenta del oncólogo."
+                    "la cuenta del profesional "
+                    "de Oncología."
                 ),
 
                 motivo=str(
@@ -1095,7 +1339,6 @@ class OncologoListCreateAPIView(
                         "CREACION",
                 },
             )
-
 
             return Response(
                 {
@@ -1111,8 +1354,9 @@ class OncologoListCreateAPIView(
 
 
 # ==========================================================
-# DETALLE / EDICIÓN ONCÓLOGO
+# DETALLE / EDICIÓN
 # ==========================================================
+
 
 class OncologoDetailAPIView(
     AuditoriaPermisosOncologoMixin,
@@ -1124,7 +1368,7 @@ class OncologoDetailAPIView(
     # ======================================================
 
     def get_permissions(
-        self
+        self,
     ):
 
         if (
@@ -1137,7 +1381,6 @@ class OncologoDetailAPIView(
                 PuedeListarOncologos()
             ]
 
-
         if (
             self.request.method
             ==
@@ -1148,21 +1391,19 @@ class OncologoDetailAPIView(
                 PuedeEditarOncologos()
             ]
 
-
         return (
             super()
             .get_permissions()
         )
 
-
     # ======================================================
-    # CONSULTAR DETALLE
+    # CONSULTAR
     # ======================================================
 
     def get(
         self,
         request,
-        usuario_id
+        usuario_id,
     ):
 
         try:
@@ -1173,11 +1414,6 @@ class OncologoDetailAPIView(
                     usuario_id
                 )
             )
-
-
-            # ==============================================
-            # AUDITORÍA DE CONSULTA
-            # ==============================================
 
             registrar_auditoria_oncologo(
 
@@ -1191,10 +1427,9 @@ class OncologoDetailAPIView(
 
                 descripcion=(
                     "Se consultó la ficha "
-                    "de un oncólogo."
+                    "de un profesional de Oncología."
                 ),
             )
-
 
             return Response(
                 resultado,
@@ -1202,7 +1437,6 @@ class OncologoDetailAPIView(
                     status.HTTP_200_OK
                 ),
             )
-
 
         except Exception as error:
 
@@ -1218,14 +1452,14 @@ class OncologoDetailAPIView(
 
                 descripcion=(
                     "No fue posible consultar "
-                    "la ficha del oncólogo."
+                    "la ficha del profesional "
+                    "de Oncología."
                 ),
 
                 motivo=str(
                     error
                 ),
             )
-
 
             return Response(
                 {
@@ -1239,7 +1473,6 @@ class OncologoDetailAPIView(
                 ),
             )
 
-
     # ======================================================
     # EDITAR
     # ======================================================
@@ -1247,7 +1480,7 @@ class OncologoDetailAPIView(
     def put(
         self,
         request,
-        usuario_id
+        usuario_id,
     ):
 
         serializer = (
@@ -1261,7 +1494,6 @@ class OncologoDetailAPIView(
                 },
             )
         )
-
 
         # ==================================================
         # VALIDACIÓN
@@ -1280,9 +1512,9 @@ class OncologoDetailAPIView(
                 usuario_id=usuario_id,
 
                 descripcion=(
-                    "La modificación del oncólogo "
-                    "fue rechazada durante "
-                    "la validación."
+                    "La modificación del profesional "
+                    "de Oncología fue rechazada "
+                    "durante la validación."
                 ),
 
                 motivo=(
@@ -1297,7 +1529,6 @@ class OncologoDetailAPIView(
                 },
             )
 
-
             return Response(
                 serializer.errors,
                 status=(
@@ -1305,9 +1536,8 @@ class OncologoDetailAPIView(
                 ),
             )
 
-
         # ==================================================
-        # SNAPSHOT ANTERIOR
+        # ESTADO ANTERIOR
         # ==================================================
 
         anterior = (
@@ -1315,7 +1545,6 @@ class OncologoDetailAPIView(
                 usuario_id
             )
         )
-
 
         try:
 
@@ -1327,12 +1556,15 @@ class OncologoDetailAPIView(
 
                     serializer
                     .validated_data,
+
+                    usuario_editor=(
+                        request.user
+                    ),
                 )
             )
 
-
             # ==============================================
-            # SNAPSHOT NUEVO
+            # ESTADO NUEVO
             # ==============================================
 
             nuevo = (
@@ -1341,9 +1573,8 @@ class OncologoDetailAPIView(
                 )
             )
 
-
             # ==============================================
-            # SOLO COMPARAR CAMPOS ENVIADOS
+            # CAMPOS ENVIADOS
             # ==============================================
 
             campos_enviados = [
@@ -1360,8 +1591,8 @@ class OncologoDetailAPIView(
                     not in
                     CAMPOS_SENSIBLES
                 )
-            ]
 
+            ]
 
             cambios = (
                 construir_cambios(
@@ -1375,7 +1606,6 @@ class OncologoDetailAPIView(
                     ),
                 )
             )
-
 
             # ==============================================
             # AUDITORÍA
@@ -1393,12 +1623,13 @@ class OncologoDetailAPIView(
 
                 descripcion=(
                     "Se actualizaron los datos "
-                    "del oncólogo."
+                    "del profesional de Oncología."
                 ),
 
                 cambios=cambios,
 
                 detalle_json={
+
                     "campos_enviados":
                         campos_enviados,
 
@@ -1409,11 +1640,17 @@ class OncologoDetailAPIView(
                 },
             )
 
+            # ==============================================
+            # RESPUESTA
+            # ==============================================
 
             return Response(
                 {
-                    "mensaje":
-                        "Oncólogo actualizado correctamente.",
+
+                    "mensaje": (
+                        "Profesional de Oncología "
+                        "actualizado correctamente."
+                    ),
 
                     "id_usuario":
                         str(
@@ -1424,7 +1661,6 @@ class OncologoDetailAPIView(
                     status.HTTP_200_OK
                 ),
             )
-
 
         except Exception as error:
 
@@ -1440,7 +1676,8 @@ class OncologoDetailAPIView(
 
                 descripcion=(
                     "No fue posible actualizar "
-                    "los datos del oncólogo."
+                    "los datos del profesional "
+                    "de Oncología."
                 ),
 
                 motivo=str(
@@ -1452,7 +1689,6 @@ class OncologoDetailAPIView(
                         "ACTUALIZACION",
                 },
             )
-
 
             return Response(
                 {
@@ -1468,8 +1704,9 @@ class OncologoDetailAPIView(
 
 
 # ==========================================================
-# ACTIVAR / DESACTIVAR ONCÓLOGO
+# ACTIVAR / DESACTIVAR
 # ==========================================================
+
 
 class OncologoEstadoAPIView(
     AuditoriaPermisosOncologoMixin,
@@ -1481,7 +1718,7 @@ class OncologoEstadoAPIView(
     # ======================================================
 
     def get_permissions(
-        self
+        self,
     ):
 
         estado = (
@@ -1497,18 +1734,15 @@ class OncologoEstadoAPIView(
             .upper()
         )
 
-
         if estado == "ACTIVO":
 
             return [
                 PuedeActivarUsuarios()
             ]
 
-
         return [
             PuedeDesactivarUsuarios()
         ]
-
 
     # ======================================================
     # CAMBIAR ESTADO
@@ -1517,7 +1751,7 @@ class OncologoEstadoAPIView(
     def patch(
         self,
         request,
-        usuario_id
+        usuario_id,
     ):
 
         serializer = (
@@ -1526,9 +1760,8 @@ class OncologoEstadoAPIView(
             )
         )
 
-
         # ==================================================
-        # VALIDACIÓN FALLIDA
+        # ERROR DE VALIDACIÓN
         # ==================================================
 
         if not serializer.is_valid():
@@ -1544,19 +1777,28 @@ class OncologoEstadoAPIView(
                 .upper()
             )
 
-
             accion = (
                 "ACTIVAR"
-                if estado_solicitado
-                == "ACTIVO"
 
-                else "DESACTIVAR"
-                if estado_solicitado
-                == "INACTIVO"
+                if (
+                    estado_solicitado
+                    ==
+                    "ACTIVO"
+                )
 
-                else "EDITAR"
+                else (
+                    "DESACTIVAR"
+
+                    if (
+                        estado_solicitado
+                        ==
+                        "INACTIVO"
+                    )
+
+                    else
+                    "EDITAR"
+                )
             )
-
 
             registrar_auditoria_oncologo(
 
@@ -1570,7 +1812,8 @@ class OncologoEstadoAPIView(
 
                 descripcion=(
                     "El cambio de estado "
-                    "del oncólogo fue rechazado."
+                    "del profesional de Oncología "
+                    "fue rechazado."
                 ),
 
                 motivo=(
@@ -1585,14 +1828,12 @@ class OncologoEstadoAPIView(
                 },
             )
 
-
             return Response(
                 serializer.errors,
                 status=(
                     status.HTTP_400_BAD_REQUEST
                 ),
             )
-
 
         nuevo_estado = (
             serializer
@@ -1601,18 +1842,21 @@ class OncologoEstadoAPIView(
             ]
         )
 
-
         accion = (
             "ACTIVAR"
-            if nuevo_estado
-            == "ACTIVO"
+
+            if (
+                nuevo_estado
+                ==
+                "ACTIVO"
+            )
+
             else
             "DESACTIVAR"
         )
 
-
         # ==================================================
-        # ESTADO ANTERIOR
+        # SNAPSHOT ANTERIOR
         # ==================================================
 
         anterior = (
@@ -1620,7 +1864,6 @@ class OncologoEstadoAPIView(
                 usuario_id
             )
         )
-
 
         try:
 
@@ -1634,9 +1877,8 @@ class OncologoEstadoAPIView(
                 )
             )
 
-
             # ==============================================
-            # ESTADO NUEVO
+            # SNAPSHOT NUEVO
             # ==============================================
 
             nuevo = (
@@ -1644,7 +1886,6 @@ class OncologoEstadoAPIView(
                     usuario_id
                 )
             )
-
 
             cambios = (
                 construir_cambios(
@@ -1658,7 +1899,6 @@ class OncologoEstadoAPIView(
                     ],
                 )
             )
-
 
             # ==============================================
             # MENSAJE
@@ -1680,9 +1920,8 @@ class OncologoEstadoAPIView(
 
                 mensaje = (
                     "Cuenta desactivada correctamente. "
-                    "El historial del oncólogo se conserva."
+                    "El historial del usuario se conserva."
                 )
-
 
             # ==============================================
             # AUDITORÍA
@@ -1699,13 +1938,21 @@ class OncologoEstadoAPIView(
                 usuario_id=usuario_id,
 
                 descripcion=(
+
                     "Se activó la cuenta "
-                    "del oncólogo."
-                    if nuevo_estado
-                    == "ACTIVO"
+                    "del profesional de Oncología."
+
+                    if (
+                        nuevo_estado
+                        ==
+                        "ACTIVO"
+                    )
+
                     else
+
                     "Se desactivó la cuenta "
-                    "del oncólogo."
+                    "del profesional de Oncología."
+
                 ),
 
                 cambios=cambios,
@@ -1734,7 +1981,6 @@ class OncologoEstadoAPIView(
                 },
             )
 
-
             return Response(
                 {
                     "mensaje":
@@ -1746,7 +1992,6 @@ class OncologoEstadoAPIView(
                     status.HTTP_200_OK
                 ),
             )
-
 
         except Exception as error:
 
@@ -1762,7 +2007,8 @@ class OncologoEstadoAPIView(
 
                 descripcion=(
                     "No fue posible cambiar "
-                    "el estado del oncólogo."
+                    "el estado del profesional "
+                    "de Oncología."
                 ),
 
                 motivo=str(
@@ -1774,7 +2020,6 @@ class OncologoEstadoAPIView(
                         nuevo_estado,
                 },
             )
-
 
             return Response(
                 {
