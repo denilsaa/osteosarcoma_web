@@ -3,6 +3,31 @@ import axios from "axios";
 import api from "./axios";
 
 
+/* =========================================================
+   TIPOS
+   ========================================================= */
+
+export type RolOncologia =
+  | "ONCOLOGO"
+  | "JEFE_ONCOLOGIA";
+
+
+export type ExpedicionBolivia =
+  | "LP"
+  | "CB"
+  | "SC"
+  | "OR"
+  | "PT"
+  | "CH"
+  | "TJ"
+  | "BE"
+  | "PD";
+
+
+/* =========================================================
+   PERFIL PROFESIONAL
+   ========================================================= */
+
 export interface PerfilProfesional {
 
   matricula_profesional:
@@ -14,6 +39,9 @@ export interface PerfilProfesional {
   subespecialidad:
     string | null;
 
+  area_clinica:
+    string | null;
+
   cargo:
     string | null;
 
@@ -23,9 +51,17 @@ export interface PerfilProfesional {
 }
 
 
+/* =========================================================
+   MI PERFIL
+   ========================================================= */
+
 export interface MiPerfil {
 
   id_usuario: string;
+
+  /* -------------------------------------------------------
+     DATOS PERSONALES
+     ------------------------------------------------------- */
 
   nombres: string;
 
@@ -36,29 +72,74 @@ export interface MiPerfil {
 
   nombre_completo: string;
 
+  telefono:
+    string | null;
+
+  /* -------------------------------------------------------
+     IDENTIFICACIÓN
+     ------------------------------------------------------- */
+
+  ci_numero:
+    string | null;
+
+  ci_complemento:
+    string | null;
+
+  ci_expedido:
+    ExpedicionBolivia | null;
+
+  ci_completo:
+    string | null;
+
+  /* -------------------------------------------------------
+     CUENTA
+     ------------------------------------------------------- */
+
   correo: string;
 
   nombre_usuario: string;
-
-  telefono:
-    string | null;
 
   estado: string;
 
   estado_nombre: string;
 
-  roles: string[];
+  /* -------------------------------------------------------
+     ROL
+     ------------------------------------------------------- */
+
+  rol_codigo:
+    RolOncologia | string | null;
+
+  rol_nombre:
+    string | null;
+
+  roles:
+    string[];
+
+  /* -------------------------------------------------------
+     PROFESIONAL
+     ------------------------------------------------------- */
 
   perfil_profesional:
     PerfilProfesional;
 
+  /* -------------------------------------------------------
+     FECHAS
+     ------------------------------------------------------- */
+
   fecha_creacion: string;
+
+  fecha_actualizacion: string;
 
   ultimo_acceso:
     string | null;
 
 }
 
+
+/* =========================================================
+   ACTUALIZACIÓN
+   ========================================================= */
 
 export interface ActualizarPerfilPayload {
 
@@ -84,6 +165,10 @@ export interface ActualizarPerfilResponse {
 }
 
 
+/* =========================================================
+   OBTENER MI PERFIL
+   ========================================================= */
+
 export async function obtenerMiPerfil():
   Promise<MiPerfil> {
 
@@ -97,6 +182,10 @@ export async function obtenerMiPerfil():
 
 }
 
+
+/* =========================================================
+   ACTUALIZAR MI PERFIL
+   ========================================================= */
 
 export async function actualizarMiPerfil(
   data: ActualizarPerfilPayload,
@@ -113,6 +202,78 @@ export async function actualizarMiPerfil(
 
 }
 
+
+/* =========================================================
+   EXTRAER MENSAJES DE ERROR
+   ========================================================= */
+
+function extraerMensaje(
+  valor: unknown,
+): string | null {
+
+  if (
+    typeof valor === "string"
+  ) {
+
+    return valor;
+
+  }
+
+
+  if (
+    Array.isArray(valor)
+  ) {
+
+    return valor
+      .map(String)
+      .join(" ");
+
+  }
+
+
+  if (
+    valor
+    &&
+    typeof valor === "object"
+  ) {
+
+    for (
+      const elemento
+      of Object.values(
+        valor as Record<
+          string,
+          unknown
+        >
+      )
+    ) {
+
+      const mensaje =
+        extraerMensaje(
+          elemento
+        );
+
+
+      if (
+        mensaje
+      ) {
+
+        return mensaje;
+
+      }
+
+    }
+
+  }
+
+
+  return null;
+
+}
+
+
+/* =========================================================
+   MENSAJE DE ERROR
+   ========================================================= */
 
 export function obtenerMensajeErrorPerfil(
   error: unknown,
@@ -134,7 +295,26 @@ export function obtenerMensajeErrorPerfil(
 
 
   if (
-    !data ||
+    !data
+  ) {
+
+    return (
+      "No fue posible comunicarse con el servidor."
+    );
+
+  }
+
+
+  if (
+    typeof data === "string"
+  ) {
+
+    return data;
+
+  }
+
+
+  if (
     typeof data !== "object"
   ) {
 
@@ -172,31 +352,17 @@ export function obtenerMensajeErrorPerfil(
   }
 
 
-  const primerError =
-    Object.values(
-      contenido,
-    )[0];
+  const mensaje =
+    extraerMensaje(
+      contenido
+    );
 
 
   if (
-    Array.isArray(
-      primerError,
-    )
+    mensaje
   ) {
 
-    return primerError
-      .map(String)
-      .join(" ");
-
-  }
-
-
-  if (
-    typeof primerError ===
-    "string"
-  ) {
-
-    return primerError;
+    return mensaje;
 
   }
 

@@ -4,10 +4,13 @@ import {
   BriefcaseMedical,
   CalendarDays,
   CheckCircle2,
-  Eye,
+  Clock3,
+  Fingerprint,
+  IdCard,
   LoaderCircle,
   LockKeyhole,
   Mail,
+  MapPin,
   Pencil,
   Phone,
   Save,
@@ -32,6 +35,10 @@ import {
 
 import "./PerfilPage.css";
 
+
+/* =========================================================
+   FORMULARIO
+   ========================================================= */
 
 interface FormularioPerfil {
 
@@ -60,22 +67,60 @@ const formularioVacio:
   };
 
 
+/* =========================================================
+   DEPARTAMENTOS
+   ========================================================= */
+
+const DEPARTAMENTOS:
+  Record<string, string> = {
+
+  LP: "La Paz",
+
+  CB: "Cochabamba",
+
+  SC: "Santa Cruz",
+
+  OR: "Oruro",
+
+  PT: "Potosí",
+
+  CH: "Chuquisaca",
+
+  TJ: "Tarija",
+
+  BE: "Beni",
+
+  PD: "Pando",
+
+};
+
+
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+
 function formatearFecha(
   valor?: string | null,
 ): string {
 
-  if (!valor) {
+  if (
+    !valor
+  ) {
+
     return "Sin registro";
+
   }
 
 
   const fecha =
-    new Date(valor);
+    new Date(
+      valor
+    );
 
 
   if (
     Number.isNaN(
-      fecha.getTime(),
+      fecha.getTime()
     )
   ) {
 
@@ -87,41 +132,15 @@ function formatearFecha(
   return new Intl.DateTimeFormat(
     "es-BO",
     {
-      dateStyle: "medium",
-      timeStyle: "short",
+      dateStyle:
+        "medium",
+
+      timeStyle:
+        "short",
     },
-  ).format(fecha);
-
-}
-
-
-function nombreRol(
-  roles: string[],
-): string {
-
-  if (
-    roles.includes(
-      "JEFE_ONCOLOGIA",
-    )
-  ) {
-
-    return "Jefe de Oncología";
-
-  }
-
-
-  if (
-    roles.includes(
-      "ONCOLOGO",
-    )
-  ) {
-
-    return "Médico oncólogo";
-
-  }
-
-
-  return "Personal autorizado";
+  ).format(
+    fecha
+  );
 
 }
 
@@ -130,21 +149,53 @@ function obtenerIniciales(
   nombre: string,
 ): string {
 
-  return nombre
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(
-      (parte) =>
-        parte.charAt(0),
-    )
-    .join("")
-    .toUpperCase()
+  return (
+    nombre
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(
+        (
+          parte
+        ) =>
+          parte.charAt(0)
+      )
+      .join("")
+      .toUpperCase()
     ||
-    "US";
+    "US"
+  );
 
 }
 
+
+function nombreDepartamento(
+  codigo?: string | null,
+): string {
+
+  if (
+    !codigo
+  ) {
+
+    return "Sin registro";
+
+  }
+
+
+  return (
+    DEPARTAMENTOS[
+      codigo
+    ]
+    ||
+    codigo
+  );
+
+}
+
+
+/* =========================================================
+   COMPONENTE
+   ========================================================= */
 
 export function PerfilPage() {
 
@@ -153,45 +204,62 @@ export function PerfilPage() {
     setPerfil,
   ] = useState<
     MiPerfil | null
-  >(null);
+  >(
+    null
+  );
 
 
   const [
     cargando,
     setCargando,
-  ] = useState(true);
+  ] = useState(
+    true
+  );
 
 
   const [
     editando,
     setEditando,
-  ] = useState(false);
+  ] = useState(
+    false
+  );
 
 
   const [
     guardando,
     setGuardando,
-  ] = useState(false);
+  ] = useState(
+    false
+  );
 
 
   const [
     error,
     setError,
-  ] = useState("");
+  ] = useState(
+    ""
+  );
 
 
   const [
     exito,
     setExito,
-  ] = useState("");
+  ] = useState(
+    ""
+  );
 
 
   const [
     erroresFormulario,
     setErroresFormulario,
   ] = useState<
-    Record<string, string>
-  >({});
+    Record<
+      string,
+      string
+    >
+  >(
+    {}
+  );
 
 
   const [
@@ -200,13 +268,13 @@ export function PerfilPage() {
   ] = useState<
     FormularioPerfil
   >(
-    formularioVacio,
+    formularioVacio
   );
 
 
-  // ========================================================
-  // CARGAR PERFIL REAL
-  // ========================================================
+  /* =======================================================
+     CARGAR PERFIL
+     ======================================================= */
 
   useEffect(
     () => {
@@ -216,9 +284,13 @@ export function PerfilPage() {
 
           try {
 
-            setCargando(true);
+            setCargando(
+              true
+            );
 
-            setError("");
+            setError(
+              ""
+            );
 
 
             const response =
@@ -226,20 +298,24 @@ export function PerfilPage() {
 
 
             setPerfil(
-              response,
+              response
             );
 
-          } catch (errorActual) {
+          } catch (
+            errorActual
+          ) {
 
             setError(
               obtenerMensajeErrorPerfil(
-                errorActual,
-              ),
+                errorActual
+              )
             );
 
           } finally {
 
-            setCargando(false);
+            setCargando(
+              false
+            );
 
           }
 
@@ -253,16 +329,56 @@ export function PerfilPage() {
   );
 
 
-  // ========================================================
-  // DATOS DERIVADOS
-  // ========================================================
+  /* =======================================================
+     DATOS DERIVADOS
+     ======================================================= */
 
   const rolVisible =
     useMemo(
-      () =>
-        nombreRol(
-          perfil?.roles ?? [],
-        ),
+      () => {
+
+        if (
+          perfil?.rol_nombre
+        ) {
+
+          return (
+            perfil.rol_nombre
+          );
+
+        }
+
+
+        if (
+          perfil?.roles.includes(
+            "JEFE_ONCOLOGIA"
+          )
+        ) {
+
+          return (
+            "Jefe de Oncología"
+          );
+
+        }
+
+
+        if (
+          perfil?.roles.includes(
+            "ONCOLOGO"
+          )
+        ) {
+
+          return (
+            "Oncólogo"
+          );
+
+        }
+
+
+        return (
+          "Personal autorizado"
+        );
+
+      },
       [
         perfil,
       ],
@@ -275,7 +391,7 @@ export function PerfilPage() {
         obtenerIniciales(
           perfil?.nombre_completo
           ??
-          "Usuario",
+          "Usuario"
         ),
       [
         perfil,
@@ -283,112 +399,171 @@ export function PerfilPage() {
     );
 
 
-  // ========================================================
-  // ABRIR EDICIÓN
-  // ========================================================
+  /* =======================================================
+     ABRIR EDICIÓN
+     ======================================================= */
 
   const abrirEdicion =
     () => {
 
-      if (!perfil) {
+      if (
+        !perfil
+      ) {
+
         return;
+
       }
 
 
-      setFormulario({
-
-        nombres:
-          perfil.nombres ?? "",
-
-        apellido_paterno:
-          perfil.apellido_paterno
-          ?? "",
-
-        apellido_materno:
-          perfil.apellido_materno
-          ?? "",
-
-        telefono:
-          perfil.telefono
-          ?? "",
-
-      });
-
-
-      setErroresFormulario({});
-
-      setError("");
-
-      setEditando(true);
-
-    };
-
-
-  const cerrarEdicion =
-    () => {
-
-      if (guardando) {
-        return;
-      }
-
-
-      setEditando(false);
-
-      setErroresFormulario({});
-
       setFormulario(
-        formularioVacio,
-      );
+        {
 
-    };
+          nombres:
+            perfil.nombres
+            ??
+            "",
 
+          apellido_paterno:
+            perfil.apellido_paterno
+            ??
+            "",
 
-  // ========================================================
-  // ACTUALIZAR INPUT
-  // ========================================================
+          apellido_materno:
+            perfil.apellido_materno
+            ??
+            "",
 
-  const actualizarCampo =
-    (
-      campo:
-        keyof FormularioPerfil,
+          telefono:
+            perfil.telefono
+            ??
+            "",
 
-      valor: string,
-    ) => {
-
-      setFormulario(
-        (actual) => ({
-
-          ...actual,
-
-          [campo]:
-            valor,
-
-        }),
+        }
       );
 
 
       setErroresFormulario(
-        (actual) => {
-
-          const nuevos = {
-            ...actual,
-          };
+        {}
+      );
 
 
-          delete nuevos[campo];
+      setError(
+        ""
+      );
 
 
-          return nuevos;
-
-        },
+      setEditando(
+        true
       );
 
     };
 
 
-  // ========================================================
-  // VALIDACIONES VISIBLES
-  // ========================================================
+  /* =======================================================
+     CERRAR EDICIÓN
+     ======================================================= */
+
+  const cerrarEdicion =
+    () => {
+
+      if (
+        guardando
+      ) {
+
+        return;
+
+      }
+
+
+      setEditando(
+        false
+      );
+
+
+      setErroresFormulario(
+        {}
+      );
+
+
+      setFormulario(
+        formularioVacio
+      );
+
+    };
+
+
+  /* =======================================================
+     ACTUALIZAR CAMPO
+     ======================================================= */
+
+  const actualizarCampo = (
+    campo:
+      keyof FormularioPerfil,
+
+    valorOriginal:
+      string,
+  ) => {
+
+    let valor =
+      valorOriginal;
+
+
+    if (
+      campo ===
+      "telefono"
+    ) {
+
+      valor =
+        valorOriginal
+          .replace(
+            /\D/g,
+            ""
+          )
+          .slice(
+            0,
+            8
+          );
+
+    }
+
+
+    setFormulario(
+      (
+        actual
+      ) => ({
+        ...actual,
+        [campo]:
+          valor,
+      })
+    );
+
+
+    setErroresFormulario(
+      (
+        actual
+      ) => {
+
+        const nuevos = {
+          ...actual,
+        };
+
+
+        delete nuevos[
+          campo
+        ];
+
+
+        return nuevos;
+
+      }
+    );
+
+  };
+
+
+  /* =======================================================
+     VALIDAR
+     ======================================================= */
 
   const validar =
     (): Record<
@@ -430,21 +605,24 @@ export function PerfilPage() {
 
 
       if (
-        formulario.telefono.trim()
+        formulario
+          .telefono
+          .trim()
       ) {
 
-        const telefonoValido =
-          /^[0-9+\-\s()]{7,25}$/;
-
-
         if (
-          !telefonoValido.test(
-            formulario.telefono.trim(),
+          !/^[67]\d{7}$/.test(
+            formulario
+              .telefono
+              .trim()
           )
         ) {
 
           errores.telefono =
-            "Ingrese un número de teléfono válido.";
+            (
+              "El teléfono debe tener 8 dígitos " +
+              "y comenzar con 6 o 7."
+            );
 
         }
 
@@ -456,9 +634,9 @@ export function PerfilPage() {
     };
 
 
-  // ========================================================
-  // GUARDAR
-  // ========================================================
+  /* =======================================================
+     GUARDAR
+     ======================================================= */
 
   const guardar =
     async () => {
@@ -469,12 +647,12 @@ export function PerfilPage() {
 
       if (
         Object.keys(
-          erroresLocales,
+          erroresLocales
         ).length > 0
       ) {
 
         setErroresFormulario(
-          erroresLocales,
+          erroresLocales
         );
 
         return;
@@ -484,18 +662,30 @@ export function PerfilPage() {
 
       try {
 
-        setGuardando(true);
+        setGuardando(
+          true
+        );
 
-        setError("");
 
-        setExito("");
+        setError(
+          ""
+        );
 
-        setErroresFormulario({});
+
+        setExito(
+          ""
+        );
+
+
+        setErroresFormulario(
+          {}
+        );
 
 
         const response =
           await actualizarMiPerfil(
             {
+
               nombres:
                 formulario
                   .nombres
@@ -519,62 +709,75 @@ export function PerfilPage() {
                   .trim()
                 ||
                 null,
-            },
+
+            }
           );
 
 
         setPerfil(
-          response.perfil,
+          response.perfil
         );
 
 
         setEditando(
-          false,
+          false
         );
 
 
         setExito(
-          response.mensaje,
+          response.mensaje
         );
 
 
         window.setTimeout(
           () => {
 
-            setExito("");
+            setExito(
+              ""
+            );
 
           },
-          3500,
+          3500
         );
 
-      } catch (errorActual) {
+      } catch (
+        errorActual
+      ) {
 
         setError(
           obtenerMensajeErrorPerfil(
-            errorActual,
-          ),
+            errorActual
+          )
         );
 
       } finally {
 
-        setGuardando(false);
+        setGuardando(
+          false
+        );
 
       }
 
     };
 
 
-  // ========================================================
-  // LOADING
-  // ========================================================
+  /* =======================================================
+     CARGANDO
+     ======================================================= */
 
-  if (cargando) {
+  if (
+    cargando
+  ) {
 
     return (
 
-      <div className="profile-page">
+      <div
+        className="profile-page"
+      >
 
-        <div className="profile-loading">
+        <div
+          className="profile-loading"
+        >
 
           <LoaderCircle
             size={30}
@@ -598,13 +801,23 @@ export function PerfilPage() {
   }
 
 
-  if (!perfil) {
+  /* =======================================================
+     ERROR
+     ======================================================= */
+
+  if (
+    !perfil
+  ) {
 
     return (
 
-      <div className="profile-page">
+      <div
+        className="profile-page"
+      >
 
-        <div className="profile-error-state">
+        <div
+          className="profile-error-state"
+        >
 
           <AlertCircle
             size={30}
@@ -627,21 +840,29 @@ export function PerfilPage() {
   }
 
 
+  /* =======================================================
+     RENDER
+     ======================================================= */
+
   return (
 
-    <div className="profile-page">
+    <div
+      className="profile-page"
+    >
 
+      {/* =================================================
+          HERO
+          ================================================= */}
 
-      {/* ====================================================
-          CABECERA
-          ==================================================== */}
-
-      <section className="profile-hero">
-
+      <section
+        className="profile-hero"
+      >
 
         <div>
 
-          <span className="profile-hero__eyebrow">
+          <span
+            className="profile-hero__eyebrow"
+          >
             Cuenta institucional
           </span>
 
@@ -650,26 +871,19 @@ export function PerfilPage() {
           </h1>
 
           <p>
-
-            Consulte su información personal
-            y actualice únicamente los datos
-            autorizados.
-
+            Consulte su información personal, profesional
+            y los datos institucionales asociados a su cuenta.
           </p>
 
         </div>
 
 
         <button
-
           type="button"
-
           className="profile-edit-button"
-
           onClick={
             abrirEdicion
           }
-
         >
 
           <Pencil
@@ -680,107 +894,97 @@ export function PerfilPage() {
 
         </button>
 
-
       </section>
 
 
-      {/* ====================================================
+      {/* =================================================
           MENSAJES
-          ==================================================== */}
+          ================================================= */}
 
-      {exito && (
+      {
+        exito
+        &&
+        (
+          <div
+            className="profile-alert profile-alert--success"
+          >
 
-        <div className="profile-alert profile-alert--success">
+            <CheckCircle2
+              size={18}
+            />
 
-          <CheckCircle2
-            size={18}
-          />
-
-          {exito}
-
-        </div>
-
-      )}
-
-
-      {error && (
-
-        <div className="profile-alert profile-alert--error">
-
-          <AlertCircle
-            size={18}
-          />
-
-          {error}
-
-        </div>
-
-      )}
-
-
-      {/* ====================================================
-          PERFIL
-          ==================================================== */}
-
-      <div className="profile-grid">
-
-
-        <section className="profile-card">
-
-
-          <div className="profile-card__heading">
-
-            <div className="profile-card__icon">
-
-              <UserRound
-                size={20}
-              />
-
-            </div>
-
-            <div>
-
-              <h2>
-                Información personal
-              </h2>
-
-              <p>
-                Datos asociados a su cuenta.
-              </p>
-
-            </div>
+            {exito}
 
           </div>
+        )
+      }
 
 
-          <div className="profile-account">
+      {
+        error
+        &&
+        (
+          <div
+            className="profile-alert profile-alert--error"
+          >
+
+            <AlertCircle
+              size={18}
+            />
+
+            {error}
+
+          </div>
+        )
+      }
 
 
-            <div className="profile-account__avatar">
+      {/* =================================================
+          RESUMEN CUENTA
+          ================================================= */}
 
-              {iniciales}
+      <section
+        className="profile-summary-card"
+      >
 
-            </div>
+        <div
+          className="profile-summary-card__avatar"
+        >
+          {iniciales}
+        </div>
 
 
-            <div>
+        <div
+          className="profile-summary-card__identity"
+        >
 
-              <strong>
-                {perfil.nombre_completo}
-              </strong>
+          <span>
+            Perfil profesional
+          </span>
 
-              <span>
-                {rolVisible}
-              </span>
+          <h2>
+            {perfil.nombre_completo}
+          </h2>
 
-            </div>
+          <div>
+
+            <span
+              className="profile-role-badge"
+            >
+              <Stethoscope
+                size={13}
+              />
+
+              {rolVisible}
+            </span>
 
 
             <span
               className={`
                 profile-state
                 ${
-                  perfil.estado === "ACTIVO"
+                  perfil.estado ===
+                  "ACTIVO"
                     ? "profile-state--active"
                     : "profile-state--inactive"
                 }
@@ -793,14 +997,89 @@ export function PerfilPage() {
 
             </span>
 
+          </div>
+
+        </div>
+
+
+        <div
+          className="profile-summary-card__meta"
+        >
+
+          <span>
+            <Mail
+              size={14}
+            />
+
+            {perfil.correo}
+          </span>
+
+          <span>
+            <Fingerprint
+              size={14}
+            />
+
+            @{perfil.nombre_usuario}
+          </span>
+
+        </div>
+
+      </section>
+
+
+      {/* =================================================
+          BLOQUES PRINCIPALES
+          ================================================= */}
+
+      <div
+        className="profile-grid"
+      >
+
+        {/* ===============================================
+            INFORMACIÓN PERSONAL
+            =============================================== */}
+
+        <section
+          className="profile-card"
+        >
+
+          <div
+            className="profile-card__heading"
+          >
+
+            <div
+              className="profile-card__icon"
+            >
+
+              <UserRound
+                size={20}
+              />
+
+            </div>
+
+
+            <div>
+
+              <h2>
+                Información personal
+              </h2>
+
+              <p>
+                Datos personales e identificación.
+              </p>
+
+            </div>
 
           </div>
 
 
-          <div className="profile-data-grid">
+          <div
+            className="profile-data-grid"
+          >
 
-
-            <div className="profile-data-item">
+            <div
+              className="profile-data-item"
+            >
 
               <UserRound
                 size={17}
@@ -817,7 +1096,9 @@ export function PerfilPage() {
             </div>
 
 
-            <div className="profile-data-item">
+            <div
+              className="profile-data-item"
+            >
 
               <UserRound
                 size={17}
@@ -831,8 +1112,11 @@ export function PerfilPage() {
 
                 {
                   [
-                    perfil.apellido_paterno,
-                    perfil.apellido_materno,
+                    perfil
+                      .apellido_paterno,
+
+                    perfil
+                      .apellido_materno,
                   ]
                     .filter(Boolean)
                     .join(" ")
@@ -843,7 +1127,55 @@ export function PerfilPage() {
             </div>
 
 
-            <div className="profile-data-item">
+            <div
+              className="profile-data-item"
+            >
+
+              <IdCard
+                size={17}
+              />
+
+              <span>
+                Cédula de identidad
+              </span>
+
+              <strong>
+                {
+                  perfil.ci_completo
+                  ||
+                  "Sin registro"
+                }
+              </strong>
+
+            </div>
+
+
+            <div
+              className="profile-data-item"
+            >
+
+              <MapPin
+                size={17}
+              />
+
+              <span>
+                Expedido en
+              </span>
+
+              <strong>
+                {
+                  nombreDepartamento(
+                    perfil.ci_expedido
+                  )
+                }
+              </strong>
+
+            </div>
+
+
+            <div
+              className="profile-data-item"
+            >
 
               <Phone
                 size={17}
@@ -854,68 +1186,98 @@ export function PerfilPage() {
               </span>
 
               <strong>
-
-                {perfil.telefono
+                {
+                  perfil.telefono
                   ||
-                  "Sin registro"}
-
+                  "Sin registro"
+                }
               </strong>
 
             </div>
 
 
-            <div className="profile-data-item">
+            <div
+              className="profile-data-item"
+            >
 
               <CalendarDays
                 size={17}
               />
 
               <span>
-                Registrado
+                Cuenta registrada
               </span>
 
               <strong>
-
-                {formatearFecha(
-                  perfil.fecha_creacion,
-                )}
-
+                {
+                  formatearFecha(
+                    perfil.fecha_creacion
+                  )
+                }
               </strong>
 
             </div>
 
-
           </div>
 
+
+          <div
+            className="profile-protected-note"
+          >
+
+            <LockKeyhole
+              size={18}
+            />
+
+            <div>
+
+              <strong>
+                Documento protegido
+              </strong>
+
+              <span>
+                La cédula de identidad no puede modificarse
+                desde Mi perfil.
+              </span>
+
+            </div>
+
+          </div>
 
         </section>
 
 
-        {/* ==================================================
-            INFORMACIÓN INSTITUCIONAL
-            ================================================== */}
+        {/* ===============================================
+            INFORMACIÓN PROFESIONAL
+            =============================================== */}
 
-        <section className="profile-card">
+        <section
+          className="profile-card"
+        >
 
+          <div
+            className="profile-card__heading"
+          >
 
-          <div className="profile-card__heading">
+            <div
+              className="profile-card__icon"
+            >
 
-            <div className="profile-card__icon">
-
-              <ShieldCheck
+              <BriefcaseMedical
                 size={20}
               />
 
             </div>
 
+
             <div>
 
               <h2>
-                Información institucional
+                Información profesional
               </h2>
 
               <p>
-                Datos administrados por Jefatura.
+                Información médica registrada por Jefatura.
               </p>
 
             </div>
@@ -923,14 +1285,296 @@ export function PerfilPage() {
           </div>
 
 
-          <div className="profile-institutional-list">
+          <div
+            className="profile-professional-grid"
+          >
 
+            <div
+              className="profile-professional-item"
+            >
+
+              <BadgeCheck
+                size={18}
+              />
+
+              <div>
+
+                <span>
+                  Matrícula profesional
+                </span>
+
+                <strong>
+                  {
+                    perfil
+                      .perfil_profesional
+                      .matricula_profesional
+                    ||
+                    "Sin registro"
+                  }
+                </strong>
+
+              </div>
+
+              <LockKeyhole
+                size={14}
+                className="profile-lock"
+              />
+
+            </div>
+
+
+            <div
+              className="profile-professional-item"
+            >
+
+              <Stethoscope
+                size={18}
+              />
+
+              <div>
+
+                <span>
+                  Especialidad
+                </span>
+
+                <strong>
+                  {
+                    perfil
+                      .perfil_profesional
+                      .especialidad
+                    ||
+                    "Sin registro"
+                  }
+                </strong>
+
+              </div>
+
+              <LockKeyhole
+                size={14}
+                className="profile-lock"
+              />
+
+            </div>
+
+
+            <div
+              className="profile-professional-item"
+            >
+
+              <BriefcaseMedical
+                size={18}
+              />
+
+              <div>
+
+                <span>
+                  Subespecialidad
+                </span>
+
+                <strong>
+                  {
+                    perfil
+                      .perfil_profesional
+                      .subespecialidad
+                    ||
+                    "Sin registro"
+                  }
+                </strong>
+
+              </div>
+
+              <LockKeyhole
+                size={14}
+                className="profile-lock"
+              />
+
+            </div>
+
+
+            <div
+              className="profile-professional-item profile-professional-item--highlight"
+            >
+
+              <BadgeCheck
+                size={18}
+              />
+
+              <div>
+
+                <span>
+                  Área clínica
+                </span>
+
+                <strong>
+                  {
+                    perfil
+                      .perfil_profesional
+                      .area_clinica
+                    ||
+                    "Sin registro"
+                  }
+                </strong>
+
+              </div>
+
+              <LockKeyhole
+                size={14}
+                className="profile-lock"
+              />
+
+            </div>
+
+
+            <div
+              className="profile-professional-item"
+            >
+
+              <ShieldCheck
+                size={18}
+              />
+
+              <div>
+
+                <span>
+                  Cargo
+                </span>
+
+                <strong>
+                  {
+                    perfil
+                      .perfil_profesional
+                      .cargo
+                    ||
+                    rolVisible
+                  }
+                </strong>
+
+              </div>
+
+              <LockKeyhole
+                size={14}
+                className="profile-lock"
+              />
+
+            </div>
+
+
+            <div
+              className="profile-professional-item"
+            >
+
+              <Phone
+                size={18}
+              />
+
+              <div>
+
+                <span>
+                  Teléfono institucional
+                </span>
+
+                <strong>
+                  {
+                    perfil
+                      .perfil_profesional
+                      .telefono_institucional
+                    ||
+                    "Sin registro"
+                  }
+                </strong>
+
+              </div>
+
+              <LockKeyhole
+                size={14}
+                className="profile-lock"
+              />
+
+            </div>
+
+          </div>
+
+
+          <div
+            className="profile-protected-note"
+          >
+
+            <ShieldCheck
+              size={19}
+            />
 
             <div>
 
-              <Mail
-                size={18}
-              />
+              <strong>
+                Información profesional protegida
+              </strong>
+
+              <span>
+                Matrícula, especialidad, subespecialidad,
+                área clínica y cargo son administrados
+                por personal autorizado.
+              </span>
+
+            </div>
+
+          </div>
+
+        </section>
+
+      </div>
+
+
+      {/* =================================================
+          CUENTA INSTITUCIONAL
+          ================================================= */}
+
+      <section
+        className="profile-card"
+      >
+
+        <div
+          className="profile-card__heading"
+        >
+
+          <div
+            className="profile-card__icon"
+          >
+
+            <ShieldCheck
+              size={20}
+            />
+
+          </div>
+
+
+          <div>
+
+            <h2>
+              Cuenta institucional
+            </h2>
+
+            <p>
+              Credenciales e información de acceso.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div
+          className="profile-institutional-grid"
+        >
+
+          <div
+            className="profile-institutional-item"
+          >
+
+            <Mail
+              size={18}
+            />
+
+            <div>
 
               <span>
                 Correo institucional
@@ -940,197 +1584,126 @@ export function PerfilPage() {
                 {perfil.correo}
               </strong>
 
-              <LockKeyhole
-                size={14}
-                className="profile-lock"
-              />
-
             </div>
 
+            <LockKeyhole
+              size={14}
+              className="profile-lock"
+            />
+
+          </div>
+
+
+          <div
+            className="profile-institutional-item"
+          >
+
+            <Fingerprint
+              size={18}
+            />
 
             <div>
-
-              <UserRound
-                size={18}
-              />
 
               <span>
                 Nombre de usuario
               </span>
 
               <strong>
-                {perfil.nombre_usuario}
+                @{perfil.nombre_usuario}
               </strong>
-
-              <LockKeyhole
-                size={14}
-                className="profile-lock"
-              />
 
             </div>
 
+            <LockKeyhole
+              size={14}
+              className="profile-lock"
+            />
+
+          </div>
+
+
+          <div
+            className="profile-institutional-item"
+          >
+
+            <Stethoscope
+              size={18}
+            />
 
             <div>
 
-              <Stethoscope
-                size={18}
-              />
-
               <span>
-                Rol
+                Rol principal
               </span>
 
               <strong>
                 {rolVisible}
               </strong>
 
-              <LockKeyhole
-                size={14}
-                className="profile-lock"
-              />
-
             </div>
 
-
-            <div>
-
-              <BadgeCheck
-                size={18}
-              />
-
-              <span>
-                Matrícula profesional
-              </span>
-
-              <strong>
-
-                {
-                  perfil
-                    .perfil_profesional
-                    .matricula_profesional
-                  ||
-                  "Sin registro"
-                }
-
-              </strong>
-
-              <LockKeyhole
-                size={14}
-                className="profile-lock"
-              />
-
-            </div>
-
-
-            <div>
-
-              <BriefcaseMedical
-                size={18}
-              />
-
-              <span>
-                Especialidad
-              </span>
-
-              <strong>
-
-                {
-                  perfil
-                    .perfil_profesional
-                    .especialidad
-                  ||
-                  "Sin registro"
-                }
-
-              </strong>
-
-              <LockKeyhole
-                size={14}
-                className="profile-lock"
-              />
-
-            </div>
-
-
-            <div>
-
-              <Stethoscope
-                size={18}
-              />
-
-              <span>
-                Cargo
-              </span>
-
-              <strong>
-
-                {
-                  perfil
-                    .perfil_profesional
-                    .cargo
-                  ||
-                  rolVisible
-                }
-
-              </strong>
-
-              <LockKeyhole
-                size={14}
-                className="profile-lock"
-              />
-
-            </div>
-
+            <LockKeyhole
+              size={14}
+              className="profile-lock"
+            />
 
           </div>
 
 
-          <div className="profile-protected-note">
+          <div
+            className="profile-institutional-item"
+          >
 
-            <ShieldCheck
-              size={19}
+            <CheckCircle2
+              size={18}
             />
 
             <div>
 
-              <strong>
-                Información protegida
-              </strong>
-
               <span>
-
-                Estos datos no pueden
-                modificarse desde Mi perfil.
-
+                Estado de cuenta
               </span>
+
+              <strong>
+                {perfil.estado_nombre}
+              </strong>
 
             </div>
 
+            <LockKeyhole
+              size={14}
+              className="profile-lock"
+            />
+
           </div>
 
+        </div>
 
-        </section>
-
-
-      </div>
+      </section>
 
 
-      {/* ====================================================
+      {/* =================================================
           SEGURIDAD
-          ==================================================== */}
+          ================================================= */}
 
-      <section className="profile-card">
+      <section
+        className="profile-card"
+      >
 
+        <div
+          className="profile-card__heading"
+        >
 
-        <div className="profile-card__heading">
-
-          <div className="profile-card__icon">
+          <div
+            className="profile-card__icon"
+          >
 
             <ShieldCheck
               size={20}
             />
 
           </div>
+
 
           <div>
 
@@ -1147,12 +1720,17 @@ export function PerfilPage() {
         </div>
 
 
-        <div className="profile-security-grid">
+        <div
+          className="profile-security-grid"
+        >
 
+          <div
+            className="profile-security-status"
+          >
 
-          <div className="profile-security-status">
-
-            <div className="profile-security-status__icon">
+            <div
+              className="profile-security-status__icon"
+            >
 
               <CheckCircle2
                 size={23}
@@ -1160,14 +1738,15 @@ export function PerfilPage() {
 
             </div>
 
+
             <div>
 
               <strong>
-                Sesión activa
+                Sesión autenticada
               </strong>
 
               <span>
-                Su sesión se encuentra validada.
+                Su sesión actual se encuentra validada.
               </span>
 
             </div>
@@ -1175,33 +1754,11 @@ export function PerfilPage() {
           </div>
 
 
-          <div className="profile-security-info">
+          <div
+            className="profile-security-info"
+          >
 
-            <ShieldCheck
-              size={20}
-            />
-
-            <div>
-
-              <strong>
-                Acceso protegido
-              </strong>
-
-              <span>
-
-                La plataforma valida automáticamente
-                su sesión y sus permisos.
-
-              </span>
-
-            </div>
-
-          </div>
-
-
-          <div className="profile-security-info">
-
-            <Eye
+            <Clock3
               size={20}
             />
 
@@ -1212,11 +1769,11 @@ export function PerfilPage() {
               </strong>
 
               <span>
-
-                {formatearFecha(
-                  perfil.ultimo_acceso,
-                )}
-
+                {
+                  formatearFecha(
+                    perfil.ultimo_acceso
+                  )
+                }
               </span>
 
             </div>
@@ -1224,329 +1781,374 @@ export function PerfilPage() {
           </div>
 
 
-        </div>
+          <div
+            className="profile-security-info"
+          >
 
+            <CalendarDays
+              size={20}
+            />
+
+            <div>
+
+              <strong>
+                Última actualización
+              </strong>
+
+              <span>
+                {
+                  formatearFecha(
+                    perfil.fecha_actualizacion
+                  )
+                }
+              </span>
+
+            </div>
+
+          </div>
+
+        </div>
 
       </section>
 
 
-      {/* ====================================================
+      {/* =================================================
           MODAL EDICIÓN
-          ==================================================== */}
+          ================================================= */}
 
-      {editando && (
-
-        <div
-          className="profile-modal-backdrop"
-          onMouseDown={
-            cerrarEdicion
-          }
-        >
-
-          <section
-
-            className="profile-modal"
-
-            onMouseDown={(event) =>
-              event.stopPropagation()
+      {
+        editando
+        &&
+        (
+          <div
+            className="profile-modal-backdrop"
+            onMouseDown={
+              cerrarEdicion
             }
-
           >
 
+            <section
+              className="profile-modal"
+              onMouseDown={
+                (
+                  event
+                ) =>
+                  event.stopPropagation()
+              }
+            >
 
-            <header className="profile-modal__header">
-
-              <div>
-
-                <span>
-                  Mi perfil
-                </span>
-
-                <h2>
-                  Editar datos personales
-                </h2>
-
-              </div>
-
-
-              <button
-
-                type="button"
-
-                onClick={
-                  cerrarEdicion
-                }
-
-                disabled={
-                  guardando
-                }
-
+              <header
+                className="profile-modal__header"
               >
 
-                <X
+                <div>
+
+                  <span>
+                    Mi perfil
+                  </span>
+
+                  <h2>
+                    Editar datos personales
+                  </h2>
+
+                </div>
+
+
+                <button
+                  type="button"
+                  onClick={
+                    cerrarEdicion
+                  }
+                  disabled={
+                    guardando
+                  }
+                  aria-label="Cerrar"
+                >
+
+                  <X
+                    size={19}
+                  />
+
+                </button>
+
+              </header>
+
+
+              <div
+                className="profile-modal__notice"
+              >
+
+                <ShieldCheck
                   size={19}
                 />
 
-              </button>
+                <div>
 
-            </header>
+                  <strong>
+                    Datos autorizados
+                  </strong>
 
+                  <span>
+                    Puede modificar únicamente sus nombres,
+                    apellidos y teléfono personal.
+                  </span>
 
-            <div className="profile-modal__notice">
-
-              <ShieldCheck
-                size={19}
-              />
-
-              <div>
-
-                <strong>
-                  Datos autorizados
-                </strong>
-
-                <span>
-
-                  Puede modificar únicamente
-                  sus datos personales.
-
-                </span>
+                </div>
 
               </div>
 
-            </div>
 
+              <div
+                className="profile-edit-grid"
+              >
 
-            <div className="profile-edit-grid">
+                <label>
 
+                  <span>
+                    Nombres *
+                  </span>
 
-              <label>
+                  <input
+                    value={
+                      formulario.nombres
+                    }
+                    onChange={
+                      (
+                        event
+                      ) =>
+                        actualizarCampo(
+                          "nombres",
+                          event.target.value
+                        )
+                    }
+                    maxLength={100}
+                    aria-invalid={
+                      Boolean(
+                        erroresFormulario.nombres
+                      )
+                    }
+                  />
 
-                <span>
-                  Nombres *
-                </span>
-
-                <input
-
-                  value={
-                    formulario.nombres
-                  }
-
-                  onChange={(event) =>
-                    actualizarCampo(
-                      "nombres",
-                      event.target.value,
+                  {
+                    erroresFormulario.nombres
+                    &&
+                    (
+                      <small>
+                        {
+                          erroresFormulario
+                            .nombres
+                        }
+                      </small>
                     )
                   }
 
-                />
-
-                {erroresFormulario.nombres && (
-
-                  <small>
-                    {erroresFormulario.nombres}
-                  </small>
-
-                )}
-
-              </label>
+                </label>
 
 
-              <label>
+                <label>
 
-                <span>
-                  Apellido paterno *
-                </span>
+                  <span>
+                    Apellido paterno *
+                  </span>
 
-                <input
-
-                  value={
-                    formulario
-                      .apellido_paterno
-                  }
-
-                  onChange={(event) =>
-                    actualizarCampo(
-                      "apellido_paterno",
-                      event.target.value,
-                    )
-                  }
-
-                />
-
-                {erroresFormulario.apellido_paterno && (
-
-                  <small>
-
-                    {
-                      erroresFormulario
+                  <input
+                    value={
+                      formulario
                         .apellido_paterno
                     }
+                    onChange={
+                      (
+                        event
+                      ) =>
+                        actualizarCampo(
+                          "apellido_paterno",
+                          event.target.value
+                        )
+                    }
+                    maxLength={80}
+                    aria-invalid={
+                      Boolean(
+                        erroresFormulario
+                          .apellido_paterno
+                      )
+                    }
+                  />
 
-                  </small>
-
-                )}
-
-              </label>
-
-
-              <label>
-
-                <span>
-                  Apellido materno
-                </span>
-
-                <input
-
-                  value={
-                    formulario
-                      .apellido_materno
-                  }
-
-                  onChange={(event) =>
-                    actualizarCampo(
-                      "apellido_materno",
-                      event.target.value,
+                  {
+                    erroresFormulario
+                      .apellido_paterno
+                    &&
+                    (
+                      <small>
+                        {
+                          erroresFormulario
+                            .apellido_paterno
+                        }
+                      </small>
                     )
                   }
 
-                />
-
-              </label>
+                </label>
 
 
-              <label>
+                <label>
 
-                <span>
-                  Teléfono personal
-                </span>
+                  <span>
+                    Apellido materno
+                  </span>
 
-                <input
+                  <input
+                    value={
+                      formulario
+                        .apellido_materno
+                    }
+                    onChange={
+                      (
+                        event
+                      ) =>
+                        actualizarCampo(
+                          "apellido_materno",
+                          event.target.value
+                        )
+                    }
+                    maxLength={80}
+                  />
 
-                  value={
-                    formulario.telefono
-                  }
+                </label>
 
-                  onChange={(event) =>
-                    actualizarCampo(
-                      "telefono",
-                      event.target.value,
+
+                <label>
+
+                  <span>
+                    Teléfono personal
+                  </span>
+
+                  <input
+                    value={
+                      formulario.telefono
+                    }
+                    onChange={
+                      (
+                        event
+                      ) =>
+                        actualizarCampo(
+                          "telefono",
+                          event.target.value
+                        )
+                    }
+                    placeholder="Ej. 71234567"
+                    inputMode="numeric"
+                    maxLength={8}
+                    aria-invalid={
+                      Boolean(
+                        erroresFormulario.telefono
+                      )
+                    }
+                  />
+
+                  {
+                    erroresFormulario.telefono
+                    &&
+                    (
+                      <small>
+                        {
+                          erroresFormulario
+                            .telefono
+                        }
+                      </small>
                     )
                   }
 
-                  placeholder="Ej. 71234567"
-
-                />
-
-                {erroresFormulario.telefono && (
-
-                  <small>
-                    {erroresFormulario.telefono}
-                  </small>
-
-                )}
-
-              </label>
-
-
-            </div>
-
-
-            <div className="profile-readonly-preview">
-
-              <LockKeyhole
-                size={18}
-              />
-
-              <div>
-
-                <strong>
-                  Datos institucionales bloqueados
-                </strong>
-
-                <span>
-
-                  Correo, usuario, rol, matrícula,
-                  especialidad y cargo solo pueden ser
-                  administrados por personal autorizado.
-
-                </span>
+                </label>
 
               </div>
 
-            </div>
 
-
-            <footer className="profile-modal__footer">
-
-
-              <button
-
-                type="button"
-
-                className="profile-secondary-button"
-
-                onClick={
-                  cerrarEdicion
-                }
-
-                disabled={
-                  guardando
-                }
-
+              <div
+                className="profile-readonly-preview"
               >
 
-                Cancelar
+                <LockKeyhole
+                  size={18}
+                />
 
-              </button>
+                <div>
+
+                  <strong>
+                    Datos protegidos
+                  </strong>
+
+                  <span>
+                    CI, correo, usuario, rol, matrícula,
+                    especialidad, subespecialidad, área clínica
+                    y cargo no pueden modificarse desde esta sección.
+                  </span>
+
+                </div>
+
+              </div>
 
 
-              <button
-
-                type="button"
-
-                className="profile-primary-button"
-
-                onClick={() =>
-                  void guardar()
-                }
-
-                disabled={
-                  guardando
-                }
-
+              <footer
+                className="profile-modal__footer"
               >
 
-                {guardando ? (
-
-                  <LoaderCircle
-                    size={17}
-                    className="profile-spin"
-                  />
-
-                ) : (
-
-                  <Save
-                    size={17}
-                  />
-
-                )}
-
-                {guardando
-                  ? "Guardando..."
-                  : "Guardar cambios"}
-
-              </button>
+                <button
+                  type="button"
+                  className="profile-secondary-button"
+                  onClick={
+                    cerrarEdicion
+                  }
+                  disabled={
+                    guardando
+                  }
+                >
+                  Cancelar
+                </button>
 
 
-            </footer>
+                <button
+                  type="button"
+                  className="profile-primary-button"
+                  onClick={
+                    () =>
+                      void guardar()
+                  }
+                  disabled={
+                    guardando
+                  }
+                >
 
+                  {
+                    guardando
+                      ? (
+                          <LoaderCircle
+                            size={17}
+                            className="profile-spin"
+                          />
+                        )
+                      : (
+                          <Save
+                            size={17}
+                          />
+                        )
+                  }
 
-          </section>
+                  {
+                    guardando
+                      ? "Guardando..."
+                      : "Guardar cambios"
+                  }
 
-        </div>
+                </button>
 
-      )}
+              </footer>
 
+            </section>
+
+          </div>
+        )
+      }
 
     </div>
 

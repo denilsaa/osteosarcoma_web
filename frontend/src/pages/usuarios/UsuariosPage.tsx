@@ -1,11 +1,14 @@
 import {
   AlertCircle,
   BadgeCheck,
+  BriefcaseMedical,
   CalendarDays,
   CheckCircle2,
   Eye,
+  IdCard,
   LoaderCircle,
   Mail,
+  MapPin,
   Pencil,
   Phone,
   Power,
@@ -13,6 +16,7 @@ import {
   RefreshCw,
   Save,
   Search,
+  ShieldCheck,
   Stethoscope,
   UserPlus,
   UserRound,
@@ -37,18 +41,90 @@ import {
   obtenerStatusError,
   type EditarOncologoPayload,
   type ErroresFormulario,
+  type ExpedicionBolivia,
   type OncologoDetalle,
   type OncologoResumen,
+  type RolOncologia,
 } from "../../api/oncologos.api";
 
 import "./UsuariosPage.css";
 
+
+/* =========================================================
+   TIPOS
+   ========================================================= */
 
 type EstadoFiltro =
   | ""
   | "ACTIVO"
   | "INACTIVO";
 
+
+type RolFiltro =
+  | ""
+  | RolOncologia;
+
+
+/* =========================================================
+   CATÁLOGOS
+   ========================================================= */
+
+const DEPARTAMENTOS: Array<{
+  codigo: ExpedicionBolivia;
+  nombre: string;
+}> = [
+  {
+    codigo: "LP",
+    nombre: "La Paz",
+  },
+  {
+    codigo: "CB",
+    nombre: "Cochabamba",
+  },
+  {
+    codigo: "SC",
+    nombre: "Santa Cruz",
+  },
+  {
+    codigo: "OR",
+    nombre: "Oruro",
+  },
+  {
+    codigo: "PT",
+    nombre: "Potosí",
+  },
+  {
+    codigo: "CH",
+    nombre: "Chuquisaca",
+  },
+  {
+    codigo: "TJ",
+    nombre: "Tarija",
+  },
+  {
+    codigo: "BE",
+    nombre: "Beni",
+  },
+  {
+    codigo: "PD",
+    nombre: "Pando",
+  },
+];
+
+
+const SUBESPECIALIDADES = [
+  "Oncología médica",
+  "Oncología pediátrica",
+  "Oncología quirúrgica",
+  "Oncología radioterápica",
+  "Oncología ortopédica",
+  "Otra",
+];
+
+
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
 
 function formatearFecha(
   fecha?: string | null,
@@ -63,7 +139,7 @@ function formatearFecha(
 
   if (
     Number.isNaN(
-      valor.getTime(),
+      valor.getTime()
     )
   ) {
     return "Sin registro";
@@ -93,29 +169,83 @@ function obtenerIniciales(
     .slice(0, 2)
     .map(
       (parte) =>
-        parte.charAt(0),
+        parte.charAt(0)
     )
     .join("")
     .toUpperCase();
 }
 
 
-function construirNombreCompleto(
-  nombres?: string | null,
-  apellidoPaterno?: string | null,
-  apellidoMaterno?: string | null,
+function nombreRol(
+  codigo?: string | null,
 ): string {
 
-  return [
-    nombres,
-    apellidoPaterno,
-    apellidoMaterno,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
+  if (
+    codigo ===
+    "JEFE_ONCOLOGIA"
+  ) {
+    return "Jefe de Oncología";
+  }
+
+  if (
+    codigo ===
+    "ONCOLOGO"
+  ) {
+    return "Oncólogo";
+  }
+
+  return "Personal oncológico";
 }
 
+
+function nombreDepartamento(
+  codigo?: string | null,
+): string {
+
+  const encontrado =
+    DEPARTAMENTOS.find(
+      (departamento) =>
+        departamento.codigo === codigo
+    );
+
+  return (
+    encontrado?.nombre
+    ??
+    codigo
+    ??
+    "Sin registro"
+  );
+}
+
+
+function construirCi(
+  numero?: string | null,
+  complemento?: string | null,
+  expedido?: string | null,
+): string {
+
+  if (!numero) {
+    return "Sin registro";
+  }
+
+  let valor =
+    numero;
+
+  if (complemento) {
+    valor += `-${complemento}`;
+  }
+
+  if (expedido) {
+    valor += ` ${expedido}`;
+  }
+
+  return valor;
+}
+
+
+/* =========================================================
+   COMPONENTE
+   ========================================================= */
 
 export function UsuariosPage() {
 
@@ -123,9 +253,9 @@ export function UsuariosPage() {
     useNavigate();
 
 
-  // ========================================================
-  // LISTADO
-  // ========================================================
+  /* =======================================================
+     LISTADO
+     ======================================================= */
 
   const [
     oncologos,
@@ -144,9 +274,13 @@ export function UsuariosPage() {
   const [
     estado,
     setEstado,
-  ] = useState<
-    EstadoFiltro
-  >("");
+  ] = useState<EstadoFiltro>("");
+
+
+  const [
+    rol,
+    setRol,
+  ] = useState<RolFiltro>("");
 
 
   const [
@@ -173,9 +307,9 @@ export function UsuariosPage() {
   ] = useState("");
 
 
-  // ========================================================
-  // DETALLE / EDICIÓN
-  // ========================================================
+  /* =======================================================
+     DETALLE
+     ======================================================= */
 
   const [
     detalle,
@@ -206,22 +340,18 @@ export function UsuariosPage() {
   const [
     erroresEdicion,
     setErroresEdicion,
-  ] = useState<
-    ErroresFormulario
-  >({});
+  ] = useState<ErroresFormulario>({});
 
 
   const [
     formEdicion,
     setFormEdicion,
-  ] = useState<
-    EditarOncologoPayload
-  >({});
+  ] = useState<EditarOncologoPayload>({});
 
 
-  // ========================================================
-  // MODAL ACTIVAR / DESACTIVAR
-  // ========================================================
+  /* =======================================================
+     ESTADO
+     ======================================================= */
 
   const [
     oncologoEstado,
@@ -237,33 +367,30 @@ export function UsuariosPage() {
   ] = useState(false);
 
 
-  // ========================================================
-  // MENSAJES TEMPORALES
-  // ========================================================
+  /* =======================================================
+     MENSAJE TEMPORAL
+     ======================================================= */
 
-  const mostrarExito =
-    (
-      mensaje: string,
-    ) => {
+  const mostrarExito = (
+    mensaje: string,
+  ) => {
 
-      setMensajeExito(
-        mensaje,
-      );
+    setMensajeExito(
+      mensaje
+    );
 
-      window.setTimeout(
-        () => {
-
-          setMensajeExito("");
-
-        },
-        3500,
-      );
-    };
+    window.setTimeout(
+      () => {
+        setMensajeExito("");
+      },
+      3500,
+    );
+  };
 
 
-  // ========================================================
-  // LISTAR
-  // ========================================================
+  /* =======================================================
+     CARGAR LISTADO
+     ======================================================= */
 
   useEffect(
     () => {
@@ -278,31 +405,30 @@ export function UsuariosPage() {
 
               setErrorGeneral("");
 
-              setAccesoDenegado(
-                false,
-              );
+              setAccesoDenegado(false);
 
 
               const response =
                 await listarOncologos(
                   buscar,
                   estado,
+                  rol,
                 );
 
 
               setOncologos(
                 Array.isArray(
-                  response.resultados,
+                  response.resultados
                 )
                   ? response.resultados
-                  : [],
+                  : []
               );
 
             } catch (error) {
 
               const status =
                 obtenerStatusError(
-                  error,
+                  error
                 );
 
 
@@ -311,7 +437,7 @@ export function UsuariosPage() {
               ) {
 
                 setAccesoDenegado(
-                  true,
+                  true
                 );
 
                 setOncologos([]);
@@ -322,18 +448,20 @@ export function UsuariosPage() {
 
               const errores =
                 normalizarErroresApi(
-                  error,
+                  error
                 );
 
 
               setErrorGeneral(
-                errores.general ??
-                "No fue posible cargar los oncólogos.",
+                errores.general
+                ??
+                "No fue posible cargar el personal de Oncología."
               );
 
             } finally {
 
               setCargando(false);
+
             }
 
           },
@@ -342,24 +470,23 @@ export function UsuariosPage() {
 
 
       return () => {
-
         window.clearTimeout(
-          temporizador,
+          temporizador
         );
-
       };
 
     },
     [
       buscar,
       estado,
+      rol,
     ],
   );
 
 
-  // ========================================================
-  // RECARGAR
-  // ========================================================
+  /* =======================================================
+     RECARGAR
+     ======================================================= */
 
   const recargar =
     async () => {
@@ -375,41 +502,40 @@ export function UsuariosPage() {
           await listarOncologos(
             buscar,
             estado,
+            rol,
           );
 
 
         setOncologos(
-          Array.isArray(
-            response.resultados,
-          )
-            ? response.resultados
-            : [],
+          response.resultados ?? []
         );
 
       } catch (error) {
 
         const errores =
           normalizarErroresApi(
-            error,
+            error
           );
 
 
         setErrorGeneral(
-          errores.general ??
-          "No fue posible actualizar la lista.",
+          errores.general
+          ??
+          "No fue posible actualizar el listado."
         );
 
       } finally {
 
         setCargando(false);
+
       }
 
     };
 
 
-  // ========================================================
-  // CONSULTAR
-  // ========================================================
+  /* =======================================================
+     DETALLE
+     ======================================================= */
 
   const abrirDetalle =
     async (
@@ -418,9 +544,7 @@ export function UsuariosPage() {
 
       try {
 
-        setCargandoDetalle(
-          true,
-        );
+        setCargandoDetalle(true);
 
         setErrorGeneral("");
 
@@ -433,17 +557,16 @@ export function UsuariosPage() {
 
         const response =
           await obtenerOncologo(
-            idUsuario,
+            idUsuario
           );
 
 
         setDetalle(
-          response,
+          response
         );
 
 
         setFormEdicion({
-
           nombres:
             response.nombres ?? "",
 
@@ -453,55 +576,62 @@ export function UsuariosPage() {
           apellido_materno:
             response.apellido_materno ?? "",
 
+          telefono:
+            response.telefono ?? "",
+
           correo:
             response.correo ?? "",
 
-          nombre_usuario:
-            response.nombre_usuario ?? "",
+          ci_numero:
+            response.ci_numero ?? "",
 
-          telefono:
-            response.telefono ?? "",
+          ci_complemento:
+            response.ci_complemento ?? "",
+
+          ci_expedido:
+            response.ci_expedido ?? "LP",
 
           matricula_profesional:
             response.perfil
               ?.matricula_profesional
             ?? "",
 
-          especialidad:
-            response.perfil
-              ?.especialidad
-            ?? "",
-
           subespecialidad:
             response.perfil
               ?.subespecialidad
-            ?? "",
+            ?? "Oncología médica",
 
           telefono_institucional:
             response.perfil
               ?.telefono_institucional
             ?? "",
 
+          rol_codigo:
+            response.rol_codigo
+            ??
+            "ONCOLOGO",
         });
 
       } catch (error) {
 
         const errores =
           normalizarErroresApi(
-            error,
+            error
           );
 
 
         setErrorGeneral(
-          errores.general ??
-          "No fue posible consultar al oncólogo.",
+          errores.general
+          ??
+          "No fue posible consultar al profesional."
         );
 
       } finally {
 
         setCargandoDetalle(
-          false,
+          false
         );
+
       }
 
     };
@@ -524,60 +654,144 @@ export function UsuariosPage() {
     };
 
 
-  // ========================================================
-  // CAMPOS EDICIÓN
-  // ========================================================
+  /* =======================================================
+     ACTUALIZAR FORM EDICIÓN
+     ======================================================= */
 
-  const actualizarCampo =
-    (
-      campo:
-        keyof EditarOncologoPayload,
+  const actualizarCampo = (
+    campo:
+      keyof EditarOncologoPayload,
 
-      valor: string,
-    ) => {
+    valorOriginal:
+      string,
+  ) => {
 
-      setFormEdicion(
-        (actual) => ({
+    let valor =
+      valorOriginal;
 
+
+    if (
+      campo === "telefono"
+      ||
+      campo === "telefono_institucional"
+    ) {
+
+      valor =
+        valorOriginal
+          .replace(
+            /\D/g,
+            ""
+          )
+          .slice(
+            0,
+            8
+          );
+    }
+
+
+    if (
+      campo === "ci_numero"
+    ) {
+
+      valor =
+        valorOriginal
+          .replace(
+            /\D/g,
+            ""
+          )
+          .slice(
+            0,
+            20
+          );
+    }
+
+
+    if (
+      campo === "ci_complemento"
+    ) {
+
+      valor =
+        valorOriginal
+          .toUpperCase()
+          .replace(
+            /[^A-Z0-9]/g,
+            ""
+          )
+          .slice(
+            0,
+            10
+          );
+    }
+
+
+    if (
+      campo === "matricula_profesional"
+    ) {
+
+      valor =
+        valorOriginal
+          .toUpperCase()
+          .replace(
+            /\s+/g,
+            ""
+          )
+          .replace(
+            /[^A-Z0-9./-]/g,
+            ""
+          )
+          .slice(
+            0,
+            30
+          );
+    }
+
+
+    if (
+      campo === "correo"
+    ) {
+
+      valor =
+        valorOriginal
+          .toLowerCase();
+    }
+
+
+    setFormEdicion(
+      (actual) => ({
+        ...actual,
+        [campo]:
+          valor,
+      })
+    );
+
+
+    setErroresEdicion(
+      (actual) => {
+
+        const nuevos = {
           ...actual,
+        };
 
-          [campo]:
-            valor,
+        delete nuevos[
+          campo
+        ];
 
-        }),
-      );
+        delete nuevos.general;
 
-
-      setErroresEdicion(
-        (actual) => {
-
-          const nuevos = {
-            ...actual,
-          };
-
-          delete nuevos[campo];
-
-          delete nuevos.general;
-
-          return nuevos;
-        },
-      );
-    };
-
-
-  // ========================================================
-  // GUARDAR EDICIÓN
-  // ========================================================
-
-  const guardarEdicion =
-    async () => {
-
-      if (!detalle) {
-        return;
+        return nuevos;
       }
+    );
+  };
 
 
-      const erroresLocales:
+  /* =======================================================
+     VALIDAR EDICIÓN
+     ======================================================= */
+
+  const validarEdicion =
+    (): ErroresFormulario => {
+
+      const errores:
         ErroresFormulario = {};
 
 
@@ -587,7 +801,7 @@ export function UsuariosPage() {
           ?.trim()
       ) {
 
-        erroresLocales.nombres =
+        errores.nombres =
           "Los nombres son obligatorios.";
       }
 
@@ -598,9 +812,8 @@ export function UsuariosPage() {
           ?.trim()
       ) {
 
-        erroresLocales
-          .apellido_paterno =
-            "El apellido paterno es obligatorio.";
+        errores.apellido_paterno =
+          "El apellido paterno es obligatorio.";
       }
 
 
@@ -610,31 +823,93 @@ export function UsuariosPage() {
           ?.trim()
       ) {
 
-        erroresLocales.correo =
+        errores.correo =
           "El correo es obligatorio.";
       }
 
 
       if (
         !formEdicion
-          .nombre_usuario
+          .ci_numero
           ?.trim()
       ) {
 
-        erroresLocales
-          .nombre_usuario =
-            "El usuario es obligatorio.";
+        errores.ci_numero =
+          "La cédula de identidad es obligatoria.";
       }
 
 
       if (
+        !formEdicion
+          .matricula_profesional
+          ?.trim()
+      ) {
+
+        errores.matricula_profesional =
+          "La matrícula profesional es obligatoria.";
+      }
+
+
+      if (
+        formEdicion.telefono
+        &&
+        !/^[67]\d{7}$/.test(
+          String(
+            formEdicion.telefono
+          )
+        )
+      ) {
+
+        errores.telefono =
+          "Debe tener 8 dígitos y comenzar con 6 o 7.";
+      }
+
+
+      if (
+        formEdicion
+          .telefono_institucional
+        &&
+        !/^\d{8}$/.test(
+          String(
+            formEdicion
+              .telefono_institucional
+          )
+        )
+      ) {
+
+        errores.telefono_institucional =
+          "Debe tener exactamente 8 dígitos.";
+      }
+
+
+      return errores;
+    };
+
+
+  /* =======================================================
+     GUARDAR EDICIÓN
+     ======================================================= */
+
+  const guardarEdicion =
+    async () => {
+
+      if (!detalle) {
+        return;
+      }
+
+
+      const erroresLocales =
+        validarEdicion();
+
+
+      if (
         Object.keys(
-          erroresLocales,
+          erroresLocales
         ).length > 0
       ) {
 
         setErroresEdicion(
-          erroresLocales,
+          erroresLocales
         );
 
         return;
@@ -650,131 +925,85 @@ export function UsuariosPage() {
         setErrorGeneral("");
 
 
-        const idUsuario =
-          detalle.id_usuario;
+        const payload:
+          EditarOncologoPayload = {
+
+          nombres:
+            formEdicion
+              .nombres
+              ?.trim(),
+
+          apellido_paterno:
+            formEdicion
+              .apellido_paterno
+              ?.trim(),
+
+          apellido_materno:
+            formEdicion
+              .apellido_materno
+              ?.trim()
+            ||
+            null,
+
+          telefono:
+            formEdicion
+              .telefono
+              ?.trim()
+            ||
+            null,
+
+          correo:
+            formEdicion
+              .correo
+              ?.trim()
+              .toLowerCase(),
+
+          ci_numero:
+            formEdicion
+              .ci_numero
+              ?.trim(),
+
+          ci_complemento:
+            formEdicion
+              .ci_complemento
+              ?.trim()
+            ||
+            null,
+
+          ci_expedido:
+            formEdicion
+              .ci_expedido,
+
+          matricula_profesional:
+            formEdicion
+              .matricula_profesional
+              ?.trim()
+              .toUpperCase(),
+
+          subespecialidad:
+            formEdicion
+              .subespecialidad,
+
+          telefono_institucional:
+            formEdicion
+              .telefono_institucional
+              ?.trim()
+            ||
+            null,
+
+          rol_codigo:
+            formEdicion
+              .rol_codigo,
+        };
 
 
         const response =
           await editarOncologo(
-            idUsuario,
-            formEdicion,
+            detalle.id_usuario,
+            payload,
           );
 
 
-        // ==================================================
-        // ACTUALIZAR FILA LOCALMENTE
-        // No hacemos otra petición inmediatamente.
-        // Esto evita el render que te dejaba la pantalla blanca.
-        // ==================================================
-
-        const nuevoNombre =
-          construirNombreCompleto(
-
-            formEdicion.nombres,
-
-            formEdicion
-              .apellido_paterno,
-
-            formEdicion
-              .apellido_materno,
-
-          );
-
-
-        setOncologos(
-          (actuales) =>
-            actuales.map(
-              (oncologo) => {
-
-                if (
-                  oncologo.id_usuario !==
-                  idUsuario
-                ) {
-
-                  return oncologo;
-                }
-
-
-                return {
-
-                  ...oncologo,
-
-                  nombres:
-                    formEdicion
-                      .nombres
-                    ??
-                    oncologo.nombres,
-
-                  apellido_paterno:
-                    formEdicion
-                      .apellido_paterno
-                    ??
-                    oncologo
-                      .apellido_paterno,
-
-                  apellido_materno:
-                    formEdicion
-                      .apellido_materno
-                    ??
-                    null,
-
-                  nombre_completo:
-                    nuevoNombre ||
-                    oncologo
-                      .nombre_completo,
-
-                  correo:
-                    formEdicion
-                      .correo
-                    ??
-                    oncologo.correo,
-
-                  nombre_usuario:
-                    formEdicion
-                      .nombre_usuario
-                    ??
-                    oncologo
-                      .nombre_usuario,
-
-                  telefono:
-                    formEdicion
-                      .telefono
-                    ??
-                    null,
-
-                  matricula_profesional:
-                    formEdicion
-                      .matricula_profesional
-                    ??
-                    null,
-
-                  especialidad:
-                    formEdicion
-                      .especialidad
-                    ??
-                    null,
-
-                  subespecialidad:
-                    formEdicion
-                      .subespecialidad
-                    ??
-                    null,
-
-                  telefono_institucional:
-                    formEdicion
-                      .telefono_institucional
-                    ??
-                    null,
-
-                };
-
-              },
-            ),
-        );
-
-
-        // Cerramos el modal
-        // después de actualizar el estado.
         setDetalle(null);
 
         setModoEdicion(false);
@@ -783,41 +1012,44 @@ export function UsuariosPage() {
 
 
         mostrarExito(
-          response.mensaje,
+          response.mensaje
         );
+
+
+        await recargar();
 
       } catch (error) {
 
         setErroresEdicion(
           normalizarErroresApi(
-            error,
-          ),
+            error
+          )
         );
 
       } finally {
 
         setGuardando(false);
+
       }
 
     };
 
 
-  // ========================================================
-  // ABRIR CONFIRMACIÓN DE ESTADO
-  // ========================================================
+  /* =======================================================
+     CAMBIO DE ESTADO
+     ======================================================= */
 
-  const abrirCambioEstado =
-    (
-      oncologo:
-        OncologoResumen,
-    ) => {
+  const abrirCambioEstado = (
+    oncologo:
+      OncologoResumen,
+  ) => {
 
-      setErrorGeneral("");
+    setErrorGeneral("");
 
-      setOncologoEstado(
-        oncologo,
-      );
-    };
+    setOncologoEstado(
+      oncologo
+    );
+  };
 
 
   const cerrarCambioEstado =
@@ -830,14 +1062,10 @@ export function UsuariosPage() {
       }
 
       setOncologoEstado(
-        null,
+        null
       );
     };
 
-
-  // ========================================================
-  // CONFIRMAR ACTIVAR / DESACTIVAR
-  // ========================================================
 
   const confirmarCambioEstado =
     async () => {
@@ -851,19 +1079,16 @@ export function UsuariosPage() {
 
       const nuevoEstado:
         "ACTIVO" | "INACTIVO" =
-
         oncologoEstado.estado ===
         "ACTIVO"
-
           ? "INACTIVO"
-
           : "ACTIVO";
 
 
       try {
 
         setProcesandoEstado(
-          true,
+          true
         );
 
         setErrorGeneral("");
@@ -871,85 +1096,64 @@ export function UsuariosPage() {
 
         const response =
           await cambiarEstadoOncologo(
-
             oncologoEstado.id_usuario,
-
             nuevoEstado,
-
           );
 
 
         setOncologos(
           (actuales) =>
             actuales.map(
-              (oncologo) => {
-
-                if (
-                  oncologo.id_usuario !==
-                  oncologoEstado.id_usuario
-                ) {
-
-                  return oncologo;
-                }
-
-
-                return {
-
-                  ...oncologo,
-
-                  estado:
-                    response.estado,
-
-                  estado_nombre:
-                    response.estado_nombre,
-
-                };
-
-              },
-            ),
+              (oncologo) =>
+                oncologo.id_usuario ===
+                oncologoEstado.id_usuario
+                  ? {
+                      ...oncologo,
+                      estado:
+                        response.estado,
+                      estado_nombre:
+                        response.estado_nombre,
+                    }
+                  : oncologo
+            )
         );
 
 
-        setOncologoEstado(
-          null,
-        );
-
+        setOncologoEstado(null);
 
         mostrarExito(
-          response.mensaje,
+          response.mensaje
         );
 
       } catch (error) {
 
         const errores =
           normalizarErroresApi(
-            error,
+            error
           );
 
 
-        setOncologoEstado(
-          null,
-        );
+        setOncologoEstado(null);
 
 
         setErrorGeneral(
-          errores.general ??
-          "No fue posible cambiar el estado de la cuenta.",
+          errores.general
+          ??
+          "No fue posible cambiar el estado de la cuenta."
         );
 
       } finally {
 
-        setProcesandoEstado(
-          false,
-        );
+        setProcesandoEstado(false);
+
       }
 
     };
 
 
-  // ========================================================
-  // ACCESO DENEGADO
-  // ========================================================
+  /* =======================================================
+     ACCESO DENEGADO
+     ======================================================= */
 
   if (
     accesoDenegado
@@ -957,11 +1161,17 @@ export function UsuariosPage() {
 
     return (
 
-      <div className="oncologists-page">
+      <div
+        className="oncologists-page"
+      >
 
-        <section className="oncologists-access-denied">
+        <section
+          className="oncologists-access-denied"
+        >
 
-          <div className="oncologists-access-denied__icon">
+          <div
+            className="oncologists-access-denied__icon"
+          >
 
             <AlertCircle
               size={28}
@@ -974,28 +1184,21 @@ export function UsuariosPage() {
           </h1>
 
           <p>
-
-            La gestión de cuentas de oncólogos
-            está disponible únicamente para
-            personal autorizado de Jefatura de
-            Oncología.
-
+            La administración del personal
+            oncológico está disponible únicamente
+            para Jefatura de Oncología.
           </p>
 
           <button
-
             type="button"
-
-            onClick={() =>
-              navigate(
-                "/dashboard",
-              )
+            onClick={
+              () =>
+                navigate(
+                  "/dashboard"
+                )
             }
-
           >
-
             Volver al inicio
-
           </button>
 
         </section>
@@ -1006,147 +1209,175 @@ export function UsuariosPage() {
   }
 
 
-  // ========================================================
-  // PÁGINA
-  // ========================================================
+  /* =======================================================
+     RENDER
+     ======================================================= */
 
   return (
 
-    <div className="oncologists-page">
+    <div
+      className="oncologists-page"
+    >
 
+      {/* =================================================
+          CABECERA
+          ================================================= */}
 
-      {/* CABECERA */}
-
-      <section className="oncologists-header">
+      <section
+        className="oncologists-header"
+      >
 
         <div>
 
-          <span className="oncologists-header__eyebrow">
+          <span
+            className="oncologists-header__eyebrow"
+          >
             Administración
           </span>
 
           <h1>
-            Gestión de oncólogos
+            Personal de Oncología
           </h1>
 
           <p>
-
-            Registre, busque, consulte y
-            actualice las cuentas del personal
-            médico oncológico.
-
+            Registre, consulte y administre las
+            cuentas de oncólogos y Jefatura de Oncología.
           </p>
 
         </div>
 
 
         <button
-
           type="button"
-
           className="oncologists-primary-button"
-
-          onClick={() =>
-            navigate(
-              "/usuarios/nuevo",
-            )
+          onClick={
+            () =>
+              navigate(
+                "/usuarios/nuevo"
+              )
           }
-
         >
 
           <UserPlus
             size={18}
           />
 
-          Nuevo oncólogo
+          Registrar profesional
 
         </button>
 
       </section>
 
 
-      {/* MENSAJE ÉXITO */}
+      {/* =================================================
+          MENSAJES
+          ================================================= */}
 
-      {mensajeExito && (
+      {
+        mensajeExito
+        &&
+        (
+          <div
+            className="oncologists-alert oncologists-alert--success"
+          >
 
-        <div className="oncologists-alert oncologists-alert--success">
+            <CheckCircle2
+              size={18}
+            />
 
-          <CheckCircle2
-            size={18}
-          />
+            {mensajeExito}
 
-          {mensajeExito}
-
-        </div>
-
-      )}
-
-
-      {/* ERROR */}
-
-      {errorGeneral && (
-
-        <div className="oncologists-alert oncologists-alert--error">
-
-          <AlertCircle
-            size={18}
-          />
-
-          {errorGeneral}
-
-        </div>
-
-      )}
+          </div>
+        )
+      }
 
 
-      {/* TABLA */}
+      {
+        errorGeneral
+        &&
+        (
+          <div
+            className="oncologists-alert oncologists-alert--error"
+          >
 
-      <section className="oncologists-card">
+            <AlertCircle
+              size={18}
+            />
+
+            {errorGeneral}
+
+          </div>
+        )
+      }
 
 
-        <div className="oncologists-toolbar">
+      {/* =================================================
+          LISTADO
+          ================================================= */}
 
+      <section
+        className="oncologists-card"
+      >
 
-          <div className="oncologists-search">
+        <div
+          className="oncologists-toolbar oncologists-toolbar--extended"
+        >
+
+          <div
+            className="oncologists-search"
+          >
 
             <Search
               size={18}
             />
 
             <input
-
               type="search"
-
               value={buscar}
-
-              onChange={(event) =>
-                setBuscar(
-                  event.target.value,
-                )
+              onChange={
+                (event) =>
+                  setBuscar(
+                    event.target.value
+                  )
               }
-
-              placeholder="Buscar por nombre, correo, usuario o matrícula..."
-
+              placeholder="Buscar por nombre, CI, correo, usuario o matrícula..."
             />
 
           </div>
 
 
           <select
+            value={rol}
+            onChange={(event) => {
+              const nuevoRol = event.target.value as RolFiltro;
 
-            value={estado}
-
-            onChange={(event) =>
-              setEstado(
-                event.target
-                  .value as EstadoFiltro,
-              )
-            }
-
+              setRol(nuevoRol);
+            }}
             className="oncologists-filter"
-
           >
+            <option value="">
+              Todos los roles
+            </option>
 
+            <option value="JEFE_ONCOLOGIA">
+              Jefes de Oncología
+            </option>
+
+            <option value="ONCOLOGO">
+              Oncólogos
+            </option>
+          </select>
+
+
+          <select
+            value={estado}
+            onChange={(event) => {
+              const nuevoEstado = event.target.value as EstadoFiltro;
+
+              setEstado(nuevoEstado);
+            }}
+            className="oncologists-filter"
+          >
             <option value="">
               Todos los estados
             </option>
@@ -1158,22 +1389,17 @@ export function UsuariosPage() {
             <option value="INACTIVO">
               Inactivos
             </option>
-
           </select>
 
 
           <button
-
             type="button"
-
             className="oncologists-refresh-button"
-
-            onClick={() =>
-              void recargar()
+            onClick={
+              () =>
+                void recargar()
             }
-
             aria-label="Actualizar"
-
           >
 
             <RefreshCw
@@ -1182,11 +1408,12 @@ export function UsuariosPage() {
 
           </button>
 
-
         </div>
 
 
-        <div className="oncologists-summary">
+        <div
+          className="oncologists-summary"
+        >
 
           <div>
 
@@ -1195,7 +1422,7 @@ export function UsuariosPage() {
             </strong>
 
             <span>
-              oncólogos encontrados
+              profesionales encontrados
             </span>
 
           </div>
@@ -1203,1300 +1430,1624 @@ export function UsuariosPage() {
         </div>
 
 
-        {cargando ? (
+        {
+          cargando
+            ? (
+                <div
+                  className="oncologists-loading"
+                >
 
-          <div className="oncologists-loading">
+                  <LoaderCircle
+                    size={26}
+                    className="oncologists-spin"
+                  />
 
-            <LoaderCircle
-              size={26}
-              className="oncologists-spin"
-            />
+                  <span>
+                    Cargando personal...
+                  </span>
 
-            <span>
-              Cargando oncólogos...
-            </span>
+                </div>
+              )
+            : oncologos.length === 0
+              ? (
+                  <div
+                    className="oncologists-empty"
+                  >
 
-          </div>
+                    <UserRound
+                      size={30}
+                    />
 
-        ) : oncologos.length === 0 ? (
+                    <strong>
+                      No se encontraron profesionales
+                    </strong>
 
-          <div className="oncologists-empty">
+                    <span>
+                      Pruebe con otros criterios de búsqueda.
+                    </span>
 
-            <UserRound
-              size={30}
-            />
+                  </div>
+                )
+              : (
+                  <div
+                    className="oncologists-table-wrapper"
+                  >
 
-            <strong>
-              No se encontraron oncólogos
-            </strong>
-
-            <span>
-
-              Pruebe con otro criterio
-              de búsqueda.
-
-            </span>
-
-          </div>
-
-        ) : (
-
-          <div className="oncologists-table-wrapper">
-
-            <table className="oncologists-table">
-
-              <thead>
-
-                <tr>
-
-                  <th>
-                    Oncólogo
-                  </th>
-
-                  <th>
-                    Matrícula
-                  </th>
-
-                  <th>
-                    Especialidad
-                  </th>
-
-                  <th>
-                    Estado
-                  </th>
-
-                  <th>
-                    Acciones
-                  </th>
-
-                </tr>
-
-              </thead>
-
-
-              <tbody>
-
-                {oncologos.map(
-                  (oncologo) => (
-
-                    <tr
-                      key={
-                        oncologo.id_usuario
-                      }
+                    <table
+                      className="oncologists-table"
                     >
 
-                      <td>
+                      <thead>
 
-                        <div className="oncologists-person">
+                        <tr>
 
-                          <div className="oncologists-avatar">
+                          <th>
+                            Profesional
+                          </th>
 
-                            {obtenerIniciales(
-                              oncologo
-                                .nombre_completo,
-                            )}
+                          <th>
+                            CI
+                          </th>
 
+                          <th>
+                            Matrícula
+                          </th>
+
+                          <th>
+                            Rol
+                          </th>
+
+                          <th>
+                            Estado
+                          </th>
+
+                          <th>
+                            Acciones
+                          </th>
+
+                        </tr>
+
+                      </thead>
+
+
+                      <tbody>
+
+                        {
+                          oncologos.map(
+                            (oncologo) => (
+
+                              <tr
+                                key={
+                                  oncologo.id_usuario
+                                }
+                              >
+
+                                <td>
+
+                                  <div
+                                    className="oncologists-person"
+                                  >
+
+                                    <div
+                                      className="oncologists-avatar"
+                                    >
+                                      {
+                                        obtenerIniciales(
+                                          oncologo.nombre_completo
+                                        )
+                                      }
+                                    </div>
+
+
+                                    <div>
+
+                                      <strong>
+                                        {
+                                          oncologo.nombre_completo
+                                        }
+                                      </strong>
+
+                                      <span>
+                                        {oncologo.correo}
+                                      </span>
+
+                                    </div>
+
+                                  </div>
+
+                                </td>
+
+
+                                <td>
+
+                                  <span
+                                    className="oncologists-document"
+                                  >
+                                    {
+                                      oncologo.ci_completo
+                                      ??
+                                      construirCi(
+                                        oncologo.ci_numero,
+                                        oncologo.ci_complemento,
+                                        oncologo.ci_expedido,
+                                      )
+                                    }
+                                  </span>
+
+                                </td>
+
+
+                                <td>
+                                  {
+                                    oncologo.matricula_profesional
+                                    ??
+                                    "Sin registro"
+                                  }
+                                </td>
+
+
+                                <td>
+
+                                  <span
+                                    className={`
+                                      oncologists-role
+                                      ${
+                                        oncologo.rol_codigo ===
+                                        "JEFE_ONCOLOGIA"
+                                          ? "oncologists-role--chief"
+                                          : "oncologists-role--oncologist"
+                                      }
+                                    `}
+                                  >
+
+                                    {
+                                      oncologo.rol_codigo ===
+                                      "JEFE_ONCOLOGIA"
+                                        ? (
+                                            <ShieldCheck
+                                              size={13}
+                                            />
+                                          )
+                                        : (
+                                            <Stethoscope
+                                              size={13}
+                                            />
+                                          )
+                                    }
+
+                                    {
+                                      nombreRol(
+                                        oncologo.rol_codigo
+                                      )
+                                    }
+
+                                  </span>
+
+                                </td>
+
+
+                                <td>
+
+                                  <span
+                                    className={`
+                                      oncologists-status
+                                      ${
+                                        oncologo.estado ===
+                                        "ACTIVO"
+                                          ? "oncologists-status--active"
+                                          : "oncologists-status--inactive"
+                                      }
+                                    `}
+                                  >
+
+                                    <span />
+
+                                    {
+                                      oncologo.estado_nombre
+                                    }
+
+                                  </span>
+
+                                </td>
+
+
+                                <td>
+
+                                  <div
+                                    className="oncologists-actions"
+                                  >
+
+                                    <button
+                                      type="button"
+                                      onClick={
+                                        () =>
+                                          void abrirDetalle(
+                                            oncologo.id_usuario
+                                          )
+                                      }
+                                    >
+
+                                      <Eye
+                                        size={16}
+                                      />
+
+                                      Consultar
+
+                                    </button>
+
+
+                                    <button
+                                      type="button"
+                                      className={
+                                        oncologo.estado ===
+                                        "ACTIVO"
+                                          ? "oncologists-action-state oncologists-action-state--disable"
+                                          : "oncologists-action-state oncologists-action-state--enable"
+                                      }
+                                      onClick={
+                                        () =>
+                                          abrirCambioEstado(
+                                            oncologo
+                                          )
+                                      }
+                                    >
+
+                                      {
+                                        oncologo.estado ===
+                                        "ACTIVO"
+                                          ? (
+                                              <PowerOff
+                                                size={15}
+                                              />
+                                            )
+                                          : (
+                                              <Power
+                                                size={15}
+                                              />
+                                            )
+                                      }
+
+                                      {
+                                        oncologo.estado ===
+                                        "ACTIVO"
+                                          ? "Desactivar"
+                                          : "Activar"
+                                      }
+
+                                    </button>
+
+                                  </div>
+
+                                </td>
+
+                              </tr>
+
+                            )
+                          )
+                        }
+
+                      </tbody>
+
+                    </table>
+
+                  </div>
+                )
+        }
+
+      </section>
+
+
+      {/* =================================================
+          CARGANDO DETALLE
+          ================================================= */}
+
+      {
+        cargandoDetalle
+        &&
+        (
+          <div
+            className="oncologists-modal-backdrop"
+          >
+
+            <div
+              className="oncologists-modal oncologists-modal--loading"
+            >
+
+              <LoaderCircle
+                size={28}
+                className="oncologists-spin"
+              />
+
+              Consultando profesional...
+
+            </div>
+
+          </div>
+        )
+      }
+
+
+      {/* =================================================
+          DETALLE
+          ================================================= */}
+
+      {
+        detalle
+        &&
+        (
+          <div
+            className="oncologists-modal-backdrop"
+            onMouseDown={
+              cerrarDetalle
+            }
+          >
+
+            <section
+              className="oncologists-modal"
+              onMouseDown={
+                (event) =>
+                  event.stopPropagation()
+              }
+            >
+
+              <header
+                className="oncologists-modal__header"
+              >
+
+                <div>
+
+                  <span>
+                    Personal de Oncología
+                  </span>
+
+                  <h2>
+                    {detalle.nombre_completo}
+                  </h2>
+
+                </div>
+
+
+                <button
+                  type="button"
+                  onClick={
+                    cerrarDetalle
+                  }
+                  className="oncologists-modal__close"
+                >
+
+                  <X
+                    size={20}
+                  />
+
+                </button>
+
+              </header>
+
+
+              {
+                erroresEdicion.general
+                &&
+                (
+                  <div
+                    className="oncologists-alert oncologists-alert--error"
+                  >
+
+                    <AlertCircle
+                      size={18}
+                    />
+
+                    {
+                      erroresEdicion.general
+                    }
+
+                  </div>
+                )
+              }
+
+
+              {
+                !modoEdicion
+                  ? (
+                      <>
+
+                        <div
+                          className="oncologists-detail-profile"
+                        >
+
+                          <div
+                            className="oncologists-detail-profile__avatar"
+                          >
+                            {
+                              obtenerIniciales(
+                                detalle.nombre_completo
+                              )
+                            }
                           </div>
+
 
                           <div>
 
                             <strong>
-
                               {
-                                oncologo
-                                  .nombre_completo
+                                detalle.nombre_completo
                               }
-
                             </strong>
 
                             <span>
-
                               {
-                                oncologo
-                                  .correo
+                                nombreRol(
+                                  detalle.rol_codigo
+                                )
                               }
+                            </span>
 
+                          </div>
+
+
+                          <span
+                            className={`
+                              oncologists-status
+                              ${
+                                detalle.estado ===
+                                "ACTIVO"
+                                  ? "oncologists-status--active"
+                                  : "oncologists-status--inactive"
+                              }
+                            `}
+                          >
+
+                            <span />
+
+                            {
+                              detalle.estado_nombre
+                            }
+
+                          </span>
+
+                        </div>
+
+
+                        <div
+                          className="oncologists-detail-section-title"
+                        >
+                          Datos personales
+                        </div>
+
+
+                        <div
+                          className="oncologists-detail-grid"
+                        >
+
+                          <div>
+
+                            <IdCard
+                              size={17}
+                            />
+
+                            <span>
+                              Cédula de identidad
+                            </span>
+
+                            <strong>
+                              {
+                                detalle.ci_completo
+                                ??
+                                construirCi(
+                                  detalle.ci_numero,
+                                  detalle.ci_complemento,
+                                  detalle.ci_expedido,
+                                )
+                              }
+                            </strong>
+
+                          </div>
+
+
+                          <div>
+
+                            <MapPin
+                              size={17}
+                            />
+
+                            <span>
+                              Expedido en
+                            </span>
+
+                            <strong>
+                              {
+                                nombreDepartamento(
+                                  detalle.ci_expedido
+                                )
+                              }
+                            </strong>
+
+                          </div>
+
+
+                          <div>
+
+                            <Phone
+                              size={17}
+                            />
+
+                            <span>
+                              Teléfono personal
+                            </span>
+
+                            <strong>
+                              {
+                                detalle.telefono
+                                ??
+                                "Sin registro"
+                              }
+                            </strong>
+
+                          </div>
+
+
+                          <div>
+
+                            <CalendarDays
+                              size={17}
+                            />
+
+                            <span>
+                              Registrado
+                            </span>
+
+                            <strong>
+                              {
+                                formatearFecha(
+                                  detalle.fecha_creacion
+                                )
+                              }
+                            </strong>
+
+                          </div>
+
+                        </div>
+
+
+                        <div
+                          className="oncologists-detail-section-title"
+                        >
+                          Información profesional
+                        </div>
+
+
+                        <div
+                          className="oncologists-detail-grid"
+                        >
+
+                          <div>
+
+                            <BadgeCheck
+                              size={17}
+                            />
+
+                            <span>
+                              Matrícula profesional
+                            </span>
+
+                            <strong>
+                              {
+                                detalle.perfil
+                                  ?.matricula_profesional
+                                ??
+                                "Sin registro"
+                              }
+                            </strong>
+
+                          </div>
+
+
+                          <div>
+
+                            <Stethoscope
+                              size={17}
+                            />
+
+                            <span>
+                              Especialidad
+                            </span>
+
+                            <strong>
+                              {
+                                detalle.perfil
+                                  ?.especialidad
+                                ??
+                                "Oncología"
+                              }
+                            </strong>
+
+                          </div>
+
+
+                          <div>
+
+                            <BriefcaseMedical
+                              size={17}
+                            />
+
+                            <span>
+                              Subespecialidad
+                            </span>
+
+                            <strong>
+                              {
+                                detalle.perfil
+                                  ?.subespecialidad
+                                ??
+                                "Sin registro"
+                              }
+                            </strong>
+
+                          </div>
+
+
+                          <div
+                            className="oncologists-detail-highlight"
+                          >
+
+                            <BadgeCheck
+                              size={17}
+                            />
+
+                            <span>
+                              Área clínica
+                            </span>
+
+                            <strong>
+                              {
+                                detalle.perfil
+                                  ?.area_clinica
+                                ??
+                                "Tumores óseos / Osteosarcoma"
+                              }
+                            </strong>
+
+                          </div>
+
+
+                          <div>
+
+                            <Phone
+                              size={17}
+                            />
+
+                            <span>
+                              Teléfono institucional
+                            </span>
+
+                            <strong>
+                              {
+                                detalle.perfil
+                                  ?.telefono_institucional
+                                ??
+                                "Sin registro"
+                              }
+                            </strong>
+
+                          </div>
+
+
+                          <div>
+
+                            <ShieldCheck
+                              size={17}
+                            />
+
+                            <span>
+                              Cargo
+                            </span>
+
+                            <strong>
+                              {
+                                detalle.perfil
+                                  ?.cargo
+                                ??
+                                nombreRol(
+                                  detalle.rol_codigo
+                                )
+                              }
+                            </strong>
+
+                          </div>
+
+                        </div>
+
+
+                        <div
+                          className="oncologists-detail-section-title"
+                        >
+                          Cuenta institucional
+                        </div>
+
+
+                        <div
+                          className="oncologists-detail-grid"
+                        >
+
+                          <div>
+
+                            <Mail
+                              size={17}
+                            />
+
+                            <span>
+                              Correo
+                            </span>
+
+                            <strong>
+                              {detalle.correo}
+                            </strong>
+
+                          </div>
+
+
+                          <div>
+
+                            <UserRound
+                              size={17}
+                            />
+
+                            <span>
+                              Nombre de usuario
+                            </span>
+
+                            <strong>
+                              @{detalle.nombre_usuario}
+                            </strong>
+
+                          </div>
+
+
+                          <div>
+
+                            <ShieldCheck
+                              size={17}
+                            />
+
+                            <span>
+                              Rol
+                            </span>
+
+                            <strong>
+                              {
+                                nombreRol(
+                                  detalle.rol_codigo
+                                )
+                              }
+                            </strong>
+
+                          </div>
+
+                        </div>
+
+
+                        <footer
+                          className="oncologists-modal__footer"
+                        >
+
+                          <button
+                            type="button"
+                            className="oncologists-secondary-button"
+                            onClick={
+                              cerrarDetalle
+                            }
+                          >
+                            Cerrar
+                          </button>
+
+
+                          <button
+                            type="button"
+                            className="oncologists-primary-button"
+                            onClick={
+                              () =>
+                                setModoEdicion(
+                                  true
+                                )
+                            }
+                          >
+
+                            <Pencil
+                              size={17}
+                            />
+
+                            Editar profesional
+
+                          </button>
+
+                        </footer>
+
+                      </>
+                    )
+                  : (
+                      <>
+
+                        <div
+                          className="oncologists-edit-note"
+                        >
+
+                          <ShieldCheck
+                            size={18}
+                          />
+
+                          <div>
+
+                            <strong>
+                              Campos controlados
+                            </strong>
+
+                            <span>
+                              El nombre de usuario, especialidad y área clínica
+                              son administrados automáticamente por el sistema.
                             </span>
 
                           </div>
 
                         </div>
 
-                      </td>
 
-
-                      <td>
-
-                        {
-                          oncologo
-                            .matricula_profesional
-                          ??
-                          "Sin registro"
-                        }
-
-                      </td>
-
-
-                      <td>
-
-                        {
-                          oncologo
-                            .especialidad
-                          ??
-                          "Oncología"
-                        }
-
-                      </td>
-
-
-                      <td>
-
-                        <span
-                          className={`
-                            oncologists-status
-                            ${
-                              oncologo.estado ===
-                              "ACTIVO"
-
-                                ? "oncologists-status--active"
-
-                                : "oncologists-status--inactive"
-                            }
-                          `}
+                        <div
+                          className="oncologists-edit-grid"
                         >
 
-                          <span />
+                          <label>
 
-                          {
-                            oncologo
-                              .estado_nombre
-                          }
+                            <span>
+                              Nombres *
+                            </span>
 
-                        </span>
-
-                      </td>
-
-
-                      <td>
-
-                        <div className="oncologists-actions">
-
-
-                          <button
-
-                            type="button"
-
-                            onClick={() =>
-                              void abrirDetalle(
-                                oncologo
-                                  .id_usuario,
-                              )
-                            }
-
-                          >
-
-                            <Eye
-                              size={16}
+                            <input
+                              value={
+                                formEdicion.nombres
+                                ??
+                                ""
+                              }
+                              onChange={
+                                (event) =>
+                                  actualizarCampo(
+                                    "nombres",
+                                    event.target.value
+                                  )
+                              }
                             />
 
-                            Consultar
-
-                          </button>
-
-
-                          <button
-
-                            type="button"
-
-                            className={
-                              oncologo.estado ===
-                              "ACTIVO"
-
-                                ? "oncologists-action-state oncologists-action-state--disable"
-
-                                : "oncologists-action-state oncologists-action-state--enable"
-                            }
-
-                            onClick={() =>
-                              abrirCambioEstado(
-                                oncologo,
+                            {
+                              erroresEdicion.nombres
+                              &&
+                              (
+                                <small>
+                                  {
+                                    erroresEdicion.nombres
+                                  }
+                                </small>
                               )
                             }
 
-                          >
+                          </label>
+
+
+                          <label>
+
+                            <span>
+                              Apellido paterno *
+                            </span>
+
+                            <input
+                              value={
+                                formEdicion.apellido_paterno
+                                ??
+                                ""
+                              }
+                              onChange={
+                                (event) =>
+                                  actualizarCampo(
+                                    "apellido_paterno",
+                                    event.target.value
+                                  )
+                              }
+                            />
 
                             {
-                              oncologo.estado ===
-                              "ACTIVO"
-
-                                ? (
-                                  <PowerOff
-                                    size={15}
-                                  />
-                                )
-
-                                : (
-                                  <Power
-                                    size={15}
-                                  />
-                                )
+                              erroresEdicion.apellido_paterno
+                              &&
+                              (
+                                <small>
+                                  {
+                                    erroresEdicion.apellido_paterno
+                                  }
+                                </small>
+                              )
                             }
+
+                          </label>
+
+
+                          <label>
+
+                            <span>
+                              Apellido materno
+                            </span>
+
+                            <input
+                              value={
+                                formEdicion.apellido_materno
+                                ??
+                                ""
+                              }
+                              onChange={
+                                (event) =>
+                                  actualizarCampo(
+                                    "apellido_materno",
+                                    event.target.value
+                                  )
+                              }
+                            />
+
+                          </label>
+
+
+                          <label>
+
+                            <span>
+                              Teléfono personal
+                            </span>
+
+                            <input
+                              value={
+                                formEdicion.telefono
+                                ??
+                                ""
+                              }
+                              onChange={
+                                (event) =>
+                                  actualizarCampo(
+                                    "telefono",
+                                    event.target.value
+                                  )
+                              }
+                              inputMode="numeric"
+                              maxLength={8}
+                            />
 
                             {
-                              oncologo.estado ===
-                              "ACTIVO"
-
-                                ? "Desactivar"
-
-                                : "Activar"
+                              erroresEdicion.telefono
+                              &&
+                              (
+                                <small>
+                                  {
+                                    erroresEdicion.telefono
+                                  }
+                                </small>
+                              )
                             }
 
-                          </button>
+                          </label>
 
+
+                          <label>
+
+                            <span>
+                              CI *
+                            </span>
+
+                            <input
+                              value={
+                                formEdicion.ci_numero
+                                ??
+                                ""
+                              }
+                              onChange={
+                                (event) =>
+                                  actualizarCampo(
+                                    "ci_numero",
+                                    event.target.value
+                                  )
+                              }
+                              inputMode="numeric"
+                              maxLength={20}
+                            />
+
+                            {
+                              erroresEdicion.ci_numero
+                              &&
+                              (
+                                <small>
+                                  {
+                                    erroresEdicion.ci_numero
+                                  }
+                                </small>
+                              )
+                            }
+
+                          </label>
+
+
+                          <label>
+
+                            <span>
+                              Complemento
+                            </span>
+
+                            <input
+                              value={
+                                formEdicion.ci_complemento
+                                ??
+                                ""
+                              }
+                              onChange={
+                                (event) =>
+                                  actualizarCampo(
+                                    "ci_complemento",
+                                    event.target.value
+                                  )
+                              }
+                              maxLength={10}
+                            />
+
+                          </label>
+
+
+                          <label>
+
+                            <span>
+                              Expedido *
+                            </span>
+
+                            <select
+                              value={
+                                formEdicion.ci_expedido
+                                ??
+                                "LP"
+                              }
+                              onChange={
+                                (event) =>
+                                  actualizarCampo(
+                                    "ci_expedido",
+                                    event.target.value
+                                  )
+                              }
+                            >
+
+                              {
+                                DEPARTAMENTOS.map(
+                                  (departamento) => (
+
+                                    <option
+                                      key={
+                                        departamento.codigo
+                                      }
+                                      value={
+                                        departamento.codigo
+                                      }
+                                    >
+                                      {
+                                        departamento.nombre
+                                      }
+                                    </option>
+
+                                  )
+                                )
+                              }
+
+                            </select>
+
+                          </label>
+
+
+                          <label>
+
+                            <span>
+                              Correo institucional *
+                            </span>
+
+                            <input
+                              type="email"
+                              value={
+                                formEdicion.correo
+                                ??
+                                ""
+                              }
+                              onChange={
+                                (event) =>
+                                  actualizarCampo(
+                                    "correo",
+                                    event.target.value
+                                  )
+                              }
+                            />
+
+                            {
+                              erroresEdicion.correo
+                              &&
+                              (
+                                <small>
+                                  {
+                                    erroresEdicion.correo
+                                  }
+                                </small>
+                              )
+                            }
+
+                          </label>
+
+
+                          <label>
+
+                            <span>
+                              Matrícula profesional *
+                            </span>
+
+                            <input
+                              value={
+                                formEdicion.matricula_profesional
+                                ??
+                                ""
+                              }
+                              onChange={
+                                (event) =>
+                                  actualizarCampo(
+                                    "matricula_profesional",
+                                    event.target.value
+                                  )
+                              }
+                              maxLength={30}
+                            />
+
+                            {
+                              erroresEdicion.matricula_profesional
+                              &&
+                              (
+                                <small>
+                                  {
+                                    erroresEdicion.matricula_profesional
+                                  }
+                                </small>
+                              )
+                            }
+
+                          </label>
+
+
+                          <label>
+
+                            <span>
+                              Subespecialidad *
+                            </span>
+
+                            <select
+                              value={
+                                formEdicion.subespecialidad
+                                ??
+                                "Oncología médica"
+                              }
+                              onChange={
+                                (event) =>
+                                  actualizarCampo(
+                                    "subespecialidad",
+                                    event.target.value
+                                  )
+                              }
+                            >
+
+                              {
+                                SUBESPECIALIDADES.map(
+                                  (opcion) => (
+
+                                    <option
+                                      key={opcion}
+                                      value={opcion}
+                                    >
+                                      {opcion}
+                                    </option>
+
+                                  )
+                                )
+                              }
+
+                            </select>
+
+                          </label>
+
+
+                          <label>
+
+                            <span>
+                              Teléfono institucional
+                            </span>
+
+                            <input
+                              value={
+                                formEdicion.telefono_institucional
+                                ??
+                                ""
+                              }
+                              onChange={
+                                (event) =>
+                                  actualizarCampo(
+                                    "telefono_institucional",
+                                    event.target.value
+                                  )
+                              }
+                              inputMode="numeric"
+                              maxLength={8}
+                            />
+
+                            {
+                              erroresEdicion.telefono_institucional
+                              &&
+                              (
+                                <small>
+                                  {
+                                    erroresEdicion.telefono_institucional
+                                  }
+                                </small>
+                              )
+                            }
+
+                          </label>
+
+
+                          <label>
+
+                            <span>
+                              Rol *
+                            </span>
+
+                            <select
+                              value={
+                                formEdicion.rol_codigo
+                                ??
+                                "ONCOLOGO"
+                              }
+                              onChange={
+                                (event) =>
+                                  actualizarCampo(
+                                    "rol_codigo",
+                                    event.target.value
+                                  )
+                              }
+                            >
+
+                              <option value="ONCOLOGO">
+                                Oncólogo
+                              </option>
+
+                              <option value="JEFE_ONCOLOGIA">
+                                Jefe de Oncología
+                              </option>
+
+                            </select>
+
+                          </label>
+
+
+                          <label>
+
+                            <span>
+                              Especialidad
+                            </span>
+
+                            <div
+                              className="oncologist-readonly-field"
+                            >
+                              <Stethoscope
+                                size={16}
+                              />
+
+                              Oncología
+
+                              <BadgeCheck
+                                size={15}
+                              />
+                            </div>
+
+                          </label>
+
+
+                          <label>
+
+                            <span>
+                              Área clínica
+                            </span>
+
+                            <div
+                              className="oncologist-readonly-field oncologist-readonly-field--accent"
+                            >
+                              <BadgeCheck
+                                size={16}
+                              />
+
+                              Tumores óseos / Osteosarcoma
+                            </div>
+
+                          </label>
 
                         </div>
 
-                      </td>
 
-                    </tr>
+                        <footer
+                          className="oncologists-modal__footer"
+                        >
 
-                  ),
-                )}
+                          <button
+                            type="button"
+                            className="oncologists-secondary-button"
+                            onClick={
+                              () => {
+                                setModoEdicion(false);
+                                setErroresEdicion({});
+                              }
+                            }
+                            disabled={
+                              guardando
+                            }
+                          >
+                            Cancelar
+                          </button>
 
-              </tbody>
 
-            </table>
+                          <button
+                            type="button"
+                            className="oncologists-primary-button"
+                            onClick={
+                              () =>
+                                void guardarEdicion()
+                            }
+                            disabled={
+                              guardando
+                            }
+                          >
+
+                            {
+                              guardando
+                                ? (
+                                    <LoaderCircle
+                                      size={17}
+                                      className="oncologists-spin"
+                                    />
+                                  )
+                                : (
+                                    <Save
+                                      size={17}
+                                    />
+                                  )
+                            }
+
+                            {
+                              guardando
+                                ? "Guardando..."
+                                : "Guardar cambios"
+                            }
+
+                          </button>
+
+                        </footer>
+
+                      </>
+                    )
+              }
+
+            </section>
 
           </div>
-
-        )}
-
-
-      </section>
+        )
+      }
 
 
-      {/* CARGANDO DETALLE */}
+      {/* =================================================
+          CAMBIAR ESTADO
+          ================================================= */}
 
-      {cargandoDetalle && (
-
-        <div className="oncologists-modal-backdrop">
-
-          <div className="oncologists-modal oncologists-modal--loading">
-
-            <LoaderCircle
-              size={28}
-              className="oncologists-spin"
-            />
-
-            Consultando oncólogo...
-
-          </div>
-
-        </div>
-
-      )}
-
-
-      {/* DETALLE / EDICIÓN */}
-
-      {detalle && (
-
-        <div
-          className="oncologists-modal-backdrop"
-          onMouseDown={
-            cerrarDetalle
-          }
-        >
-
-          <section
-
-            className="oncologists-modal"
-
-            onMouseDown={(
-              event,
-            ) =>
-              event.stopPropagation()
+      {
+        oncologoEstado
+        &&
+        (
+          <div
+            className="oncologists-modal-backdrop"
+            onMouseDown={
+              cerrarCambioEstado
             }
-
           >
 
-
-            <header className="oncologists-modal__header">
-
-              <div>
-
-                <span>
-                  Cuenta médica
-                </span>
-
-                <h2>
-
-                  {
-                    detalle
-                      .nombre_completo
-                  }
-
-                </h2>
-
-              </div>
-
-
-              <button
-
-                type="button"
-
-                onClick={
-                  cerrarDetalle
-                }
-
-                className="oncologists-modal__close"
-
-              >
-
-                <X
-                  size={20}
-                />
-
-              </button>
-
-            </header>
-
-
-            {erroresEdicion.general && (
-
-              <div className="oncologists-alert oncologists-alert--error">
-
-                <AlertCircle
-                  size={18}
-                />
-
-                {
-                  erroresEdicion.general
-                }
-
-              </div>
-
-            )}
-
-
-            {!modoEdicion ? (
-
-              <>
-
-                <div className="oncologists-detail-profile">
-
-                  <div className="oncologists-detail-profile__avatar">
-
-                    {obtenerIniciales(
-                      detalle
-                        .nombre_completo,
-                    )}
-
-                  </div>
-
-                  <div>
-
-                    <strong>
-
-                      {
-                        detalle
-                          .nombre_completo
-                      }
-
-                    </strong>
-
-                    <span>
-
-                      {
-                        detalle
-                          .perfil
-                          ?.cargo
-                        ??
-                        "Médico oncólogo"
-                      }
-
-                    </span>
-
-                  </div>
-
-
-                  <span
-                    className={`
-                      oncologists-status
-                      ${
-                        detalle.estado ===
-                        "ACTIVO"
-
-                          ? "oncologists-status--active"
-
-                          : "oncologists-status--inactive"
-                      }
-                    `}
-                  >
-
-                    <span />
-
-                    {
-                      detalle
-                        .estado_nombre
-                    }
-
-                  </span>
-
-                </div>
-
-
-                <div className="oncologists-detail-grid">
-
-                  <div>
-
-                    <Mail
-                      size={17}
-                    />
-
-                    <span>
-                      Correo institucional
-                    </span>
-
-                    <strong>
-                      {detalle.correo}
-                    </strong>
-
-                  </div>
-
-
-                  <div>
-
-                    <UserRound
-                      size={17}
-                    />
-
-                    <span>
-                      Usuario
-                    </span>
-
-                    <strong>
-
-                      {
-                        detalle
-                          .nombre_usuario
-                      }
-
-                    </strong>
-
-                  </div>
-
-
-                  <div>
-
-                    <Stethoscope
-                      size={17}
-                    />
-
-                    <span>
-                      Especialidad
-                    </span>
-
-                    <strong>
-
-                      {
-                        detalle
-                          .perfil
-                          ?.especialidad
-                        ??
-                        "Sin registro"
-                      }
-
-                    </strong>
-
-                  </div>
-
-
-                  <div>
-
-                    <BadgeCheck
-                      size={17}
-                    />
-
-                    <span>
-                      Matrícula profesional
-                    </span>
-
-                    <strong>
-
-                      {
-                        detalle
-                          .perfil
-                          ?.matricula_profesional
-                        ??
-                        "Sin registro"
-                      }
-
-                    </strong>
-
-                  </div>
-
-
-                  <div>
-
-                    <Phone
-                      size={17}
-                    />
-
-                    <span>
-                      Teléfono personal
-                    </span>
-
-                    <strong>
-
-                      {
-                        detalle
-                          .telefono
-                        ??
-                        "Sin registro"
-                      }
-
-                    </strong>
-
-                  </div>
-
-
-                  <div>
-
-                    <CalendarDays
-                      size={17}
-                    />
-
-                    <span>
-                      Registrado
-                    </span>
-
-                    <strong>
-
-                      {formatearFecha(
-                        detalle
-                          .fecha_creacion,
-                      )}
-
-                    </strong>
-
-                  </div>
-
-                </div>
-
-
-                <footer className="oncologists-modal__footer">
-
-                  <button
-
-                    type="button"
-
-                    className="oncologists-secondary-button"
-
-                    onClick={
-                      cerrarDetalle
-                    }
-
-                  >
-
-                    Cerrar
-
-                  </button>
-
-
-                  <button
-
-                    type="button"
-
-                    className="oncologists-primary-button"
-
-                    onClick={() =>
-                      setModoEdicion(
-                        true,
-                      )
-                    }
-
-                  >
-
-                    <Pencil
-                      size={17}
-                    />
-
-                    Editar oncólogo
-
-                  </button>
-
-                </footer>
-
-              </>
-
-            ) : (
-
-              <>
-
-                <div className="oncologists-edit-grid">
-
-
-                  <label>
-
-                    <span>
-                      Nombres *
-                    </span>
-
-                    <input
-
-                      value={
-                        formEdicion
-                          .nombres
-                        ?? ""
-                      }
-
-                      onChange={(event) =>
-                        actualizarCampo(
-                          "nombres",
-                          event.target.value,
-                        )
-                      }
-
-                    />
-
-                    {erroresEdicion.nombres && (
-
-                      <small>
-                        {erroresEdicion.nombres}
-                      </small>
-
-                    )}
-
-                  </label>
-
-
-                  <label>
-
-                    <span>
-                      Apellido paterno *
-                    </span>
-
-                    <input
-
-                      value={
-                        formEdicion
-                          .apellido_paterno
-                        ?? ""
-                      }
-
-                      onChange={(event) =>
-                        actualizarCampo(
-                          "apellido_paterno",
-                          event.target.value,
-                        )
-                      }
-
-                    />
-
-                    {erroresEdicion.apellido_paterno && (
-
-                      <small>
-
-                        {
-                          erroresEdicion
-                            .apellido_paterno
-                        }
-
-                      </small>
-
-                    )}
-
-                  </label>
-
-
-                  <label>
-
-                    <span>
-                      Apellido materno
-                    </span>
-
-                    <input
-
-                      value={
-                        formEdicion
-                          .apellido_materno
-                        ?? ""
-                      }
-
-                      onChange={(event) =>
-                        actualizarCampo(
-                          "apellido_materno",
-                          event.target.value,
-                        )
-                      }
-
-                    />
-
-                  </label>
-
-
-                  <label>
-
-                    <span>
-                      Correo institucional *
-                    </span>
-
-                    <input
-
-                      type="email"
-
-                      value={
-                        formEdicion
-                          .correo
-                        ?? ""
-                      }
-
-                      onChange={(event) =>
-                        actualizarCampo(
-                          "correo",
-                          event.target.value,
-                        )
-                      }
-
-                    />
-
-                    {erroresEdicion.correo && (
-
-                      <small>
-                        {erroresEdicion.correo}
-                      </small>
-
-                    )}
-
-                  </label>
-
-
-                  <label>
-
-                    <span>
-                      Nombre de usuario *
-                    </span>
-
-                    <input
-
-                      value={
-                        formEdicion
-                          .nombre_usuario
-                        ?? ""
-                      }
-
-                      onChange={(event) =>
-                        actualizarCampo(
-                          "nombre_usuario",
-                          event.target.value,
-                        )
-                      }
-
-                    />
-
-                    {erroresEdicion.nombre_usuario && (
-
-                      <small>
-
-                        {
-                          erroresEdicion
-                            .nombre_usuario
-                        }
-
-                      </small>
-
-                    )}
-
-                  </label>
-
-
-                  <label>
-
-                    <span>
-                      Teléfono personal
-                    </span>
-
-                    <input
-
-                      value={
-                        formEdicion
-                          .telefono
-                        ?? ""
-                      }
-
-                      onChange={(event) =>
-                        actualizarCampo(
-                          "telefono",
-                          event.target.value,
-                        )
-                      }
-
-                    />
-
-                    {erroresEdicion.telefono && (
-
-                      <small>
-                        {erroresEdicion.telefono}
-                      </small>
-
-                    )}
-
-                  </label>
-
-
-                  <label>
-
-                    <span>
-                      Matrícula profesional
-                    </span>
-
-                    <input
-
-                      value={
-                        formEdicion
-                          .matricula_profesional
-                        ?? ""
-                      }
-
-                      onChange={(event) =>
-                        actualizarCampo(
-                          "matricula_profesional",
-                          event.target.value,
-                        )
-                      }
-
-                    />
-
-                    {erroresEdicion.matricula_profesional && (
-
-                      <small>
-
-                        {
-                          erroresEdicion
-                            .matricula_profesional
-                        }
-
-                      </small>
-
-                    )}
-
-                  </label>
-
-
-                  <label>
-
-                    <span>
-                      Especialidad
-                    </span>
-
-                    <input
-
-                      value={
-                        formEdicion
-                          .especialidad
-                        ?? ""
-                      }
-
-                      onChange={(event) =>
-                        actualizarCampo(
-                          "especialidad",
-                          event.target.value,
-                        )
-                      }
-
-                    />
-
-                  </label>
-
-
-                  <label>
-
-                    <span>
-                      Subespecialidad
-                    </span>
-
-                    <input
-
-                      value={
-                        formEdicion
-                          .subespecialidad
-                        ?? ""
-                      }
-
-                      onChange={(event) =>
-                        actualizarCampo(
-                          "subespecialidad",
-                          event.target.value,
-                        )
-                      }
-
-                    />
-
-                  </label>
-
-
-                  <label>
-
-                    <span>
-                      Teléfono institucional
-                    </span>
-
-                    <input
-
-                      value={
-                        formEdicion
-                          .telefono_institucional
-                        ?? ""
-                      }
-
-                      onChange={(event) =>
-                        actualizarCampo(
-                          "telefono_institucional",
-                          event.target.value,
-                        )
-                      }
-
-                    />
-
-                  </label>
-
-                </div>
-
-
-                <footer className="oncologists-modal__footer">
-
-                  <button
-
-                    type="button"
-
-                    className="oncologists-secondary-button"
-
-                    onClick={() => {
-
-                      setModoEdicion(
-                        false,
-                      );
-
-                      setErroresEdicion(
-                        {},
-                      );
-
-                    }}
-
-                    disabled={
-                      guardando
-                    }
-
-                  >
-
-                    Cancelar
-
-                  </button>
-
-
-                  <button
-
-                    type="button"
-
-                    className="oncologists-primary-button"
-
-                    onClick={() =>
-                      void guardarEdicion()
-                    }
-
-                    disabled={
-                      guardando
-                    }
-
-                  >
-
-                    {guardando ? (
-
-                      <LoaderCircle
-                        size={17}
-                        className="oncologists-spin"
-                      />
-
-                    ) : (
-
-                      <Save
-                        size={17}
-                      />
-
-                    )}
-
-                    {
-                      guardando
-                        ? "Guardando..."
-                        : "Guardar cambios"
-                    }
-
-                  </button>
-
-                </footer>
-
-              </>
-
-            )}
-
-          </section>
-
-        </div>
-
-      )}
-
-
-      {/* ====================================================
-          MODAL ACTIVAR / DESACTIVAR
-          ==================================================== */}
-
-      {oncologoEstado && (
-
-        <div
-          className="oncologists-modal-backdrop"
-          onMouseDown={
-            cerrarCambioEstado
-          }
-        >
-
-          <section
-
-            className="oncologists-confirm-modal"
-
-            onMouseDown={(
-              event,
-            ) =>
-              event.stopPropagation()
-            }
-
-          >
-
-
-            <button
-
-              type="button"
-
-              className="oncologists-confirm-modal__close"
-
-              onClick={
-                cerrarCambioEstado
+            <section
+              className="oncologists-confirm-modal"
+              onMouseDown={
+                (event) =>
+                  event.stopPropagation()
               }
-
-              disabled={
-                procesandoEstado
-              }
-
             >
 
-              <X
-                size={19}
-              />
-
-            </button>
-
-
-            <div
-              className={`
-                oncologists-confirm-modal__icon
-                ${
-                  oncologoEstado.estado ===
-                  "ACTIVO"
-
-                    ? "oncologists-confirm-modal__icon--danger"
-
-                    : "oncologists-confirm-modal__icon--success"
-                }
-              `}
-            >
-
-              {
-                oncologoEstado.estado ===
-                "ACTIVO"
-
-                  ? (
-                    <PowerOff
-                      size={27}
-                    />
-                  )
-
-                  : (
-                    <Power
-                      size={27}
-                    />
-                  )
-              }
-
-            </div>
-
-
-            <h2>
-
-              {
-                oncologoEstado.estado ===
-                "ACTIVO"
-
-                  ? "Desactivar cuenta"
-
-                  : "Activar cuenta"
-              }
-
-            </h2>
-
-
-            <p>
-
-              {
-                oncologoEstado.estado ===
-                "ACTIVO"
-
-                  ? (
-                    <>
-                      ¿Desea desactivar la cuenta de{" "}
-                      <strong>
-                        {
-                          oncologoEstado
-                            .nombre_completo
-                        }
-                      </strong>
-                      ?
-                    </>
-                  )
-
-                  : (
-                    <>
-                      ¿Desea activar nuevamente la cuenta de{" "}
-                      <strong>
-                        {
-                          oncologoEstado
-                            .nombre_completo
-                        }
-                      </strong>
-                      ?
-                    </>
-                  )
-              }
-
-            </p>
-
-
-            {oncologoEstado.estado ===
-            "ACTIVO" && (
-
-              <div className="oncologists-confirm-modal__notice">
-
-                <AlertCircle
-                  size={18}
-                />
-
-                <span>
-
-                  La cuenta será deshabilitada,
-                  pero <strong>no será eliminada</strong>.
-                  Su información e historial se
-                  conservarán.
-
-                </span>
-
-              </div>
-
-            )}
-
-
-            <div className="oncologists-confirm-modal__actions">
-
-
               <button
-
                 type="button"
-
-                className="oncologists-secondary-button"
-
+                className="oncologists-confirm-modal__close"
                 onClick={
                   cerrarCambioEstado
                 }
-
                 disabled={
                   procesandoEstado
                 }
-
               >
 
-                Cancelar
+                <X
+                  size={19}
+                />
 
               </button>
 
 
-              <button
-
-                type="button"
-
-                className={
-                  oncologoEstado.estado ===
-                  "ACTIVO"
-
-                    ? "oncologists-confirm-button oncologists-confirm-button--danger"
-
-                    : "oncologists-confirm-button oncologists-confirm-button--success"
-                }
-
-                onClick={() =>
-                  void confirmarCambioEstado()
-                }
-
-                disabled={
-                  procesandoEstado
-                }
-
+              <div
+                className={`
+                  oncologists-confirm-modal__icon
+                  ${
+                    oncologoEstado.estado ===
+                    "ACTIVO"
+                      ? "oncologists-confirm-modal__icon--danger"
+                      : "oncologists-confirm-modal__icon--success"
+                  }
+                `}
               >
-
-                {procesandoEstado ? (
-
-                  <LoaderCircle
-                    size={17}
-                    className="oncologists-spin"
-                  />
-
-                ) : oncologoEstado.estado ===
-                  "ACTIVO" ? (
-
-                  <PowerOff
-                    size={17}
-                  />
-
-                ) : (
-
-                  <Power
-                    size={17}
-                  />
-
-                )}
-
 
                 {
-                  procesandoEstado
-
-                    ? "Procesando..."
-
-                    : oncologoEstado.estado ===
-                      "ACTIVO"
-
-                      ? "Sí, desactivar"
-
-                      : "Sí, activar"
+                  oncologoEstado.estado ===
+                  "ACTIVO"
+                    ? (
+                        <PowerOff
+                          size={27}
+                        />
+                      )
+                    : (
+                        <Power
+                          size={27}
+                        />
+                      )
                 }
 
-              </button>
+              </div>
 
 
-            </div>
+              <h2>
+                {
+                  oncologoEstado.estado ===
+                  "ACTIVO"
+                    ? "Desactivar cuenta"
+                    : "Activar cuenta"
+                }
+              </h2>
 
-          </section>
 
-        </div>
+              <p>
+                {
+                  oncologoEstado.estado ===
+                  "ACTIVO"
+                    ? (
+                        <>
+                          ¿Desea desactivar la cuenta de{" "}
+                          <strong>
+                            {
+                              oncologoEstado.nombre_completo
+                            }
+                          </strong>
+                          ?
+                        </>
+                      )
+                    : (
+                        <>
+                          ¿Desea activar nuevamente la cuenta de{" "}
+                          <strong>
+                            {
+                              oncologoEstado.nombre_completo
+                            }
+                          </strong>
+                          ?
+                        </>
+                      )
+                }
+              </p>
 
-      )}
 
+              {
+                oncologoEstado.estado ===
+                "ACTIVO"
+                &&
+                (
+                  <div
+                    className="oncologists-confirm-modal__notice"
+                  >
+
+                    <AlertCircle
+                      size={18}
+                    />
+
+                    <span>
+                      La cuenta será deshabilitada,
+                      pero <strong>no será eliminada</strong>.
+                      Su información e historial serán conservados.
+                    </span>
+
+                  </div>
+                )
+              }
+
+
+              <div
+                className="oncologists-confirm-modal__actions"
+              >
+
+                <button
+                  type="button"
+                  className="oncologists-secondary-button"
+                  onClick={
+                    cerrarCambioEstado
+                  }
+                  disabled={
+                    procesandoEstado
+                  }
+                >
+                  Cancelar
+                </button>
+
+
+                <button
+                  type="button"
+                  className={
+                    oncologoEstado.estado ===
+                    "ACTIVO"
+                      ? "oncologists-confirm-button oncologists-confirm-button--danger"
+                      : "oncologists-confirm-button oncologists-confirm-button--success"
+                  }
+                  onClick={
+                    () =>
+                      void confirmarCambioEstado()
+                  }
+                  disabled={
+                    procesandoEstado
+                  }
+                >
+
+                  {
+                    procesandoEstado
+                      ? (
+                          <LoaderCircle
+                            size={17}
+                            className="oncologists-spin"
+                          />
+                        )
+                      : oncologoEstado.estado ===
+                        "ACTIVO"
+                        ? (
+                            <PowerOff
+                              size={17}
+                            />
+                          )
+                        : (
+                            <Power
+                              size={17}
+                            />
+                          )
+                  }
+
+                  {
+                    procesandoEstado
+                      ? "Procesando..."
+                      : oncologoEstado.estado ===
+                        "ACTIVO"
+                        ? "Sí, desactivar"
+                        : "Sí, activar"
+                  }
+
+                </button>
+
+              </div>
+
+            </section>
+
+          </div>
+        )
+      }
 
     </div>
 

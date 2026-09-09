@@ -2086,3 +2086,260 @@ select {
   }
 
 }
+/* =========================================================
+   GESTIÓN MEJORADA DE PERSONAL ONCOLÓGICO
+   ========================================================= */
+
+.oncologists-toolbar--extended {
+  grid-template-columns:
+    minmax(310px, 1fr)
+    190px
+    180px
+    44px;
+}
+
+
+/* =========================================================
+   CI
+   ========================================================= */
+
+.oncologists-document {
+  display: inline-flex;
+
+  align-items: center;
+
+  padding: 5px 8px;
+
+  border: 1px solid #e0e9ed;
+
+  border-radius: 8px;
+
+  background: #f8fbfc;
+
+  color: #4a6674;
+
+  font-size: 11px;
+  font-weight: 750;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   ROLES
+   ========================================================= */
+
+.oncologists-role {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  padding: 6px 9px;
+
+  border-radius: 999px;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+
+.oncologists-role--oncologist {
+  border: 1px solid #cce7ed;
+
+  background: #eef8fb;
+
+  color: #1a7f9b;
+}
+
+
+.oncologists-role--chief {
+  border: 1px solid #d9d8ef;
+
+  background: #f5f4fb;
+
+  color: #615d94;
+}
+
+
+/* =========================================================
+   SUBTÍTULOS DEL DETALLE
+   ========================================================= */
+
+.oncologists-detail-section-title {
+  margin:
+    20px
+    24px
+    0;
+
+  padding-bottom: 7px;
+
+  border-bottom: 1px solid #edf2f4;
+
+  color: #6b8390;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 0.07em;
+
+  text-transform: uppercase;
+}
+
+
+.oncologists-detail-section-title
++
+.oncologists-detail-grid {
+  padding-top: 13px;
+}
+
+
+.oncologists-detail-highlight {
+  border-color: #cde6dc !important;
+
+  background: #f4faf7;
+
+  color: #2e8c66 !important;
+}
+
+
+.oncologists-detail-highlight strong {
+  color: #386d59;
+}
+
+
+/* =========================================================
+   AVISO EDICIÓN
+   ========================================================= */
+
+.oncologists-edit-note {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 10px;
+
+  margin:
+    20px
+    24px
+    0;
+
+  padding: 12px 13px;
+
+  border: 1px solid #c9e4eb;
+
+  border-radius: 11px;
+
+  background: #f3fafc;
+
+  color: #1482a1;
+}
+
+
+.oncologists-edit-note > svg {
+  flex: 0 0 auto;
+
+  margin-top: 1px;
+}
+
+
+.oncologists-edit-note strong,
+.oncologists-edit-note span {
+  display: block;
+}
+
+
+.oncologists-edit-note strong {
+  color: #396e80;
+
+  font-size: 11px;
+  font-weight: 800;
+}
+
+
+.oncologists-edit-note span {
+  margin-top: 3px;
+
+  color: #748d98;
+
+  font-size: 10px;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   TABLA
+   ========================================================= */
+
+.oncologists-table th,
+.oncologists-table td {
+  white-space: nowrap;
+}
+
+
+.oncologists-table th:first-child,
+.oncologists-table td:first-child {
+  min-width: 230px;
+}
+
+
+.oncologists-table th:last-child,
+.oncologists-table td:last-child {
+  min-width: 190px;
+}
+
+
+/* =========================================================
+   MODAL MÁS CÓMODO
+   ========================================================= */
+
+.oncologists-modal {
+  width:
+    min(
+      920px,
+      100%
+    );
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (
+  max-width: 1100px
+) {
+
+  .oncologists-toolbar--extended {
+    grid-template-columns:
+      minmax(280px, 1fr)
+      170px
+      170px
+      44px;
+  }
+
+}
+
+
+@media (
+  max-width: 900px
+) {
+
+  .oncologists-toolbar--extended {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .oncologists-toolbar--extended
+  .oncologists-filter,
+  .oncologists-toolbar--extended
+  .oncologists-refresh-button {
+    width: 100%;
+  }
+
+}
