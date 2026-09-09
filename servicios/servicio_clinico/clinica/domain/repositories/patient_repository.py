@@ -12,12 +12,13 @@ class PatientRepository(ABC):
     """
     Puerto de persistencia del agregado Paciente.
 
-    La capa de aplicación depende de esta abstracción
-    y nunca directamente del ORM de Django.
-
-    Las implementaciones concretas pertenecen a
-    Infrastructure.
+    Application depende de esta abstracción.
+    Infrastructure implementa el acceso real a PostgreSQL.
     """
+
+    # ======================================================
+    # CREAR
+    # ======================================================
 
     @abstractmethod
     def create(
@@ -32,24 +33,42 @@ class PatientRepository(ABC):
         document_number: str,
         complement: str | None,
         issued_in: str | None,
-        contact_type_id: int | None,
-        contact_value: str | None,
+
+        mobile_phone: str | None,
+        landline_phone: str | None,
+        email: str | None,
+
+        emergency_contact_name: str | None,
+        emergency_relationship: str | None,
+        emergency_phone: str | None,
+        emergency_email: str | None,
     ) -> Patient:
         """
-        Registra un paciente junto con su documento
-        y contacto principal.
+        Registra:
+
+        - paciente;
+        - documento;
+        - contactos propios;
+        - contacto de emergencia.
         """
+
         raise NotImplementedError
+
+    # ======================================================
+    # OBTENER
+    # ======================================================
 
     @abstractmethod
     def get_by_id(
         self,
         patient_id: UUID,
     ) -> Optional[Patient]:
-        """
-        Obtiene un paciente mediante su UUID.
-        """
+
         raise NotImplementedError
+
+    # ======================================================
+    # LISTAR
+    # ======================================================
 
     @abstractmethod
     def list_patients(
@@ -62,16 +81,12 @@ class PatientRepository(ABC):
         page: int,
         page_size: int,
     ) -> tuple[list[Patient], int]:
-        """
-        Obtiene pacientes aplicando filtros
-        y paginación.
 
-        Retorna:
-            tuple:
-                - pacientes de la página actual
-                - cantidad total de coincidencias
-        """
         raise NotImplementedError
+
+    # ======================================================
+    # DOCUMENTO EXACTO
+    # ======================================================
 
     @abstractmethod
     def find_exact_document(
@@ -80,11 +95,12 @@ class PatientRepository(ABC):
         document_type_id: int,
         document_number: str,
     ) -> Optional[Patient]:
-        """
-        Busca una coincidencia exacta por
-        tipo y número de documento.
-        """
+
         raise NotImplementedError
+
+    # ======================================================
+    # POSIBLES DUPLICADOS
+    # ======================================================
 
     @abstractmethod
     def find_possible_duplicates(
@@ -98,14 +114,12 @@ class PatientRepository(ABC):
         birth_date: date | None,
         limit: int = 10,
     ) -> list[Patient]:
-        """
-        Busca posibles pacientes duplicados.
 
-        Puede utilizar coincidencia exacta de documento
-        o coincidencia de identidad mediante nombres
-        y fecha de nacimiento.
-        """
         raise NotImplementedError
+
+    # ======================================================
+    # ACTUALIZAR
+    # ======================================================
 
     @abstractmethod
     def update(
@@ -114,9 +128,5 @@ class PatientRepository(ABC):
         patient_id: UUID,
         changes: dict,
     ) -> Patient:
-        """
-        Actualiza únicamente los campos recibidos
-        y retorna la representación actualizada
-        del paciente.
-        """
+
         raise NotImplementedError

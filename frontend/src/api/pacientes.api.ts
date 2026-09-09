@@ -8,18 +8,15 @@ import {
 // ==========================================================
 
 export interface CatalogItem {
-
   id: number;
 
   code: string;
 
   name: string;
-
 }
 
 
 export interface PatientCatalogs {
-
   sexes:
     CatalogItem[];
 
@@ -28,16 +25,77 @@ export interface PatientCatalogs {
 
   contact_types:
     CatalogItem[];
-
 }
 
 
 interface PatientCatalogsResponse {
-
   data:
     PatientCatalogs;
-
 }
+
+
+// ==========================================================
+// DEPARTAMENTOS DE BOLIVIA
+// ==========================================================
+
+export type BoliviaDepartmentCode =
+  | "LP"
+  | "CB"
+  | "SC"
+  | "OR"
+  | "PT"
+  | "CH"
+  | "TJ"
+  | "BE"
+  | "PD";
+
+
+export interface BoliviaDepartment {
+  code: BoliviaDepartmentCode;
+
+  name: string;
+}
+
+
+export const BOLIVIA_DEPARTMENTS:
+  BoliviaDepartment[] = [
+    {
+      code: "LP",
+      name: "La Paz",
+    },
+    {
+      code: "CB",
+      name: "Cochabamba",
+    },
+    {
+      code: "SC",
+      name: "Santa Cruz",
+    },
+    {
+      code: "OR",
+      name: "Oruro",
+    },
+    {
+      code: "PT",
+      name: "Potosí",
+    },
+    {
+      code: "CH",
+      name: "Chuquisaca",
+    },
+    {
+      code: "TJ",
+      name: "Tarija",
+    },
+    {
+      code: "BE",
+      name: "Beni",
+    },
+    {
+      code: "PD",
+      name: "Pando",
+    },
+  ];
 
 
 // ==========================================================
@@ -45,7 +103,6 @@ interface PatientCatalogsResponse {
 // ==========================================================
 
 export interface PatientDocument {
-
   id_document:
     string | null;
 
@@ -65,17 +122,15 @@ export interface PatientDocument {
     string | null;
 
   issued_in:
-    string | null;
-
+    BoliviaDepartmentCode | string | null;
 }
 
 
 // ==========================================================
-// CONTACTO
+// CONTACTO DEL PACIENTE
 // ==========================================================
 
 export interface PatientContact {
-
   id_contact:
     string | null;
 
@@ -83,7 +138,10 @@ export interface PatientContact {
     number;
 
   contact_type_code:
-    string;
+    "CELULAR"
+    | "TELEFONO"
+    | "CORREO"
+    | string;
 
   contact_type_name:
     string;
@@ -93,7 +151,34 @@ export interface PatientContact {
 
   primary:
     boolean;
+}
 
+
+// ==========================================================
+// CONTACTO DE EMERGENCIA
+// ==========================================================
+
+export interface PatientEmergencyContact {
+  id_emergency_contact:
+    string | null;
+
+  full_name:
+    string;
+
+  relationship:
+    string;
+
+  phone:
+    string;
+
+  email:
+    string | null;
+
+  primary:
+    boolean;
+
+  registration_date:
+    string | null;
 }
 
 
@@ -102,13 +187,11 @@ export interface PatientContact {
 // ==========================================================
 
 export interface PatientSex {
-
   id?: number;
 
   code: string;
 
   name: string;
-
 }
 
 
@@ -117,7 +200,6 @@ export interface PatientSex {
 // ==========================================================
 
 export interface PatientSummary {
-
   id_patient:
     string;
 
@@ -144,7 +226,6 @@ export interface PatientSummary {
 
   registration_date:
     string | null;
-
 }
 
 
@@ -153,7 +234,6 @@ export interface PatientSummary {
 // ==========================================================
 
 export interface PatientDetail {
-
   id_patient:
     string;
 
@@ -187,9 +267,14 @@ export interface PatientDetail {
   contacts:
     PatientContact[];
 
+  emergency_contacts:
+    PatientEmergencyContact[];
+
+  primary_emergency_contact:
+    PatientEmergencyContact | null;
+
   clinical_cases_count:
     number;
-
 }
 
 
@@ -198,7 +283,6 @@ export interface PatientDetail {
 // ==========================================================
 
 export interface PatientPagination {
-
   page:
     number;
 
@@ -210,18 +294,15 @@ export interface PatientPagination {
 
   total_pages:
     number;
-
 }
 
 
 export interface PatientListResponse {
-
   data:
     PatientSummary[];
 
   pagination:
     PatientPagination;
-
 }
 
 
@@ -230,7 +311,6 @@ export interface PatientListResponse {
 // ==========================================================
 
 export interface PatientFilters {
-
   search?: string;
 
   sex_code?: string;
@@ -242,7 +322,6 @@ export interface PatientFilters {
   page?: number;
 
   page_size?: number;
-
 }
 
 
@@ -251,6 +330,9 @@ export interface PatientFilters {
 // ==========================================================
 
 export interface CreatePatientRequest {
+  // -------------------------------------------------------
+  // DATOS PERSONALES
+  // -------------------------------------------------------
 
   first_names:
     string;
@@ -267,6 +349,10 @@ export interface CreatePatientRequest {
   sex_id:
     number;
 
+  // -------------------------------------------------------
+  // DOCUMENTO
+  // -------------------------------------------------------
+
   document_type_id:
     number;
 
@@ -276,26 +362,46 @@ export interface CreatePatientRequest {
   complement?:
     string | null;
 
-  issued_in?:
+  issued_in:
+    BoliviaDepartmentCode;
+
+  // -------------------------------------------------------
+  // CONTACTOS DEL PACIENTE
+  // -------------------------------------------------------
+
+  mobile_phone?:
     string | null;
 
-  contact_type_id?:
-    number | null;
-
-  contact_value?:
+  landline_phone?:
     string | null;
 
+  email?:
+    string | null;
+
+  // -------------------------------------------------------
+  // CONTACTO DE EMERGENCIA
+  // -------------------------------------------------------
+
+  emergency_contact_name?:
+    string | null;
+
+  emergency_relationship?:
+    string | null;
+
+  emergency_phone?:
+    string | null;
+
+  emergency_email?:
+    string | null;
 }
 
 
 export interface CreatePatientResponse {
-
   message:
     string;
 
   data:
     PatientDetail;
-
 }
 
 
@@ -304,7 +410,6 @@ export interface CreatePatientResponse {
 // ==========================================================
 
 export interface UpdatePatientRequest {
-
   first_names?:
     string;
 
@@ -325,12 +430,10 @@ export interface UpdatePatientRequest {
 
   reason:
     string;
-
 }
 
 
 export interface PatientChange {
-
   field:
     string;
 
@@ -339,12 +442,10 @@ export interface PatientChange {
 
   new_value:
     string | null;
-
 }
 
 
 export interface UpdatePatientResponse {
-
   message:
     string;
 
@@ -356,7 +457,6 @@ export interface UpdatePatientResponse {
 
   reason:
     string;
-
 }
 
 
@@ -365,7 +465,6 @@ export interface UpdatePatientResponse {
 // ==========================================================
 
 export interface PossibleDuplicateFilters {
-
   document_type_id?:
     number;
 
@@ -383,25 +482,20 @@ export interface PossibleDuplicateFilters {
 
   birth_date?:
     string;
-
 }
 
 
 export interface PossibleDuplicateResponse {
-
   data:
     PatientSummary[];
 
   meta: {
-
     has_possible_duplicates:
       boolean;
 
     total:
       number;
-
   };
-
 }
 
 
@@ -420,7 +514,6 @@ export async function getPatientCatalogs():
 
 
   return response.data.data;
-
 }
 
 
@@ -447,7 +540,6 @@ export async function listPatients(
 
     params.search =
       filters.search.trim();
-
   }
 
 
@@ -457,7 +549,6 @@ export async function listPatients(
 
     params.sex_code =
       filters.sex_code;
-
   }
 
 
@@ -468,7 +559,6 @@ export async function listPatients(
 
     params.active =
       filters.active;
-
   }
 
 
@@ -481,7 +571,6 @@ export async function listPatients(
       .document_type_code =
         filters
           .document_type_code;
-
   }
 
 
@@ -504,7 +593,6 @@ export async function listPatients(
 
 
   return response.data;
-
 }
 
 
@@ -526,7 +614,6 @@ export async function getPatient(
 
 
   return response.data.data;
-
 }
 
 
@@ -548,7 +635,6 @@ export async function createPatient(
 
 
   return response.data;
-
 }
 
 
@@ -571,7 +657,6 @@ export async function updatePatient(
 
 
   return response.data;
-
 }
 
 
@@ -584,17 +669,80 @@ export async function findPossibleDuplicates(
     PossibleDuplicateFilters,
 ): Promise<PossibleDuplicateResponse> {
 
+  const params:
+    Record<
+      string,
+      string | number
+    > = {};
+
+
+  if (
+    filters.document_type_id
+  ) {
+
+    params.document_type_id =
+      filters.document_type_id;
+  }
+
+
+  if (
+    filters.document_number
+      ?.trim()
+  ) {
+
+    params.document_number =
+      filters.document_number.trim();
+  }
+
+
+  if (
+    filters.first_names
+      ?.trim()
+  ) {
+
+    params.first_names =
+      filters.first_names.trim();
+  }
+
+
+  if (
+    filters.paternal_surname
+      ?.trim()
+  ) {
+
+    params.paternal_surname =
+      filters.paternal_surname.trim();
+  }
+
+
+  if (
+    filters.maternal_surname
+      ?.trim()
+  ) {
+
+    params.maternal_surname =
+      filters.maternal_surname.trim();
+  }
+
+
+  if (
+    filters.birth_date
+  ) {
+
+    params.birth_date =
+      filters.birth_date;
+  }
+
+
   const response =
     await apiClinico
       .get<PossibleDuplicateResponse>(
         "/pacientes/posibles-duplicados/",
         {
-          params:
-            filters,
+          params,
         },
       );
 
 
   return response.data;
-
 }

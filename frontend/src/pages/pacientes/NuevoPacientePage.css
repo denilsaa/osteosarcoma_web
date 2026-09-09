@@ -408,3 +408,111 @@
     width: 100%;
   }
 }
+
+/* =========================================================
+   DUPLICADOS AUTOMÁTICOS
+   ========================================================= */
+
+.new-patient-auto-check {
+  display: inline-flex;
+
+  width: fit-content;
+
+  align-items: center;
+
+  gap: 7px;
+
+  margin-top: 15px;
+
+  padding: 8px 11px;
+
+  border: 1px solid #dbe3ed;
+
+  border-radius: 9px;
+
+  background: #f8fafc;
+
+  color: #64748b;
+
+  font-size: 0.76rem;
+
+  font-weight: 700;
+}
+
+
+.new-patient-auto-check:has(
+  .new-patient-spin
+) {
+  border-color: #bae6fd;
+
+  background: #f0f9ff;
+
+  color: #0369a1;
+}
+
+
+/* =========================================================
+   VALIDACIÓN DE CAMPOS
+   ========================================================= */
+
+.new-patient-grid input[aria-invalid="true"],
+.new-patient-grid select[aria-invalid="true"] {
+  border-color: #ef8b8b;
+
+  background: #fffafa;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      239,
+      68,
+      68,
+      0.06
+    );
+}
+
+
+.new-patient-field-error {
+  color: #b91c1c;
+
+  font-size: 0.7rem;
+
+  font-weight: 600;
+
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   CONTACTO DE EMERGENCIA
+   ========================================================= */
+
+.new-patient-card--emergency {
+  border-color: #dce7eb;
+
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #fbfdfe 100%
+    );
+}
+
+
+.new-patient-emergency-note {
+  margin-top: 13px;
+
+  padding: 9px 11px;
+
+  border-left: 3px solid #38a3b8;
+
+  border-radius: 6px;
+
+  background: #f3fafc;
+
+  color: #607b86;
+
+  font-size: 0.73rem;
+
+  line-height: 1.5;
+}

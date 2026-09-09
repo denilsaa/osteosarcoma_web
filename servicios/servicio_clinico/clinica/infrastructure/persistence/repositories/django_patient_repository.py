@@ -5,14 +5,26 @@ from typing import Optional
 from uuid import UUID
 
 from django.db import transaction
-from django.db.models import Count, Q
+
+from django.db.models import (
+    Count,
+    Q,
+)
 
 from clinica.domain.entities import (
     Patient,
     PatientContact,
     PatientDocument,
 )
-from clinica.domain.repositories import PatientRepository
+
+from clinica.domain.entities.patient import (
+    PatientEmergencyContact,
+)
+
+from clinica.domain.repositories import (
+    PatientRepository,
+)
+
 from clinica.infrastructure.persistence.models import (
     ContactoPaciente,
     DocumentoPaciente,
@@ -22,23 +34,22 @@ from clinica.infrastructure.persistence.models import (
     TipoDocumento,
 )
 
+from clinica.infrastructure.persistence.models.patient_models import (
+    ContactoEmergenciaPaciente,
+)
 
-class DjangoPatientRepository(PatientRepository):
-    """
-    Adaptador de persistencia del agregado Paciente.
 
-    Implementa PatientRepository utilizando Django ORM
-    y PostgreSQL.
+class DjangoPatientRepository(
+    PatientRepository
+):
 
-    Domain y Application no conocen Django.
-    """
-
-    # ==========================================================
+    # ======================================================
     # QUERY BASE
-    # ==========================================================
+    # ======================================================
 
     @staticmethod
     def _base_queryset():
+
         return (
             Paciente.objects
             .select_related(
@@ -47,59 +58,150 @@ class DjangoPatientRepository(PatientRepository):
             .prefetch_related(
                 "documentos__tipo_documento",
                 "contactos__tipo_contacto",
+                "contactos_emergencia",
             )
         )
 
-    # ==========================================================
-    # MAPEO ORM -> DOMAIN
-    # ==========================================================
+    # ======================================================
+    # ORM -> DOMAIN
+    # ======================================================
 
     @staticmethod
     def _to_domain(
         model: Paciente,
     ) -> Patient:
-        documents: list[PatientDocument] = []
 
-        for document in model.documentos.all():
+        # ==================================================
+        # DOCUMENTOS
+        # ==================================================
+
+        documents: list[
+            PatientDocument
+        ] = []
+
+        for document in (
+            model.documentos.all()
+        ):
+
             documents.append(
                 PatientDocument(
-                    id_document=document.id_documento,
+                    id_document=(
+                        document.id_documento
+                    ),
                     document_type_id=(
-                        document.tipo_documento.id_tipo_documento
+                        document
+                        .tipo_documento
+                        .id_tipo_documento
                     ),
                     document_type_code=(
-                        document.tipo_documento.codigo
+                        document
+                        .tipo_documento
+                        .codigo
                     ),
                     document_type_name=(
-                        document.tipo_documento.nombre
+                        document
+                        .tipo_documento
+                        .nombre
                     ),
                     document_number=(
-                        document.numero_documento
+                        document
+                        .numero_documento
                     ),
-                    complement=document.complemento,
-                    issued_in=document.expedido_en,
+                    complement=(
+                        document.complemento
+                    ),
+                    issued_in=(
+                        document.expedido_en
+                    ),
                 )
             )
 
-        contacts: list[PatientContact] = []
+        # ==================================================
+        # CONTACTOS
+        # ==================================================
 
-        for contact in model.contactos.all():
+        contacts: list[
+            PatientContact
+        ] = []
+
+        for contact in (
+            model.contactos.all()
+        ):
+
             contacts.append(
                 PatientContact(
-                    id_contact=contact.id_contacto,
+                    id_contact=(
+                        contact.id_contacto
+                    ),
                     contact_type_id=(
-                        contact.tipo_contacto.id_tipo_contacto
+                        contact
+                        .tipo_contacto
+                        .id_tipo_contacto
                     ),
                     contact_type_code=(
-                        contact.tipo_contacto.codigo
+                        contact
+                        .tipo_contacto
+                        .codigo
                     ),
                     contact_type_name=(
-                        contact.tipo_contacto.nombre
+                        contact
+                        .tipo_contacto
+                        .nombre
                     ),
-                    value=contact.valor,
-                    primary=contact.principal,
+                    value=(
+                        contact.valor
+                    ),
+                    primary=(
+                        contact.principal
+                    ),
                 )
             )
+
+        # ==================================================
+        # CONTACTOS DE EMERGENCIA
+        # ==================================================
+
+        emergency_contacts: list[
+            PatientEmergencyContact
+        ] = []
+
+        for emergency in (
+            model
+            .contactos_emergencia
+            .all()
+        ):
+
+            emergency_contacts.append(
+                PatientEmergencyContact(
+                    id_emergency_contact=(
+                        emergency
+                        .id_contacto_emergencia
+                    ),
+                    full_name=(
+                        emergency
+                        .nombre_completo
+                    ),
+                    relationship=(
+                        emergency.parentesco
+                    ),
+                    phone=(
+                        emergency.telefono
+                    ),
+                    email=(
+                        emergency.correo
+                    ),
+                    primary=(
+                        emergency.principal
+                    ),
+                    registration_date=(
+                        emergency.fecha_registro
+                    ),
+                )
+            )
+
+        # ==================================================
+        # CASOS
+        # ==================================================
 
         clinical_cases_count = int(
             getattr(
@@ -107,28 +209,62 @@ class DjangoPatientRepository(PatientRepository):
                 "cantidad_casos",
                 0,
             )
-            or 0
+            or
+            0
         )
+
+        # ==================================================
+        # PACIENTE
+        # ==================================================
 
         return Patient(
-            id_patient=model.id_paciente,
-            first_names=model.nombres,
-            paternal_surname=model.apellido_paterno,
-            maternal_surname=model.apellido_materno,
-            birth_date=model.fecha_nacimiento,
-            sex_id=model.sexo.id_sexo,
-            sex_code=model.sexo.codigo,
-            sex_name=model.sexo.nombre,
-            active=model.activo,
-            registration_date=model.fecha_registro,
-            documents=documents,
-            contacts=contacts,
-            clinical_cases_count=clinical_cases_count,
+            id_patient=(
+                model.id_paciente
+            ),
+            first_names=(
+                model.nombres
+            ),
+            paternal_surname=(
+                model.apellido_paterno
+            ),
+            maternal_surname=(
+                model.apellido_materno
+            ),
+            birth_date=(
+                model.fecha_nacimiento
+            ),
+            sex_id=(
+                model.sexo.id_sexo
+            ),
+            sex_code=(
+                model.sexo.codigo
+            ),
+            sex_name=(
+                model.sexo.nombre
+            ),
+            active=(
+                model.activo
+            ),
+            registration_date=(
+                model.fecha_registro
+            ),
+            documents=(
+                documents
+            ),
+            contacts=(
+                contacts
+            ),
+            emergency_contacts=(
+                emergency_contacts
+            ),
+            clinical_cases_count=(
+                clinical_cases_count
+            ),
         )
 
-    # ==========================================================
-    # CREAR PACIENTE
-    # ==========================================================
+    # ======================================================
+    # CREAR
+    # ======================================================
 
     @transaction.atomic
     def create(
@@ -143,48 +279,172 @@ class DjangoPatientRepository(PatientRepository):
         document_number: str,
         complement: str | None,
         issued_in: str | None,
-        contact_type_id: int | None,
-        contact_value: str | None,
+
+        mobile_phone: str | None,
+        landline_phone: str | None,
+        email: str | None,
+
+        emergency_contact_name: str | None,
+        emergency_relationship: str | None,
+        emergency_phone: str | None,
+        emergency_email: str | None,
     ) -> Patient:
-        sex = Sexo.objects.get(
-            id_sexo=sex_id,
+
+        # ==================================================
+        # CATÁLOGOS
+        # ==================================================
+
+        sex = (
+            Sexo.objects.get(
+                id_sexo=(
+                    sex_id
+                )
+            )
         )
 
-        document_type = TipoDocumento.objects.get(
-            id_tipo_documento=document_type_id,
+        document_type = (
+            TipoDocumento.objects.get(
+                id_tipo_documento=(
+                    document_type_id
+                )
+            )
         )
 
-        patient = Paciente.objects.create(
-            sexo=sex,
-            nombres=first_names,
-            apellido_paterno=paternal_surname,
-            apellido_materno=maternal_surname,
-            fecha_nacimiento=birth_date,
-            activo=True,
+        # ==================================================
+        # PACIENTE
+        # ==================================================
+
+        patient = (
+            Paciente.objects.create(
+                sexo=(
+                    sex
+                ),
+                nombres=(
+                    first_names
+                ),
+                apellido_paterno=(
+                    paternal_surname
+                ),
+                apellido_materno=(
+                    maternal_surname
+                ),
+                fecha_nacimiento=(
+                    birth_date
+                ),
+                activo=True,
+            )
         )
+
+        # ==================================================
+        # DOCUMENTO
+        # ==================================================
 
         DocumentoPaciente.objects.create(
-            paciente=patient,
-            tipo_documento=document_type,
-            numero_documento=document_number,
-            complemento=complement,
-            expedido_en=issued_in,
+            paciente=(
+                patient
+            ),
+            tipo_documento=(
+                document_type
+            ),
+            numero_documento=(
+                document_number
+            ),
+            complemento=(
+                complement
+            ),
+            expedido_en=(
+                issued_in
+            ),
         )
 
-        if (
-            contact_type_id is not None
-            and contact_value
-        ):
-            contact_type = TipoContacto.objects.get(
-                id_tipo_contacto=contact_type_id,
+        # ==================================================
+        # CONTACTOS DEL PACIENTE
+        # ==================================================
+
+        contactos_a_crear = [
+            (
+                "CELULAR",
+                mobile_phone,
+            ),
+            (
+                "TELEFONO",
+                landline_phone,
+            ),
+            (
+                "CORREO",
+                email,
+            ),
+        ]
+
+        principal_asignado = False
+
+        for (
+            codigo,
+            valor,
+        ) in contactos_a_crear:
+
+            if not valor:
+                continue
+
+            tipo_contacto = (
+                TipoContacto.objects.get(
+                    codigo=(
+                        codigo
+                    )
+                )
             )
 
             ContactoPaciente.objects.create(
-                paciente=patient,
-                tipo_contacto=contact_type,
-                valor=contact_value,
+                paciente=(
+                    patient
+                ),
+                tipo_contacto=(
+                    tipo_contacto
+                ),
+                valor=(
+                    valor
+                ),
+                principal=(
+                    not principal_asignado
+                ),
+            )
+
+            principal_asignado = True
+
+        # ==================================================
+        # CONTACTO DE EMERGENCIA
+        # ==================================================
+
+        if (
+            emergency_contact_name
+            and
+            emergency_relationship
+            and
+            emergency_phone
+        ):
+
+            ContactoEmergenciaPaciente.objects.create(
+                paciente=(
+                    patient
+                ),
+                nombre_completo=(
+                    emergency_contact_name
+                ),
+                parentesco=(
+                    emergency_relationship
+                ),
+                telefono=(
+                    emergency_phone
+                ),
+                correo=(
+                    emergency_email
+                ),
                 principal=True,
             )
+
+        # ==================================================
+        # RECARGAR AGREGADO
+        # ==================================================
 
         stored_patient = (
             self._base_queryset()
@@ -195,23 +455,27 @@ class DjangoPatientRepository(PatientRepository):
                 )
             )
             .get(
-                id_paciente=patient.id_paciente,
+                id_paciente=(
+                    patient.id_paciente
+                )
             )
         )
 
         return self._to_domain(
-            stored_patient,
+            stored_patient
         )
 
-    # ==========================================================
-    # OBTENER PACIENTE
-    # ==========================================================
+    # ======================================================
+    # OBTENER
+    # ======================================================
 
     def get_by_id(
         self,
         patient_id: UUID,
     ) -> Optional[Patient]:
+
         try:
+
             patient = (
                 self._base_queryset()
                 .annotate(
@@ -221,20 +485,23 @@ class DjangoPatientRepository(PatientRepository):
                     )
                 )
                 .get(
-                    id_paciente=patient_id,
+                    id_paciente=(
+                        patient_id
+                    )
                 )
             )
 
             return self._to_domain(
-                patient,
+                patient
             )
 
         except Paciente.DoesNotExist:
+
             return None
 
-    # ==========================================================
-    # LISTAR / BUSCAR / FILTRAR / PAGINAR
-    # ==========================================================
+    # ======================================================
+    # LISTAR
+    # ======================================================
 
     def list_patients(
         self,
@@ -245,70 +512,116 @@ class DjangoPatientRepository(PatientRepository):
         document_type_code: str | None,
         page: int,
         page_size: int,
-    ) -> tuple[list[Patient], int]:
+    ) -> tuple[
+        list[Patient],
+        int,
+    ]:
 
-        queryset = self._base_queryset()
+        queryset = (
+            self._base_queryset()
+        )
 
-        # ------------------------------------------------------
-        # BÚSQUEDA GENERAL
-        # ------------------------------------------------------
+        # ==================================================
+        # BÚSQUEDA
+        # ==================================================
 
         if search:
-            search = search.strip()
 
-            queryset = queryset.filter(
-                Q(
-                    nombres__icontains=search,
-                )
-                | Q(
-                    apellido_paterno__icontains=search,
-                )
-                | Q(
-                    apellido_materno__icontains=search,
-                )
-                | Q(
-                    documentos__numero_documento__icontains=search,
-                )
-                | Q(
-                    contactos__valor__icontains=search,
+            search = (
+                search.strip()
+            )
+
+            queryset = (
+                queryset.filter(
+                    Q(
+                        nombres__icontains=(
+                            search
+                        )
+                    )
+                    |
+                    Q(
+                        apellido_paterno__icontains=(
+                            search
+                        )
+                    )
+                    |
+                    Q(
+                        apellido_materno__icontains=(
+                            search
+                        )
+                    )
+                    |
+                    Q(
+                        documentos__numero_documento__icontains=(
+                            search
+                        )
+                    )
+                    |
+                    Q(
+                        contactos__valor__icontains=(
+                            search
+                        )
+                    )
+                    |
+                    Q(
+                        contactos_emergencia__nombre_completo__icontains=(
+                            search
+                        )
+                    )
+                    |
+                    Q(
+                        contactos_emergencia__telefono__icontains=(
+                            search
+                        )
+                    )
                 )
             )
 
-        # ------------------------------------------------------
+        # ==================================================
         # SEXO
-        # ------------------------------------------------------
+        # ==================================================
 
         if sex_code:
-            queryset = queryset.filter(
-                sexo__codigo=sex_code,
+
+            queryset = (
+                queryset.filter(
+                    sexo__codigo=(
+                        sex_code
+                    )
+                )
             )
 
-        # ------------------------------------------------------
-        # ESTADO
-        # ------------------------------------------------------
+        # ==================================================
+        # ACTIVO
+        # ==================================================
 
         if active is not None:
-            queryset = queryset.filter(
-                activo=active,
+
+            queryset = (
+                queryset.filter(
+                    activo=(
+                        active
+                    )
+                )
             )
 
-        # ------------------------------------------------------
-        # TIPO DOCUMENTO
-        # ------------------------------------------------------
+        # ==================================================
+        # DOCUMENTO
+        # ==================================================
 
         if document_type_code:
-            queryset = queryset.filter(
-                documentos__tipo_documento__codigo=(
-                    document_type_code
-                ),
+
+            queryset = (
+                queryset.filter(
+                    documentos__tipo_documento__codigo=(
+                        document_type_code
+                    )
+                )
             )
 
-        # ------------------------------------------------------
-        # IMPORTANTE
-        #
-        # Primero eliminamos duplicados generados por JOINs.
-        # Después calculamos casos clínicos.
-        # ------------------------------------------------------
+        # ==================================================
+        # DISTINCT + CASOS
+        # ==================================================
 
         queryset = (
             queryset
@@ -320,31 +633,38 @@ class DjangoPatientRepository(PatientRepository):
                 )
             )
             .order_by(
-                "-fecha_registro",
+                "-fecha_registro"
             )
         )
 
-        total = queryset.count()
+        total = (
+            queryset.count()
+        )
 
         start = (
             (page - 1)
-            * page_size
+            *
+            page_size
         )
 
         end = (
             start
-            + page_size
+            +
+            page_size
         )
 
-        page_items = queryset[
-            start:end
-        ]
+        page_items = (
+            queryset[
+                start:end
+            ]
+        )
 
         patients = [
             self._to_domain(
                 patient
             )
-            for patient in page_items
+            for patient
+            in page_items
         ]
 
         return (
@@ -352,9 +672,9 @@ class DjangoPatientRepository(PatientRepository):
             total,
         )
 
-    # ==========================================================
+    # ======================================================
     # DOCUMENTO EXACTO
-    # ==========================================================
+    # ======================================================
 
     def find_exact_document(
         self,
@@ -362,7 +682,9 @@ class DjangoPatientRepository(PatientRepository):
         document_type_id: int,
         document_number: str,
     ) -> Optional[Patient]:
+
         try:
+
             patient = (
                 self._base_queryset()
                 .annotate(
@@ -382,15 +704,16 @@ class DjangoPatientRepository(PatientRepository):
             )
 
             return self._to_domain(
-                patient,
+                patient
             )
 
         except Paciente.DoesNotExist:
+
             return None
 
-    # ==========================================================
-    # POSIBLES DUPLICADOS
-    # ==========================================================
+    # ======================================================
+    # DUPLICADOS
+    # ======================================================
 
     def find_possible_duplicates(
         self,
@@ -404,19 +727,25 @@ class DjangoPatientRepository(PatientRepository):
         limit: int = 10,
     ) -> list[Patient]:
 
-        queryset = self._base_queryset()
+        queryset = (
+            self._base_queryset()
+        )
 
         conditions = Q()
+
         has_conditions = False
 
-        # ------------------------------------------------------
+        # ==================================================
         # DOCUMENTO EXACTO
-        # ------------------------------------------------------
+        # ==================================================
 
         if (
-            document_type_id is not None
-            and document_number
+            document_type_id
+            is not None
+            and
+            document_number
         ):
+
             conditions |= Q(
                 documentos__tipo_documento__id_tipo_documento=(
                     document_type_id
@@ -428,50 +757,60 @@ class DjangoPatientRepository(PatientRepository):
 
             has_conditions = True
 
-        # ------------------------------------------------------
+        # ==================================================
         # IDENTIDAD
-        # ------------------------------------------------------
+        # ==================================================
 
         if (
             first_names
-            and paternal_surname
+            and
+            paternal_surname
         ):
+
             identity_condition = (
                 Q(
-                    nombres__iexact=first_names,
+                    nombres__iexact=(
+                        first_names
+                    )
                 )
-                & Q(
+                &
+                Q(
                     apellido_paterno__iexact=(
                         paternal_surname
-                    ),
+                    )
                 )
             )
 
             if maternal_surname:
+
                 identity_condition &= Q(
                     apellido_materno__iexact=(
                         maternal_surname
-                    ),
+                    )
                 )
 
             if birth_date:
+
                 identity_condition &= Q(
                     fecha_nacimiento=(
                         birth_date
-                    ),
+                    )
                 )
 
-            conditions |= identity_condition
+            conditions |= (
+                identity_condition
+            )
 
             has_conditions = True
 
         if not has_conditions:
+
             return []
 
         queryset = (
             queryset
             .filter(
-                conditions,
+                conditions
             )
             .distinct()
             .annotate(
@@ -481,7 +820,7 @@ class DjangoPatientRepository(PatientRepository):
                 )
             )
             .order_by(
-                "-fecha_registro",
+                "-fecha_registro"
             )[:limit]
         )
 
@@ -489,12 +828,13 @@ class DjangoPatientRepository(PatientRepository):
             self._to_domain(
                 patient
             )
-            for patient in queryset
+            for patient
+            in queryset
         ]
 
-    # ==========================================================
+    # ======================================================
     # ACTUALIZAR
-    # ==========================================================
+    # ======================================================
 
     @transaction.atomic
     def update(
@@ -508,10 +848,12 @@ class DjangoPatientRepository(PatientRepository):
             Paciente.objects
             .select_for_update()
             .select_related(
-                "sexo",
+                "sexo"
             )
             .get(
-                id_paciente=patient_id,
+                id_paciente=(
+                    patient_id
+                )
             )
         )
 
@@ -532,7 +874,9 @@ class DjangoPatientRepository(PatientRepository):
                 "activo",
         }
 
-        updated_fields: list[str] = []
+        updated_fields: list[
+            str
+        ] = []
 
         for (
             domain_field,
@@ -557,13 +901,18 @@ class DjangoPatientRepository(PatientRepository):
                 model_field
             )
 
-        if "sex_id" in changes:
+        if (
+            "sex_id"
+            in changes
+        ):
+
             patient.sexo = (
                 Sexo.objects.get(
-                    id_sexo=
+                    id_sexo=(
                         changes[
                             "sex_id"
-                        ],
+                        ]
+                    )
                 )
             )
 
@@ -572,9 +921,11 @@ class DjangoPatientRepository(PatientRepository):
             )
 
         if updated_fields:
+
             patient.save(
-                update_fields=
-                    updated_fields,
+                update_fields=(
+                    updated_fields
+                )
             )
 
         updated_patient = (
@@ -586,10 +937,12 @@ class DjangoPatientRepository(PatientRepository):
                 )
             )
             .get(
-                id_paciente=patient_id,
+                id_paciente=(
+                    patient_id
+                )
             )
         )
 
         return self._to_domain(
-            updated_patient,
+            updated_patient
         )

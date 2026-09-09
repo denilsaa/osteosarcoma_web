@@ -1,8 +1,15 @@
 from uuid import UUID
 
 from rest_framework import status
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
+
+from rest_framework.decorators import (
+    api_view,
+)
+
+from rest_framework.response import (
+    Response,
+)
+
 
 from clinica.application.dto import (
     CreatePatientDTO,
@@ -10,16 +17,23 @@ from clinica.application.dto import (
     PossibleDuplicateDTO,
     UpdatePatientDTO,
 )
-from clinica.bootstrap.container import get_container
+
+from clinica.bootstrap.container import (
+    get_container,
+)
+
 from clinica.infrastructure.security import (
     RequestActorExtractor,
 )
+
 from clinica.interfaces.api.error_handler import (
     domain_error_response,
 )
+
 from clinica.interfaces.api.presenters import (
     PatientPresenter,
 )
+
 from clinica.interfaces.api.serializers import (
     CreatePatientRequestSerializer,
     PatientListQuerySerializer,
@@ -59,11 +73,19 @@ def _query_params_to_dict(
 # ==========================================================
 
 
-@api_view(["GET"])
+@api_view(
+    [
+        "GET",
+    ]
+)
 def patient_catalogs_view(
     request,
 ):
-    container = get_container()
+    del request
+
+    container = (
+        get_container()
+    )
 
     result = (
         container
@@ -73,7 +95,8 @@ def patient_catalogs_view(
 
     return Response(
         {
-            "data": result,
+            "data":
+                result,
         }
     )
 
@@ -83,7 +106,11 @@ def patient_catalogs_view(
 # ==========================================================
 
 
-@api_view(["GET"])
+@api_view(
+    [
+        "GET",
+    ]
+)
 def patient_list_view(
     request,
 ):
@@ -103,42 +130,61 @@ def patient_list_view(
         raise_exception=True
     )
 
-    data = serializer.validated_data
+    data = (
+        serializer
+        .validated_data
+    )
 
     dto = PatientFiltersDTO(
-        search=data.get(
-            "search"
+        search=(
+            data.get(
+                "search"
+            )
         ),
 
-        sex_code=data.get(
-            "sex_code"
+        sex_code=(
+            data.get(
+                "sex_code"
+            )
         ),
 
-        active=data.get(
-            "active"
+        active=(
+            data.get(
+                "active"
+            )
         ),
 
-        document_type_code=data.get(
-            "document_type_code"
+        document_type_code=(
+            data.get(
+                "document_type_code"
+            )
         ),
 
-        page=data.get(
-            "page",
-            1,
+        page=(
+            data.get(
+                "page",
+                1,
+            )
         ),
 
-        page_size=data.get(
-            "page_size",
-            10,
+        page_size=(
+            data.get(
+                "page_size",
+                10,
+            )
         ),
     )
 
-    container = get_container()
+    container = (
+        get_container()
+    )
 
     result = (
         container
         .list_patients
-        .execute(dto)
+        .execute(
+            dto
+        )
     )
 
     return Response(
@@ -155,7 +201,9 @@ def patient_list_view(
 
             "pagination": {
                 "page":
-                    result["page"],
+                    result[
+                        "page"
+                    ],
 
                 "page_size":
                     result[
@@ -163,7 +211,9 @@ def patient_list_view(
                     ],
 
                 "total":
-                    result["total"],
+                    result[
+                        "total"
+                    ],
 
                 "total_pages":
                     result[
@@ -179,10 +229,18 @@ def patient_list_view(
 # ==========================================================
 
 
-@api_view(["POST"])
+@api_view(
+    [
+        "POST",
+    ]
+)
 def patient_create_view(
     request,
 ):
+    # ======================================================
+    # VALIDAR REQUEST
+    # ======================================================
+
     serializer = (
         CreatePatientRequestSerializer(
             data=request.data
@@ -193,74 +251,148 @@ def patient_create_view(
         raise_exception=True
     )
 
-    data = serializer.validated_data
-
-    dto = CreatePatientDTO(
-        first_names=
-            data["first_names"],
-
-        paternal_surname=
-            data[
-                "paternal_surname"
-            ],
-
-        maternal_surname=
-            data.get(
-                "maternal_surname"
-            ),
-
-        birth_date=
-            data["birth_date"],
-
-        sex_id=
-            data["sex_id"],
-
-        document_type_id=
-            data[
-                "document_type_id"
-            ],
-
-        document_number=
-            data[
-                "document_number"
-            ],
-
-        complement=
-            data.get(
-                "complement"
-            ),
-
-        issued_in=
-            data.get(
-                "issued_in"
-            ),
-
-        contact_type_id=
-            data.get(
-                "contact_type_id"
-            ),
-
-        contact_value=
-            data.get(
-                "contact_value"
-            ),
+    data = (
+        serializer
+        .validated_data
     )
 
-    container = get_container()
+    # ======================================================
+    # CONSTRUIR DTO
+    # ======================================================
+
+    dto = CreatePatientDTO(
+        # --------------------------------------------------
+        # DATOS PERSONALES
+        # --------------------------------------------------
+
+        first_names=(
+            data[
+                "first_names"
+            ]
+        ),
+
+        paternal_surname=(
+            data[
+                "paternal_surname"
+            ]
+        ),
+
+        maternal_surname=(
+            data.get(
+                "maternal_surname"
+            )
+        ),
+
+        birth_date=(
+            data[
+                "birth_date"
+            ]
+        ),
+
+        sex_id=(
+            data[
+                "sex_id"
+            ]
+        ),
+
+        # --------------------------------------------------
+        # DOCUMENTO
+        # --------------------------------------------------
+
+        document_type_id=(
+            data[
+                "document_type_id"
+            ]
+        ),
+
+        document_number=(
+            data[
+                "document_number"
+            ]
+        ),
+
+        complement=(
+            data.get(
+                "complement"
+            )
+        ),
+
+        issued_in=(
+            data.get(
+                "issued_in"
+            )
+        ),
+
+        # --------------------------------------------------
+        # CONTACTOS DEL PACIENTE
+        # --------------------------------------------------
+
+        mobile_phone=(
+            data.get(
+                "mobile_phone"
+            )
+        ),
+
+        landline_phone=(
+            data.get(
+                "landline_phone"
+            )
+        ),
+
+        email=(
+            data.get(
+                "email"
+            )
+        ),
+
+        # --------------------------------------------------
+        # CONTACTO DE EMERGENCIA
+        # --------------------------------------------------
+
+        emergency_contact_name=(
+            data.get(
+                "emergency_contact_name"
+            )
+        ),
+
+        emergency_relationship=(
+            data.get(
+                "emergency_relationship"
+            )
+        ),
+
+        emergency_phone=(
+            data.get(
+                "emergency_phone"
+            )
+        ),
+
+        emergency_email=(
+            data.get(
+                "emergency_email"
+            )
+        ),
+    )
+
+    container = (
+        get_container()
+    )
 
     try:
         # ==================================================
-        # 1. EJECUTAR CASO DE USO
+        # 1. CREAR PACIENTE
         # ==================================================
 
         patient = (
             container
             .create_patient
-            .execute(dto)
+            .execute(
+                dto
+            )
         )
 
         # ==================================================
-        # 2. OBTENER ACTOR DEL REQUEST
+        # 2. OBTENER ACTOR
         # ==================================================
 
         actor = (
@@ -273,20 +405,25 @@ def patient_create_view(
         # ==================================================
         # 3. PUBLICAR EVENTO
         #
-        # Clínico NO almacena auditoría.
-        # Únicamente informa lo ocurrido.
+        # El servicio clínico NO almacena auditoría.
+        # Únicamente publica el evento correspondiente.
         # ==================================================
 
         audit_published = (
             container
             .audit_service
             .patient_created(
-                patient=patient,
-                actor=actor,
+                patient=(
+                    patient
+                ),
+                actor=(
+                    actor
+                ),
             )
         )
 
         if not audit_published:
+
             print(
                 "[CLINICO][EVENTOS] "
                 "Paciente registrado, "
@@ -295,9 +432,16 @@ def patient_create_view(
             )
 
     except Exception as exc:
-        return domain_error_response(
-            exc
+
+        return (
+            domain_error_response(
+                exc
+            )
         )
+
+    # ======================================================
+    # RESPUESTA
+    # ======================================================
 
     return Response(
         {
@@ -312,8 +456,9 @@ def patient_create_view(
                     patient
                 ),
         },
-        status=
-            status.HTTP_201_CREATED,
+        status=(
+            status.HTTP_201_CREATED
+        ),
     )
 
 
@@ -322,12 +467,19 @@ def patient_create_view(
 # ==========================================================
 
 
-@api_view(["GET"])
+@api_view(
+    [
+        "GET",
+    ]
+)
 def patient_detail_view(
     request,
     patient_id,
 ):
+    del request
+
     try:
+
         patient = (
             get_container()
             .get_patient
@@ -341,8 +493,11 @@ def patient_detail_view(
         )
 
     except Exception as exc:
-        return domain_error_response(
-            exc
+
+        return (
+            domain_error_response(
+                exc
+            )
         )
 
     return Response(
@@ -360,11 +515,19 @@ def patient_detail_view(
 # ==========================================================
 
 
-@api_view(["PATCH"])
+@api_view(
+    [
+        "PATCH",
+    ]
+)
 def patient_update_view(
     request,
     patient_id,
 ):
+    # ======================================================
+    # VALIDAR REQUEST
+    # ======================================================
+
     serializer = (
         UpdatePatientRequestSerializer(
             data=request.data
@@ -375,69 +538,86 @@ def patient_update_view(
         raise_exception=True
     )
 
-    data = serializer.validated_data
+    data = (
+        serializer
+        .validated_data
+    )
+
+    # ======================================================
+    # DTO
+    # ======================================================
 
     dto = UpdatePatientDTO(
-        patient_id=UUID(
-            str(
-                patient_id
+        patient_id=(
+            UUID(
+                str(
+                    patient_id
+                )
             )
         ),
 
-        reason=
-            data["reason"],
+        reason=(
+            data[
+                "reason"
+            ]
+        ),
 
-        first_names=
+        first_names=(
             data.get(
                 "first_names"
-            ),
+            )
+        ),
 
-        paternal_surname=
+        paternal_surname=(
             data.get(
                 "paternal_surname"
-            ),
+            )
+        ),
 
-        maternal_surname=
+        maternal_surname=(
             data.get(
                 "maternal_surname"
-            ),
+            )
+        ),
 
-        birth_date=
+        birth_date=(
             data.get(
                 "birth_date"
-            ),
+            )
+        ),
 
-        sex_id=
+        sex_id=(
             data.get(
                 "sex_id"
-            ),
+            )
+        ),
 
-        active=
+        active=(
             data.get(
                 "active"
-            ),
+            )
+        ),
     )
 
-    container = get_container()
+    container = (
+        get_container()
+    )
 
     try:
         # ==================================================
-        # 1. EJECUTAR CASO DE USO
-        #
-        # Este devuelve:
-        # - paciente actualizado
-        # - motivo
-        # - anterior/nuevo
+        # 1. ACTUALIZAR
         # ==================================================
 
         result = (
             container
             .update_patient
-            .execute(dto)
+            .execute(
+                dto
+            )
         )
 
         # ==================================================
-        # 2. OBTENER ACTOR
+        # 2. ACTOR
         # ==================================================
 
         actor = (
@@ -448,34 +628,39 @@ def patient_update_view(
         )
 
         # ==================================================
-        # 3. PUBLICAR EVENTO
+        # 3. AUDITORÍA
         # ==================================================
 
         audit_published = (
             container
             .audit_service
             .patient_updated(
-                patient=
+                patient=(
                     result[
                         "patient"
-                    ],
+                    ]
+                ),
 
-                actor=
-                    actor,
+                actor=(
+                    actor
+                ),
 
-                reason=
+                reason=(
                     result[
                         "reason"
-                    ],
+                    ]
+                ),
 
-                changes=
+                changes=(
                     result[
                         "changes"
-                    ],
+                    ]
+                ),
             )
         )
 
         if not audit_published:
+
             print(
                 "[CLINICO][EVENTOS] "
                 "Paciente actualizado, "
@@ -484,9 +669,16 @@ def patient_update_view(
             )
 
     except Exception as exc:
-        return domain_error_response(
-            exc
+
+        return (
+            domain_error_response(
+                exc
+            )
         )
+
+    # ======================================================
+    # RESPUESTA
+    # ======================================================
 
     return Response(
         {
@@ -514,6 +706,7 @@ def patient_update_view(
                     "new_value":
                         change.new_value,
                 }
+
                 for change
                 in result[
                     "changes"
@@ -533,7 +726,11 @@ def patient_update_view(
 # ==========================================================
 
 
-@api_view(["GET"])
+@api_view(
+    [
+        "GET",
+    ]
+)
 def patient_duplicates_view(
     request,
 ):
@@ -553,50 +750,65 @@ def patient_duplicates_view(
         raise_exception=True
     )
 
-    data = serializer.validated_data
+    data = (
+        serializer
+        .validated_data
+    )
 
     dto = PossibleDuplicateDTO(
-        document_type_id=
+        document_type_id=(
             data.get(
                 "document_type_id"
-            ),
+            )
+        ),
 
-        document_number=
+        document_number=(
             data.get(
                 "document_number"
-            ),
+            )
+        ),
 
-        first_names=
+        first_names=(
             data.get(
                 "first_names"
-            ),
+            )
+        ),
 
-        paternal_surname=
+        paternal_surname=(
             data.get(
                 "paternal_surname"
-            ),
+            )
+        ),
 
-        maternal_surname=
+        maternal_surname=(
             data.get(
                 "maternal_surname"
-            ),
+            )
+        ),
 
-        birth_date=
+        birth_date=(
             data.get(
                 "birth_date"
-            ),
+            )
+        ),
     )
 
     try:
+
         patients = (
             get_container()
             .find_patient_duplicates
-            .execute(dto)
+            .execute(
+                dto
+            )
         )
 
     except Exception as exc:
-        return domain_error_response(
-            exc
+
+        return (
+            domain_error_response(
+                exc
+            )
         )
 
     return Response(
@@ -611,9 +823,13 @@ def patient_duplicates_view(
 
             "meta": {
                 "has_possible_duplicates":
-                    len(
-                        patients
-                    ) > 0,
+                    (
+                        len(
+                            patients
+                        )
+                        >
+                        0
+                    ),
 
                 "total":
                     len(

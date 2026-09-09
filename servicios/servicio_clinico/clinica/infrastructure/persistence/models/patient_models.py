@@ -9,7 +9,13 @@ from .catalog_models import (
 )
 
 
+# ==========================================================
+# PACIENTE
+# ==========================================================
+
+
 class Paciente(models.Model):
+
     id_paciente = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
@@ -24,11 +30,11 @@ class Paciente(models.Model):
     )
 
     nombres = models.CharField(
-        max_length=100
+        max_length=100,
     )
 
     apellido_paterno = models.CharField(
-        max_length=80
+        max_length=80,
     )
 
     apellido_materno = models.CharField(
@@ -40,15 +46,17 @@ class Paciente(models.Model):
     fecha_nacimiento = models.DateField()
 
     fecha_registro = models.DateTimeField(
-        auto_now_add=True
+        auto_now_add=True,
     )
 
     activo = models.BooleanField(
-        default=True
+        default=True,
     )
 
     class Meta:
+
         db_table = "pacientes"
+
         app_label = "clinica"
 
         indexes = [
@@ -62,6 +70,7 @@ class Paciente(models.Model):
         ]
 
     def __str__(self):
+
         partes = [
             self.nombres,
             self.apellido_paterno,
@@ -75,7 +84,13 @@ class Paciente(models.Model):
         )
 
 
+# ==========================================================
+# DOCUMENTO DEL PACIENTE
+# ==========================================================
+
+
 class DocumentoPaciente(models.Model):
+
     id_documento = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
@@ -97,7 +112,7 @@ class DocumentoPaciente(models.Model):
     )
 
     numero_documento = models.CharField(
-        max_length=50
+        max_length=50,
     )
 
     complemento = models.CharField(
@@ -113,7 +128,9 @@ class DocumentoPaciente(models.Model):
     )
 
     class Meta:
+
         db_table = "documentos_paciente"
+
         app_label = "clinica"
 
         constraints = [
@@ -127,10 +144,17 @@ class DocumentoPaciente(models.Model):
         ]
 
     def __str__(self):
+
         return self.numero_documento
 
 
+# ==========================================================
+# CONTACTOS DEL PACIENTE
+# ==========================================================
+
+
 class ContactoPaciente(models.Model):
+
     id_contacto = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
@@ -152,15 +176,17 @@ class ContactoPaciente(models.Model):
     )
 
     valor = models.CharField(
-        max_length=150
+        max_length=150,
     )
 
     principal = models.BooleanField(
-        default=False
+        default=False,
     )
 
     class Meta:
+
         db_table = "contactos_paciente"
+
         app_label = "clinica"
 
         indexes = [
@@ -174,4 +200,84 @@ class ContactoPaciente(models.Model):
         ]
 
     def __str__(self):
+
         return self.valor
+
+
+# ==========================================================
+# CONTACTOS DE EMERGENCIA
+# ==========================================================
+
+
+class ContactoEmergenciaPaciente(models.Model):
+    """
+    Persona de contacto en caso de emergencia.
+
+    Se almacena separada de ContactoPaciente porque
+    representa a un tercero relacionado con el paciente.
+
+    Un paciente puede tener más de un contacto
+    de emergencia en el futuro.
+    """
+
+    id_contacto_emergencia = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+
+    paciente = models.ForeignKey(
+        Paciente,
+        on_delete=models.CASCADE,
+        related_name="contactos_emergencia",
+        db_column="id_paciente",
+    )
+
+    nombre_completo = models.CharField(
+        max_length=180,
+    )
+
+    parentesco = models.CharField(
+        max_length=80,
+    )
+
+    telefono = models.CharField(
+        max_length=25,
+    )
+
+    correo = models.EmailField(
+        max_length=150,
+        null=True,
+        blank=True,
+    )
+
+    principal = models.BooleanField(
+        default=True,
+    )
+
+    fecha_registro = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+
+        db_table = "contactos_emergencia_paciente"
+
+        app_label = "clinica"
+
+        indexes = [
+            models.Index(
+                fields=[
+                    "paciente",
+                    "principal",
+                ],
+                name="idx_contacto_emergencia",
+            ),
+        ]
+
+    def __str__(self):
+
+        return (
+            f"{self.nombre_completo} "
+            f"({self.parentesco})"
+        )

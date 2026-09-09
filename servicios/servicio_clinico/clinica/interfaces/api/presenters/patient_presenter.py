@@ -4,17 +4,26 @@ from clinica.domain.entities import (
 
 
 class PatientPresenter:
+
+    # ======================================================
+    # DOCUMENTO
+    # ======================================================
+
     @staticmethod
     def document(
         document,
     ):
+
         if document is None:
+
             return None
 
         return {
             "id_document":
                 (
-                    str(document.id_document)
+                    str(
+                        document.id_document
+                    )
                     if document.id_document
                     else None
                 ),
@@ -38,17 +47,25 @@ class PatientPresenter:
                 document.issued_in,
         }
 
+    # ======================================================
+    # CONTACTO
+    # ======================================================
+
     @staticmethod
     def contact(
         contact,
     ):
+
         if contact is None:
+
             return None
 
         return {
             "id_contact":
                 (
-                    str(contact.id_contact)
+                    str(
+                        contact.id_contact
+                    )
                     if contact.id_contact
                     else None
                 ),
@@ -69,15 +86,77 @@ class PatientPresenter:
                 contact.primary,
         }
 
+    # ======================================================
+    # CONTACTO EMERGENCIA
+    # ======================================================
+
+    @staticmethod
+    def emergency_contact(
+        contact,
+    ):
+
+        if contact is None:
+
+            return None
+
+        return {
+            "id_emergency_contact":
+                (
+                    str(
+                        contact
+                        .id_emergency_contact
+                    )
+                    if (
+                        contact
+                        .id_emergency_contact
+                    )
+                    else None
+                ),
+
+            "full_name":
+                contact.full_name,
+
+            "relationship":
+                contact.relationship,
+
+            "phone":
+                contact.phone,
+
+            "email":
+                contact.email,
+
+            "primary":
+                contact.primary,
+
+            "registration_date":
+                (
+                    contact
+                    .registration_date
+                    .isoformat()
+                    if (
+                        contact
+                        .registration_date
+                    )
+                    else None
+                ),
+        }
+
+    # ======================================================
+    # DETALLE
+    # ======================================================
+
     @classmethod
     def detail(
         cls,
         patient: Patient,
     ) -> dict:
+
         return {
             "id_patient":
                 (
-                    str(patient.id_patient)
+                    str(
+                        patient.id_patient
+                    )
                     if patient.id_patient
                     else None
                 ),
@@ -95,7 +174,9 @@ class PatientPresenter:
                 patient.full_name,
 
             "birth_date":
-                patient.birth_date.isoformat(),
+                patient
+                .birth_date
+                .isoformat(),
 
             "sex": {
                 "id":
@@ -121,36 +202,63 @@ class PatientPresenter:
                 ),
 
             "documents": [
-                cls.document(document)
+                cls.document(
+                    document
+                )
                 for document
                 in patient.documents
             ],
 
             "contacts": [
-                cls.contact(contact)
+                cls.contact(
+                    contact
+                )
                 for contact
                 in patient.contacts
             ],
+
+            "emergency_contacts": [
+                cls.emergency_contact(
+                    contact
+                )
+                for contact
+                in patient.emergency_contacts
+            ],
+
+            "primary_emergency_contact":
+                cls.emergency_contact(
+                    patient
+                    .primary_emergency_contact
+                ),
 
             "clinical_cases_count":
                 patient
                 .clinical_cases_count,
         }
 
+    # ======================================================
+    # RESUMEN
+    # ======================================================
+
     @classmethod
     def summary(
         cls,
         patient: Patient,
     ) -> dict:
+
         return {
             "id_patient":
-                str(patient.id_patient),
+                str(
+                    patient.id_patient
+                ),
 
             "full_name":
                 patient.full_name,
 
             "birth_date":
-                patient.birth_date.isoformat(),
+                patient
+                .birth_date
+                .isoformat(),
 
             "sex": {
                 "code":
@@ -165,12 +273,14 @@ class PatientPresenter:
 
             "primary_document":
                 cls.document(
-                    patient.primary_document
+                    patient
+                    .primary_document
                 ),
 
             "primary_contact":
                 cls.contact(
-                    patient.primary_contact
+                    patient
+                    .primary_contact
                 ),
 
             "clinical_cases_count":
