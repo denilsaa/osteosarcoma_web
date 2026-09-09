@@ -36,35 +36,52 @@ from identidad.models import (
 
 def generar_token_recuperacion():
     """
-    Token de recuperación de alta entropía.
+    Genera un token de recuperación de alta entropía.
 
     IMPORTANTE:
-    Se genera únicamente cuando Jefatura APRUEBA la solicitud.
+    El token solamente se genera después de que
+    Jefatura aprueba la solicitud.
     """
 
-    return secrets.token_urlsafe(48)
+    return secrets.token_urlsafe(
+        48
+    )
 
 
-def hash_token_recuperacion(token):
+def hash_token_recuperacion(
+    token,
+):
     """
-    En base de datos se almacena solamente SHA-256(token).
-    El token en texto plano existe únicamente para construir
-    el enlace enviado al correo del usuario.
+    En base de datos se almacena únicamente SHA-256(token).
+
+    El token real solamente existe temporalmente
+    para construir el enlace enviado al correo.
     """
 
     return hashlib.sha256(
-        token.encode("utf-8")
+        token.encode(
+            "utf-8"
+        )
     ).hexdigest()
 
 
-def obtener_estado(codigo):
+def obtener_estado(
+    codigo,
+):
+    """
+    Obtiene un estado de recuperación por código.
+    """
+
     estado = (
         EstadoRecuperacion.objects
-        .filter(codigo=codigo)
+        .filter(
+            codigo=codigo
+        )
         .first()
     )
 
     if not estado:
+
         raise Exception(
             f"No existe el estado de recuperación {codigo}."
         )
@@ -72,26 +89,42 @@ def obtener_estado(codigo):
     return estado
 
 
-def nombre_completo(usuario):
+def nombre_completo(
+    usuario,
+):
+    """
+    Construye el nombre completo de un usuario.
+    """
+
     return " ".join(
-        parte
-        for parte in [
+        str(parte).strip()
+
+        for parte
+        in [
             usuario.nombres,
             usuario.apellido_paterno,
             usuario.apellido_materno,
         ]
-        if parte
+
+        if (
+            parte
+            and
+            str(parte).strip()
+        )
     )
 
 
-def actualizar_expiracion_si_corresponde(solicitud):
+def actualizar_expiracion_si_corresponde(
+    solicitud,
+):
     """
     PENDIENTE:
-      vence si Jefatura no responde dentro del plazo general.
+        vence si Jefatura no responde dentro del
+        plazo general.
 
     APROBADA:
-      vence si el usuario no utiliza el enlace dentro del
-      plazo corto configurado para el enlace.
+        vence si el usuario no utiliza el enlace
+        dentro del plazo configurado.
     """
 
     if (
@@ -101,14 +134,24 @@ def actualizar_expiracion_si_corresponde(solicitud):
             "APROBADA",
         )
         and
-        solicitud.fecha_expiracion <= timezone.now()
+        solicitud.fecha_expiracion
+        <=
+        timezone.now()
     ):
-        solicitud.estado = obtener_estado(
-            "EXPIRADA"
+
+        solicitud.estado = (
+            obtener_estado(
+                "EXPIRADA"
+            )
         )
 
-        # Al expirar destruimos la capacidad de recuperación.
-        solicitud.token_recuperacion = None
+        # --------------------------------------------------
+        # INVALIDAR TOKEN
+        # --------------------------------------------------
+
+        solicitud.token_recuperacion = (
+            None
+        )
 
         solicitud.save(
             update_fields=[
@@ -118,6 +161,73 @@ def actualizar_expiracion_si_corresponde(solicitud):
         )
 
     return solicitud
+
+
+# ==========================================================
+# VALIDAR JEFE DE ONCOLOGÍA
+# ==========================================================
+
+
+def validar_jefe_oncologia(
+    usuario,
+):
+    """
+    Verifica que el usuario:
+
+    - exista;
+    - tenga cuenta operativa;
+    - tenga rol JEFE_ONCOLOGIA activo.
+    """
+
+    if not usuario:
+
+        raise Exception(
+            "No se pudo identificar al usuario revisor."
+        )
+
+    # ------------------------------------------------------
+    # ESTADO DEL USUARIO
+    # ------------------------------------------------------
+
+    estado_usuario = getattr(
+        usuario,
+        "estado_usuario",
+        None,
+    )
+
+    if (
+        not estado_usuario
+        or
+        not estado_usuario.es_operativo
+    ):
+
+        raise Exception(
+            "La cuenta del revisor no se encuentra activa."
+        )
+
+    # ------------------------------------------------------
+    # ROL DE JEFATURA
+    # ------------------------------------------------------
+
+    es_jefe = (
+        usuario
+        .asignaciones_roles
+        .filter(
+            activo=True,
+            rol__activo=True,
+            rol__codigo="JEFE_ONCOLOGIA",
+        )
+        .exists()
+    )
+
+    if not es_jefe:
+
+        raise Exception(
+            "Solo un Jefe de Oncología "
+            "puede resolver solicitudes de recuperación."
+        )
+
+    return True
 
 
 # ==========================================================
@@ -134,42 +244,74 @@ class SolicitarRecuperacionUseCase:
         ip_origen=None,
         user_agent=None,
     ):
-        # El modelo actual no guarda IP ni user-agent en la
-        # solicitud. Se reciben para poder incorporarlos luego
-        # en auditoría sin cambiar la firma del caso de uso.
+
+        # --------------------------------------------------
+        # Actualmente IP y user-agent se reciben para
+        # auditoría, pero no se almacenan directamente
+        # en SolicitudRecuperacion.
+        # --------------------------------------------------
+
         del ip_origen
         del user_agent
 
-        correo = correo.strip().lower()
+        correo = (
+            correo
+            .strip()
+            .lower()
+        )
+
+        # ==================================================
+        # RESPUESTA GENÉRICA
+        # ==================================================
+        #
+        # No revelar si el correo existe.
+        # ==================================================
 
         respuesta_generica = {
             "mensaje": (
-                "Solicitud recibida. Si el correo pertenece a una "
-                "cuenta activa, Jefatura de Oncología podrá revisarla. "
-                "Si es aprobada, recibirá un enlace seguro en el correo "
-                "institucional registrado."
+                "Solicitud recibida. Si el correo pertenece "
+                "a una cuenta activa, Jefatura de Oncología "
+                "podrá revisarla. Si es aprobada, recibirá "
+                "un enlace seguro en el correo institucional "
+                "registrado."
             )
         }
 
+        # ==================================================
+        # BUSCAR USUARIO
+        # ==================================================
+
         usuario = (
             Usuario.objects
-            .select_related("estado_usuario")
-            .filter(correo__iexact=correo)
+            .select_related(
+                "estado_usuario"
+            )
+            .filter(
+                correo__iexact=correo
+            )
             .first()
         )
 
-        # No revelar si el correo existe o si la cuenta está activa.
         if (
             not usuario
             or
-            not usuario.estado_usuario.es_operativo
+            not usuario
+                .estado_usuario
+                .es_operativo
         ):
+
             return respuesta_generica
 
-        # Evita spam accidental por doble clic / reintentos rápidos.
+        # ==================================================
+        # EVITAR SOLICITUDES REPETIDAS MUY RÁPIDAS
+        # ==================================================
+
         limite_repeticion = (
             timezone.now()
-            - timedelta(seconds=60)
+            -
+            timedelta(
+                seconds=60
+            )
         )
 
         solicitud_reciente = (
@@ -177,24 +319,37 @@ class SolicitarRecuperacionUseCase:
             .filter(
                 usuario=usuario,
                 estado__codigo="PENDIENTE",
-                fecha_solicitud__gte=limite_repeticion,
+                fecha_solicitud__gte=(
+                    limite_repeticion
+                ),
             )
             .exists()
         )
 
         if solicitud_reciente:
+
             return respuesta_generica
 
-        estado_pendiente = obtener_estado(
-            "PENDIENTE"
+        # ==================================================
+        # ESTADOS
+        # ==================================================
+
+        estado_pendiente = (
+            obtener_estado(
+                "PENDIENTE"
+            )
         )
 
-        estado_expirada = obtener_estado(
-            "EXPIRADA"
+        estado_expirada = (
+            obtener_estado(
+                "EXPIRADA"
+            )
         )
 
-        # Cualquier recuperación anterior pendiente o aprobada
-        # queda invalidada al iniciar una nueva.
+        # ==================================================
+        # INVALIDAR RECUPERACIONES ANTERIORES
+        # ==================================================
+
         (
             SolicitudRecuperacion.objects
             .filter(
@@ -210,7 +365,14 @@ class SolicitarRecuperacionUseCase:
             )
         )
 
-        # Mientras está PENDIENTE NO existe token utilizable.
+        # ==================================================
+        # CREAR SOLICITUD
+        # ==================================================
+        #
+        # Mientras esté PENDIENTE:
+        # NO existe token utilizable.
+        # ==================================================
+
         SolicitudRecuperacion.objects.create(
             id_solicitud=uuid.uuid4(),
             usuario=usuario,
@@ -218,7 +380,10 @@ class SolicitarRecuperacionUseCase:
             token_recuperacion=None,
             fecha_expiracion=(
                 timezone.now()
-                + timedelta(hours=24)
+                +
+                timedelta(
+                    hours=24
+                )
             ),
         )
 
@@ -226,7 +391,7 @@ class SolicitarRecuperacionUseCase:
 
 
 # ==========================================================
-# VALIDAR / CONSULTAR TOKEN DEL ENLACE
+# CONSULTAR ESTADO DEL ENLACE
 # ==========================================================
 
 
@@ -237,8 +402,11 @@ class ConsultarEstadoRecuperacionUseCase:
         self,
         token,
     ):
-        token_hash = hash_token_recuperacion(
-            token
+
+        token_hash = (
+            hash_token_recuperacion(
+                token
+            )
         )
 
         solicitud = (
@@ -249,55 +417,102 @@ class ConsultarEstadoRecuperacionUseCase:
                 "estado",
             )
             .filter(
-                token_recuperacion=token_hash
+                token_recuperacion=(
+                    token_hash
+                )
             )
             .first()
         )
 
         if not solicitud:
+
             raise Exception(
-                "El enlace de recuperación no es válido o ya no está disponible."
+                "El enlace de recuperación "
+                "no es válido o ya no está disponible."
             )
 
-        solicitud = actualizar_expiracion_si_corresponde(
-            solicitud
+        # ==================================================
+        # EXPIRACIÓN
+        # ==================================================
+
+        solicitud = (
+            actualizar_expiracion_si_corresponde(
+                solicitud
+            )
         )
 
-        codigo_estado = solicitud.estado.codigo
+        codigo_estado = (
+            solicitud
+            .estado
+            .codigo
+        )
+
+        # ==================================================
+        # MENSAJES
+        # ==================================================
 
         mensajes = {
-            "APROBADA": (
-                "El enlace es válido. Puede establecer una nueva contraseña."
-            ),
-            "RECHAZADA": (
-                "La solicitud fue rechazada por Jefatura de Oncología."
-            ),
-            "UTILIZADA": (
-                "Este enlace ya fue utilizado."
-            ),
-            "EXPIRADA": (
-                "El enlace de recuperación expiró. Solicite uno nuevo."
-            ),
-            "PENDIENTE": (
-                "La solicitud todavía no está autorizada."
-            ),
+
+            "APROBADA":
+                (
+                    "El enlace es válido. "
+                    "Puede establecer una nueva contraseña."
+                ),
+
+            "RECHAZADA":
+                (
+                    "La solicitud fue rechazada "
+                    "por Jefatura de Oncología."
+                ),
+
+            "UTILIZADA":
+                (
+                    "Este enlace ya fue utilizado."
+                ),
+
+            "EXPIRADA":
+                (
+                    "El enlace de recuperación expiró. "
+                    "Solicite uno nuevo."
+                ),
+
+            "PENDIENTE":
+                (
+                    "La solicitud todavía "
+                    "no está autorizada."
+                ),
+
         }
 
         return {
-            "id_solicitud": str(
-                solicitud.id_solicitud
-            ),
-            "estado": codigo_estado,
-            "puede_cambiar_password": (
-                codigo_estado == "APROBADA"
-            ),
-            "mensaje": mensajes.get(
+
+            "id_solicitud":
+                str(
+                    solicitud.id_solicitud
+                ),
+
+            "estado":
                 codigo_estado,
-                "Estado de recuperación desconocido.",
-            ),
-            "fecha_expiracion": (
-                solicitud.fecha_expiracion.isoformat()
-            ),
+
+            "puede_cambiar_password":
+                (
+                    codigo_estado
+                    ==
+                    "APROBADA"
+                ),
+
+            "mensaje":
+                mensajes.get(
+                    codigo_estado,
+                    "Estado de recuperación desconocido.",
+                ),
+
+            "fecha_expiracion":
+                (
+                    solicitud
+                    .fecha_expiracion
+                    .isoformat()
+                ),
         }
 
 
@@ -311,7 +526,17 @@ class ListarRecuperacionesUseCase:
     def ejecutar(
         self,
         estado=None,
+        usuario_revisor=None,
     ):
+        """
+        Lista solicitudes de recuperación.
+
+        Si usuario_revisor es enviado, agrega información
+        que permitirá a frontend saber si la solicitud
+        pertenece al propio Jefe que está visualizando
+        la bandeja.
+        """
+
         consulta = (
             SolicitudRecuperacion.objects
             .select_related(
@@ -323,83 +548,240 @@ class ListarRecuperacionesUseCase:
             )
         )
 
+        # ==================================================
+        # FILTRO POR ESTADO
+        # ==================================================
+
         if estado:
-            consulta = consulta.filter(
-                estado__codigo__iexact=estado.strip()
+
+            consulta = (
+                consulta
+                .filter(
+                    estado__codigo__iexact=(
+                        estado.strip()
+                    )
+                )
             )
 
         resultados = []
 
+        # ==================================================
+        # RECORRER SOLICITUDES
+        # ==================================================
+
         for solicitud in consulta:
-            solicitud = actualizar_expiracion_si_corresponde(
-                solicitud
+
+            solicitud = (
+                actualizar_expiracion_si_corresponde(
+                    solicitud
+                )
             )
 
-            try:
-                resolucion = solicitud.resolucion
-            except ResolucionRecuperacion.DoesNotExist:
-                resolucion = None
+            # ==============================================
+            # RESOLUCIÓN
+            # ==============================================
 
-            resolucion_data = None
+            try:
+
+                resolucion = (
+                    solicitud
+                    .resolucion
+                )
+
+            except ResolucionRecuperacion.DoesNotExist:
+
+                resolucion = (
+                    None
+                )
+
+            resolucion_data = (
+                None
+            )
 
             if resolucion:
+
                 resolucion_data = {
-                    "decision": (
-                        "APROBADA"
-                        if resolucion.aprobado
-                        else "RECHAZADA"
-                    ),
-                    "observacion": resolucion.comentario,
-                    "resuelto_por": nombre_completo(
-                        resolucion.revisado_por
-                    ),
-                    "fecha_resolucion": (
-                        resolucion.fecha_revision.isoformat()
-                    ),
+
+                    "decision":
+                        (
+                            "APROBADA"
+                            if resolucion.aprobado
+                            else "RECHAZADA"
+                        ),
+
+                    "observacion":
+                        resolucion.comentario,
+
+                    "resuelto_por":
+                        nombre_completo(
+                            resolucion
+                            .revisado_por
+                        ),
+
+                    "fecha_resolucion":
+                        (
+                            resolucion
+                            .fecha_revision
+                            .isoformat()
+                        ),
+
                 }
+
+            # ==============================================
+            # DETERMINAR SI ES SOLICITUD PROPIA
+            # ==============================================
+
+            es_solicitud_propia = (
+                False
+            )
+
+            if usuario_revisor:
+
+                es_solicitud_propia = (
+                    str(
+                        solicitud
+                        .usuario
+                        .id_usuario
+                    )
+                    ==
+                    str(
+                        usuario_revisor
+                        .id_usuario
+                    )
+                )
+
+            # ==============================================
+            # OBJETO DE RESPUESTA
+            # ==============================================
 
             resultados.append(
                 {
-                    "id_solicitud": str(
-                        solicitud.id_solicitud
-                    ),
+
+                    "id_solicitud":
+                        str(
+                            solicitud
+                            .id_solicitud
+                        ),
+
                     "usuario": {
-                        "id_usuario": str(
-                            solicitud.usuario.id_usuario
-                        ),
-                        "nombre_completo": nombre_completo(
-                            solicitud.usuario
-                        ),
-                        "correo": solicitud.usuario.correo,
-                        "nombre_usuario": (
-                            solicitud.usuario.nombre_usuario
-                        ),
+
+                        "id_usuario":
+                            str(
+                                solicitud
+                                .usuario
+                                .id_usuario
+                            ),
+
+                        "nombre_completo":
+                            nombre_completo(
+                                solicitud.usuario
+                            ),
+
+                        "correo":
+                            solicitud
+                            .usuario
+                            .correo,
+
+                        "nombre_usuario":
+                            solicitud
+                            .usuario
+                            .nombre_usuario,
+
                     },
-                    "estado": solicitud.estado.codigo,
-                    "estado_nombre": solicitud.estado.nombre,
-                    "fecha_solicitud": (
-                        solicitud.fecha_solicitud.isoformat()
-                    ),
-                    "fecha_expiracion": (
-                        solicitud.fecha_expiracion.isoformat()
-                    ),
-                    "fecha_utilizacion": None,
-                    "resolucion": resolucion_data,
+
+                    "estado":
+                        solicitud
+                        .estado
+                        .codigo,
+
+                    "estado_nombre":
+                        solicitud
+                        .estado
+                        .nombre,
+
+                    "fecha_solicitud":
+                        (
+                            solicitud
+                            .fecha_solicitud
+                            .isoformat()
+                        ),
+
+                    "fecha_expiracion":
+                        (
+                            solicitud
+                            .fecha_expiracion
+                            .isoformat()
+                        ),
+
+                    "fecha_utilizacion":
+                        None,
+
+                    "resolucion":
+                        resolucion_data,
+
+                    # ======================================
+                    # INFORMACIÓN PARA LA UI
+                    # ======================================
+
+                    "es_solicitud_propia":
+                        es_solicitud_propia,
+
+                    "puede_resolver":
+                        (
+                            solicitud
+                            .estado
+                            .codigo
+                            ==
+                            "PENDIENTE"
+                            and
+                            not es_solicitud_propia
+                        ),
+
                 }
             )
 
         return {
-            "total": len(resultados),
-            "resultados": resultados,
+
+            "total":
+                len(
+                    resultados
+                ),
+
+            "resultados":
+                resultados,
+
         }
 
 
 # ==========================================================
-# APROBAR / RECHAZAR
+# RESOLVER RECUPERACIÓN
 # ==========================================================
 
 
 class ResolverRecuperacionUseCase:
+    """
+    Aprueba o rechaza una solicitud.
+
+    REGLAS:
+
+    1. Solo JEFE_ONCOLOGIA activo puede resolver.
+
+    2. Un Jefe jamás puede aprobar o rechazar
+       su propia solicitud.
+
+    3. La solicitud debe estar PENDIENTE.
+
+    4. Una solicitud solo puede resolverse una vez.
+
+    5. El token solamente se genera al aprobar.
+
+    6. Si falla SMTP, la transacción completa
+       se revierte.
+    """
+
+    # ======================================================
+    # EJECUTAR
+    # ======================================================
 
     @transaction.atomic
     def ejecutar(
@@ -409,96 +791,258 @@ class ResolverRecuperacionUseCase:
         decision,
         observacion=None,
     ):
-        decision = decision.strip().upper()
+
+        # ==================================================
+        # VALIDAR JEFE
+        # ==================================================
+
+        validar_jefe_oncologia(
+            jefe
+        )
+
+        # ==================================================
+        # NORMALIZAR DECISIÓN
+        # ==================================================
+
+        decision = (
+            str(
+                decision
+            )
+            .strip()
+            .upper()
+        )
 
         if decision not in (
             "APROBADA",
             "RECHAZADA",
         ):
+
             raise Exception(
                 "La decisión indicada no es válida."
             )
+
+        # ==================================================
+        # OBTENER SOLICITUD CON BLOQUEO
+        # ==================================================
 
         solicitud = (
             SolicitudRecuperacion.objects
             .select_for_update()
             .select_related(
                 "usuario",
+                "usuario__estado_usuario",
                 "estado",
             )
             .filter(
-                id_solicitud=solicitud_id
+                id_solicitud=(
+                    solicitud_id
+                )
             )
             .first()
         )
 
         if not solicitud:
+
             raise Exception(
                 "La solicitud de recuperación no existe."
             )
 
-        solicitud = actualizar_expiracion_si_corresponde(
-            solicitud
+        # ==================================================
+        # PROHIBIR AUTORESOLUCIÓN
+        # ==================================================
+        #
+        # Esta validación está en backend.
+        #
+        # Aunque alguien intente llamar directamente
+        # al endpoint, no puede saltarse la regla.
+        # ==================================================
+
+        if (
+            str(
+                solicitud
+                .usuario
+                .id_usuario
+            )
+            ==
+            str(
+                jefe
+                .id_usuario
+            )
+        ):
+
+            raise Exception(
+                "No puede aprobar ni rechazar "
+                "su propia solicitud de recuperación. "
+                "La solicitud debe ser revisada "
+                "por otro Jefe de Oncología."
+            )
+
+        # ==================================================
+        # VALIDAR USUARIO AFECTADO
+        # ==================================================
+
+        if (
+            not solicitud
+            .usuario
+            .estado_usuario
+            .es_operativo
+        ):
+
+            raise Exception(
+                "La cuenta que solicita la recuperación "
+                "no se encuentra activa."
+            )
+
+        # ==================================================
+        # ACTUALIZAR EXPIRACIÓN
+        # ==================================================
+
+        solicitud = (
+            actualizar_expiracion_si_corresponde(
+                solicitud
+            )
         )
 
-        codigo_estado = solicitud.estado.codigo
+        codigo_estado = (
+            solicitud
+            .estado
+            .codigo
+        )
 
-        if codigo_estado == "EXPIRADA":
+        # ==================================================
+        # VALIDAR ESTADO DE SOLICITUD
+        # ==================================================
+
+        if (
+            codigo_estado
+            ==
+            "EXPIRADA"
+        ):
+
             raise Exception(
                 "La solicitud ya expiró."
             )
 
-        if codigo_estado == "UTILIZADA":
+        if (
+            codigo_estado
+            ==
+            "UTILIZADA"
+        ):
+
             raise Exception(
                 "La solicitud ya fue utilizada."
             )
 
-        if codigo_estado != "PENDIENTE":
+        if (
+            codigo_estado
+            !=
+            "PENDIENTE"
+        ):
+
             raise Exception(
                 "La solicitud ya fue resuelta anteriormente."
             )
 
-        if (
+        # ==================================================
+        # EVITAR DOBLE RESOLUCIÓN
+        # ==================================================
+
+        resolucion_existente = (
             ResolucionRecuperacion.objects
-            .filter(solicitud=solicitud)
+            .filter(
+                solicitud=solicitud
+            )
             .exists()
-        ):
+        )
+
+        if resolucion_existente:
+
             raise Exception(
-                "La solicitud ya posee una resolución registrada."
+                "La solicitud ya posee "
+                "una resolución registrada."
             )
 
-        aprobado = decision == "APROBADA"
+        # ==================================================
+        # NORMALIZAR OBSERVACIÓN
+        # ==================================================
+
+        observacion_normalizada = (
+            str(
+                observacion
+            )
+            .strip()
+            if observacion
+            else None
+        )
+
+        # ==================================================
+        # DECISIÓN
+        # ==================================================
+
+        aprobado = (
+            decision
+            ==
+            "APROBADA"
+        )
+
+        # ==================================================
+        # CREAR RESOLUCIÓN
+        # ==================================================
 
         ResolucionRecuperacion.objects.create(
-            id_resolucion=uuid.uuid4(),
+            id_resolucion=(
+                uuid.uuid4()
+            ),
             solicitud=solicitud,
             aprobado=aprobado,
             revisado_por=jefe,
             comentario=(
-                observacion.strip()
-                if observacion
-                else None
+                observacion_normalizada
             ),
         )
 
-        solicitud.estado = obtener_estado(
-            decision
+        # ==================================================
+        # ACTUALIZAR SOLICITUD
+        # ==================================================
+
+        solicitud.estado = (
+            obtener_estado(
+                decision
+            )
         )
 
-        solicitud.fecha_resolucion = timezone.now()
+        solicitud.fecha_resolucion = (
+            timezone.now()
+        )
 
         campos_actualizados = [
             "estado",
             "fecha_resolucion",
         ]
 
+        # ==================================================
+        # APROBAR
+        # ==================================================
+
         if aprobado:
-            # El token real se crea AQUÍ, después de la aprobación.
-            token = generar_token_recuperacion()
+
+            # ==============================================
+            # GENERAR TOKEN
+            # ==============================================
+
+            token = (
+                generar_token_recuperacion()
+            )
 
             solicitud.token_recuperacion = (
-                hash_token_recuperacion(token)
+                hash_token_recuperacion(
+                    token
+                )
             )
+
+            # ==============================================
+            # VIGENCIA
+            # ==============================================
 
             minutos_vigencia = int(
                 getattr(
@@ -510,8 +1054,11 @@ class ResolverRecuperacionUseCase:
 
             solicitud.fecha_expiracion = (
                 timezone.now()
-                + timedelta(
-                    minutes=minutos_vigencia
+                +
+                timedelta(
+                    minutes=(
+                        minutos_vigencia
+                    )
                 )
             )
 
@@ -523,42 +1070,85 @@ class ResolverRecuperacionUseCase:
             )
 
             solicitud.save(
-                update_fields=campos_actualizados
+                update_fields=(
+                    campos_actualizados
+                )
             )
 
-            # El envío forma parte de la operación de aprobación.
-            # Si SMTP falla, se lanza excepción y la transacción
-            # se revierte: la solicitud seguirá PENDIENTE y el Jefe
-            # podrá reintentar después de corregir la configuración.
+            # ==============================================
+            # CORREO
+            # ==============================================
+
             try:
+
                 EmailService().enviar_enlace_recuperacion(
-                    usuario=solicitud.usuario,
+
+                    usuario=(
+                        solicitud.usuario
+                    ),
+
                     token=token,
-                    minutos_vigencia=minutos_vigencia,
-                    observacion=observacion,
+
+                    minutos_vigencia=(
+                        minutos_vigencia
+                    ),
+
+                    observacion=(
+                        observacion_normalizada
+                    ),
                 )
+
             except Exception as error:
+
                 raise Exception(
-                    "No se pudo enviar el enlace al correo institucional. "
-                    "La aprobación no fue aplicada. Revise la configuración SMTP."
+                    "No se pudo enviar el enlace "
+                    "al correo institucional. "
+                    "La aprobación no fue aplicada. "
+                    "Revise la configuración SMTP."
                 ) from error
 
+            # ==============================================
+            # RESPUESTA
+            # ==============================================
+
             return {
-                "id_solicitud": str(
-                    solicitud.id_solicitud
-                ),
-                "estado": decision,
-                "correo_enviado": True,
+
+                "id_solicitud":
+                    str(
+                        solicitud
+                        .id_solicitud
+                    ),
+
+                "estado":
+                    "APROBADA",
+
+                "correo_enviado":
+                    True,
+
+                "revisado_por":
+                    nombre_completo(
+                        jefe
+                    ),
+
                 "mensaje": (
                     "Recuperación aprobada correctamente. "
-                    "Se envió un enlace seguro al correo institucional "
-                    "registrado del oncólogo."
+                    "Se envió un enlace seguro al correo "
+                    "institucional registrado."
                 ),
+
             }
 
-        # RECHAZADA: no existe enlace ni token de cambio.
-        solicitud.token_recuperacion = None
-        solicitud.fecha_expiracion = timezone.now()
+        # ==================================================
+        # RECHAZAR
+        # ==================================================
+
+        solicitud.token_recuperacion = (
+            None
+        )
+
+        solicitud.fecha_expiracion = (
+            timezone.now()
+        )
 
         campos_actualizados.extend(
             [
@@ -568,31 +1158,66 @@ class ResolverRecuperacionUseCase:
         )
 
         solicitud.save(
-            update_fields=campos_actualizados
+            update_fields=(
+                campos_actualizados
+            )
         )
 
+        # ==================================================
+        # CORREO DE RECHAZO
+        # ==================================================
+
         try:
+
             EmailService().enviar_notificacion_rechazo(
-                usuario=solicitud.usuario,
-                observacion=observacion,
+
+                usuario=(
+                    solicitud.usuario
+                ),
+
+                observacion=(
+                    observacion_normalizada
+                ),
             )
+
         except Exception as error:
+
             raise Exception(
-                "No se pudo enviar el correo de rechazo al correo institucional. "
-                "La resolución no fue aplicada. Revise la configuración SMTP."
+                "No se pudo enviar el correo "
+                "de rechazo al correo institucional. "
+                "La resolución no fue aplicada. "
+                "Revise la configuración SMTP."
             ) from error
 
+        # ==================================================
+        # RESPUESTA
+        # ==================================================
+
         return {
-            "id_solicitud": str(
-                solicitud.id_solicitud
-            ),
-            "estado": decision,
-            "correo_enviado": True,
+
+            "id_solicitud":
+                str(
+                    solicitud
+                    .id_solicitud
+                ),
+
+            "estado":
+                "RECHAZADA",
+
+            "correo_enviado":
+                True,
+
+            "revisado_por":
+                nombre_completo(
+                    jefe
+                ),
+
             "mensaje": (
                 "Solicitud rechazada correctamente. "
-                "Se notificó la decisión al correo institucional "
-                "registrado del oncólogo."
+                "Se notificó la decisión al correo "
+                "institucional registrado."
             ),
+
         }
 
 
@@ -603,9 +1228,21 @@ class ResolverRecuperacionUseCase:
 
 class CambiarPasswordRecuperacionUseCase:
 
-    def __init__(self):
-        self.password_hasher = PasswordHasher()
-        self.sesion_repository = SesionRepository()
+    def __init__(
+        self
+    ):
+
+        self.password_hasher = (
+            PasswordHasher()
+        )
+
+        self.sesion_repository = (
+            SesionRepository()
+        )
+
+    # ======================================================
+    # EJECUTAR
+    # ======================================================
 
     @transaction.atomic
     def ejecutar(
@@ -613,9 +1250,20 @@ class CambiarPasswordRecuperacionUseCase:
         token,
         nueva_password,
     ):
-        token_hash = hash_token_recuperacion(
-            token
+
+        # ==================================================
+        # HASH DEL TOKEN
+        # ==================================================
+
+        token_hash = (
+            hash_token_recuperacion(
+                token
+            )
         )
+
+        # ==================================================
+        # OBTENER SOLICITUD
+        # ==================================================
 
         solicitud = (
             SolicitudRecuperacion.objects
@@ -625,75 +1273,153 @@ class CambiarPasswordRecuperacionUseCase:
                 "estado",
             )
             .filter(
-                token_recuperacion=token_hash
+                token_recuperacion=(
+                    token_hash
+                )
             )
             .first()
         )
 
         if not solicitud:
+
             raise Exception(
-                "El enlace de recuperación no es válido o ya no está disponible."
+                "El enlace de recuperación "
+                "no es válido o ya no está disponible."
             )
 
-        solicitud = actualizar_expiracion_si_corresponde(
-            solicitud
+        # ==================================================
+        # EXPIRACIÓN
+        # ==================================================
+
+        solicitud = (
+            actualizar_expiracion_si_corresponde(
+                solicitud
+            )
         )
 
-        codigo_estado = solicitud.estado.codigo
+        codigo_estado = (
+            solicitud
+            .estado
+            .codigo
+        )
 
-        if codigo_estado == "EXPIRADA":
+        # ==================================================
+        # VALIDACIONES
+        # ==================================================
+
+        if (
+            codigo_estado
+            ==
+            "EXPIRADA"
+        ):
+
             raise Exception(
-                "El enlace de recuperación expiró. Solicite uno nuevo."
+                "El enlace de recuperación expiró. "
+                "Solicite uno nuevo."
             )
 
-        if codigo_estado == "UTILIZADA":
+        if (
+            codigo_estado
+            ==
+            "UTILIZADA"
+        ):
+
             raise Exception(
                 "Este enlace ya fue utilizado."
             )
 
-        if codigo_estado != "APROBADA":
+        if (
+            codigo_estado
+            !=
+            "APROBADA"
+        ):
+
             raise Exception(
-                "La solicitud no está habilitada para cambiar la contraseña."
+                "La solicitud no está habilitada "
+                "para cambiar la contraseña."
             )
 
+        # ==================================================
+        # VALIDAR RESOLUCIÓN
+        # ==================================================
+
         try:
-            resolucion = solicitud.resolucion
+
+            resolucion = (
+                solicitud
+                .resolucion
+            )
+
         except ResolucionRecuperacion.DoesNotExist:
-            resolucion = None
+
+            resolucion = (
+                None
+            )
 
         if (
             not resolucion
             or
             not resolucion.aprobado
         ):
+
             raise Exception(
-                "La recuperación no posee una aprobación válida de Jefatura."
+                "La recuperación no posee una "
+                "aprobación válida de Jefatura."
             )
+
+        # ==================================================
+        # CREDENCIAL
+        # ==================================================
 
         credencial = (
             Credencial.objects
             .select_for_update()
             .filter(
-                usuario=solicitud.usuario
+                usuario=(
+                    solicitud.usuario
+                )
             )
             .first()
         )
 
         if not credencial:
+
             raise Exception(
-                "La cuenta no posee una credencial registrada."
+                "La cuenta no posee "
+                "una credencial registrada."
             )
 
+        # ==================================================
+        # NUEVO HASH
+        # ==================================================
+
         credencial.password_hash = (
-            self.password_hasher.generar_hash(
+            self
+            .password_hasher
+            .generar_hash(
                 nueva_password
             )
         )
 
-        credencial.debe_cambiar_password = False
-        credencial.intentos_fallidos = 0
-        credencial.bloqueado_hasta = None
-        credencial.fecha_ultimo_cambio = timezone.now()
+        # ==================================================
+        # RESTABLECER SEGURIDAD
+        # ==================================================
+
+        credencial.debe_cambiar_password = (
+            False
+        )
+
+        credencial.intentos_fallidos = (
+            0
+        )
+
+        credencial.bloqueado_hasta = (
+            None
+        )
+
+        credencial.fecha_ultimo_cambio = (
+            timezone.now()
+        )
 
         credencial.save(
             update_fields=[
@@ -706,12 +1432,23 @@ class CambiarPasswordRecuperacionUseCase:
             ]
         )
 
-        solicitud.estado = obtener_estado(
-            "UTILIZADA"
+        # ==================================================
+        # MARCAR COMO UTILIZADA
+        # ==================================================
+
+        solicitud.estado = (
+            obtener_estado(
+                "UTILIZADA"
+            )
         )
 
-        # Destruimos el hash del enlace después del uso.
-        solicitud.token_recuperacion = None
+        # ==================================================
+        # DESTRUIR TOKEN
+        # ==================================================
+
+        solicitud.token_recuperacion = (
+            None
+        )
 
         solicitud.save(
             update_fields=[
@@ -720,9 +1457,17 @@ class CambiarPasswordRecuperacionUseCase:
             ]
         )
 
+        # ==================================================
+        # REVOCAR TODAS LAS SESIONES
+        # ==================================================
+
         sesiones_revocadas = (
-            self.sesion_repository.revocar_todas(
+            self
+            .sesion_repository
+            .revocar_todas(
+
                 solicitud.usuario,
+
                 (
                     "Cambio de contraseña mediante "
                     "recuperación aprobada"
@@ -730,11 +1475,22 @@ class CambiarPasswordRecuperacionUseCase:
             )
         )
 
+        # ==================================================
+        # RESPUESTA
+        # ==================================================
+
         return {
+
             "mensaje": (
                 "Contraseña actualizada correctamente. "
-                "Ya puede iniciar sesión con su nueva contraseña."
+                "Ya puede iniciar sesión "
+                "con su nueva contraseña."
             ),
-            "sesiones_revocadas": sesiones_revocadas,
-            "estado": "UTILIZADA",
+
+            "sesiones_revocadas":
+                sesiones_revocadas,
+
+            "estado":
+                "UTILIZADA",
+
         }

@@ -3,6 +3,7 @@ import {
   Check,
   Clock3,
   LoaderCircle,
+  LockKeyhole,
   Mail,
   RefreshCcw,
   RotateCcw,
@@ -10,7 +11,6 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-
 import {
   useCallback,
   useEffect,
@@ -21,62 +21,78 @@ import {
   listarRecuperaciones,
   mensajeErrorRecuperacion,
   resolverRecuperacion,
+  type DecisionRecuperacion,
+  type EstadoRecuperacion,
   type RecuperacionJefatura,
 } from "../../api/recuperaciones.api";
 
 import "./RecuperacionesJefePage.css";
 
 
-// ==========================================================
-// TIPOS
-// ==========================================================
-
-type Decision =
-  | "APROBADA"
-  | "RECHAZADA";
-
+/* =========================================================
+   TIPOS
+   ========================================================= */
 
 type FiltroEstado =
   | ""
-  | "PENDIENTE"
-  | "APROBADA"
-  | "RECHAZADA"
-  | "UTILIZADA"
-  | "EXPIRADA";
+  | EstadoRecuperacion;
 
 
-// ==========================================================
-// UTILIDADES
-// ==========================================================
+/* =========================================================
+   FECHA
+   ========================================================= */
 
 function fecha(
   valor?: string | null,
 ): string {
 
-  if (!valor) {
+  if (
+    !valor
+  ) {
+
     return "—";
+
   }
 
+
   const date =
-    new Date(valor);
+    new Date(
+      valor
+    );
+
 
   if (
     Number.isNaN(
-      date.getTime(),
+      date.getTime()
     )
   ) {
+
     return valor;
+
   }
+
 
   return new Intl.DateTimeFormat(
     "es-BO",
     {
-      dateStyle: "medium",
-      timeStyle: "short",
+
+      dateStyle:
+        "medium",
+
+      timeStyle:
+        "short",
+
     },
-  ).format(date);
+  ).format(
+    date
+  );
+
 }
 
+
+/* =========================================================
+   TEXTO ESTADO
+   ========================================================= */
 
 function textoEstado(
   estado: string,
@@ -87,25 +103,42 @@ function textoEstado(
   ) {
 
     case "PENDIENTE":
+
       return "Pendiente";
 
+
     case "APROBADA":
+
       return "Aprobada";
 
+
     case "RECHAZADA":
+
       return "Rechazada";
 
+
     case "UTILIZADA":
+
       return "Utilizada";
 
+
     case "EXPIRADA":
+
       return "Expirada";
 
+
     default:
+
       return estado;
+
   }
+
 }
 
+
+/* =========================================================
+   CLASE ESTADO
+   ========================================================= */
 
 function claseEstado(
   estado: string,
@@ -116,111 +149,146 @@ function claseEstado(
   ) {
 
     case "APROBADA":
-      return "recovery-request__status recovery-request__status--approved";
+
+      return (
+        "recovery-request__status " +
+        "recovery-request__status--approved"
+      );
+
 
     case "RECHAZADA":
-      return "recovery-request__status recovery-request__status--rejected";
+
+      return (
+        "recovery-request__status " +
+        "recovery-request__status--rejected"
+      );
+
 
     case "UTILIZADA":
-      return "recovery-request__status recovery-request__status--used";
+
+      return (
+        "recovery-request__status " +
+        "recovery-request__status--used"
+      );
+
 
     case "EXPIRADA":
-      return "recovery-request__status recovery-request__status--expired";
+
+      return (
+        "recovery-request__status " +
+        "recovery-request__status--expired"
+      );
+
 
     default:
-      return "recovery-request__status recovery-request__status--pending";
+
+      return (
+        "recovery-request__status " +
+        "recovery-request__status--pending"
+      );
+
   }
+
 }
 
 
-// ==========================================================
-// COMPONENTE
-// ==========================================================
+/* =========================================================
+   COMPONENTE
+   ========================================================= */
 
 export function RecuperacionesJefePage() {
 
-  // ========================================================
-  // LISTADO
-  // ========================================================
+  /* =======================================================
+     LISTADO
+     ======================================================= */
 
   const [
     solicitudes,
     setSolicitudes,
-  ] =
-    useState<
-      RecuperacionJefatura[]
-    >([]);
+  ] = useState<
+    RecuperacionJefatura[]
+  >(
+    []
+  );
 
 
   const [
     filtro,
     setFiltro,
-  ] =
-    useState<FiltroEstado>(
-      "PENDIENTE",
-    );
+  ] = useState<FiltroEstado>(
+    "PENDIENTE"
+  );
 
 
   const [
     cargando,
     setCargando,
-  ] =
-    useState(true);
+  ] = useState(
+    true
+  );
 
 
   const [
     error,
     setError,
-  ] =
-    useState("");
+  ] = useState(
+    ""
+  );
 
 
   const [
     mensaje,
     setMensaje,
-  ] =
-    useState("");
+  ] = useState(
+    ""
+  );
 
 
-  // ========================================================
-  // MODAL
-  // ========================================================
+  /* =======================================================
+     MODAL
+     ======================================================= */
 
   const [
     seleccionada,
     setSeleccionada,
-  ] =
-    useState<
-      RecuperacionJefatura | null
-    >(null);
+  ] = useState<
+    RecuperacionJefatura
+    | null
+  >(
+    null
+  );
 
 
   const [
     decision,
     setDecision,
-  ] =
-    useState<
-      Decision | null
-    >(null);
+  ] = useState<
+    DecisionRecuperacion
+    | null
+  >(
+    null
+  );
 
 
   const [
     observacion,
     setObservacion,
-  ] =
-    useState("");
+  ] = useState(
+    ""
+  );
 
 
   const [
     procesando,
     setProcesando,
-  ] =
-    useState(false);
+  ] = useState(
+    false
+  );
 
 
-  // ========================================================
-  // CARGAR SOLICITUDES
-  // ========================================================
+  /* =======================================================
+     CARGAR SOLICITUDES
+     ======================================================= */
 
   const cargarSolicitudes =
     useCallback(
@@ -231,37 +299,52 @@ export function RecuperacionesJefePage() {
 
         try {
 
-          setCargando(true);
+          setCargando(
+            true
+          );
 
-          setError("");
+          setError(
+            ""
+          );
+
 
           const response =
             await listarRecuperaciones(
-              estadoActual,
+              estadoActual
             );
+
 
           setSolicitudes(
             Array.isArray(
-              response.resultados,
+              response.resultados
             )
               ? response.resultados
-              : [],
+              : []
           );
 
-        } catch (err) {
+        } catch (
+          err
+        ) {
 
-          setSolicitudes([]);
+          setSolicitudes(
+            []
+          );
+
 
           setError(
             mensajeErrorRecuperacion(
-              err,
-            ),
+              err
+            )
           );
 
         } finally {
 
-          setCargando(false);
+          setCargando(
+            false
+          );
+
         }
+
       },
       [
         filtro,
@@ -269,15 +352,15 @@ export function RecuperacionesJefePage() {
     );
 
 
-  // ========================================================
-  // CARGA INICIAL / CAMBIO DE FILTRO
-  // ========================================================
+  /* =======================================================
+     CARGA INICIAL
+     ======================================================= */
 
   useEffect(
     () => {
 
       void cargarSolicitudes(
-        filtro,
+        filtro
       );
 
     },
@@ -288,38 +371,70 @@ export function RecuperacionesJefePage() {
   );
 
 
-  // ========================================================
-  // ABRIR MODAL
-  // ========================================================
+  /* =======================================================
+     ABRIR RESOLUCIÓN
+     ======================================================= */
 
-  const abrirResolucion =
-    (
-      solicitud:
-        RecuperacionJefatura,
+  const abrirResolucion = (
+    solicitud:
+      RecuperacionJefatura,
 
-      nuevaDecision:
-        Decision,
-    ) => {
+    nuevaDecision:
+      DecisionRecuperacion,
+  ) => {
 
-      setSeleccionada(
-        solicitud,
+    /*
+     * Protección visual adicional.
+     *
+     * El backend ya bloquea realmente
+     * cualquier autoresolución.
+     */
+
+    if (
+      solicitud.es_solicitud_propia
+      ||
+      !solicitud.puede_resolver
+    ) {
+
+      setError(
+        "Esta solicitud no puede ser resuelta por el usuario actual."
       );
 
-      setDecision(
-        nuevaDecision,
-      );
+      return;
 
-      setObservacion("");
-
-      setError("");
-
-      setMensaje("");
-    };
+    }
 
 
-  // ========================================================
-  // CERRAR MODAL
-  // ========================================================
+    setSeleccionada(
+      solicitud
+    );
+
+
+    setDecision(
+      nuevaDecision
+    );
+
+
+    setObservacion(
+      ""
+    );
+
+
+    setError(
+      ""
+    );
+
+
+    setMensaje(
+      ""
+    );
+
+  };
+
+
+  /* =======================================================
+     CERRAR MODAL
+     ======================================================= */
 
   const cerrarResolucion =
     () => {
@@ -327,63 +442,111 @@ export function RecuperacionesJefePage() {
       if (
         procesando
       ) {
+
         return;
+
       }
 
-      setSeleccionada(null);
 
-      setDecision(null);
+      setSeleccionada(
+        null
+      );
 
-      setObservacion("");
+
+      setDecision(
+        null
+      );
+
+
+      setObservacion(
+        ""
+      );
+
+
+      setError(
+        ""
+      );
+
     };
 
 
-  // ========================================================
-  // RESOLVER
-  // ========================================================
+  /* =======================================================
+     RESOLVER
+     ======================================================= */
 
   const resolver =
     async () => {
 
       if (
-        !seleccionada ||
-        !decision ||
+        !seleccionada
+        ||
+        !decision
+        ||
         procesando
       ) {
+
         return;
+
       }
 
 
-      // ----------------------------------------------------
-      // PARA RECHAZO EXIGIMOS MOTIVO
-      // ----------------------------------------------------
+      /* ---------------------------------------------------
+         SEGUNDA PROTECCIÓN VISUAL
+         --------------------------------------------------- */
+
+      if (
+        seleccionada
+          .es_solicitud_propia
+        ||
+        !seleccionada
+          .puede_resolver
+      ) {
+
+        setError(
+          "No puede resolver su propia solicitud de recuperación."
+        );
+
+        return;
+
+      }
+
+
+      /* ---------------------------------------------------
+         MOTIVO OBLIGATORIO EN RECHAZO
+         --------------------------------------------------- */
 
       if (
         decision ===
-          "RECHAZADA" &&
+        "RECHAZADA"
+        &&
         !observacion.trim()
       ) {
 
         setError(
-          "Debe indicar el motivo del rechazo.",
+          "Debe indicar el motivo del rechazo."
         );
 
         return;
+
       }
 
 
       try {
 
-        setProcesando(true);
-
-        setError("");
-
-        setMensaje("");
+        setProcesando(
+          true
+        );
 
 
-        // ==================================================
-        // AQUÍ OCURRE EL POST REAL AL BACKEND
-        // ==================================================
+        setError(
+          ""
+        );
+
+
+        setMensaje(
+          ""
+        );
+
 
         const response =
           await resolverRecuperacion(
@@ -398,9 +561,9 @@ export function RecuperacionesJefePage() {
           );
 
 
-        // ==================================================
-        // MENSAJE DE ÉXITO
-        // ==================================================
+        /* ================================================
+           MENSAJE
+           ================================================ */
 
         if (
           decision ===
@@ -411,12 +574,13 @@ export function RecuperacionesJefePage() {
             response.correo_enviado
               ? (
                   "La recuperación fue aprobada correctamente " +
-                  "y el enlace seguro fue enviado al correo del oncólogo."
+                  "y el enlace seguro fue enviado al correo institucional."
                 )
               : (
-                  response.mensaje ||
+                  response.mensaje
+                  ||
                   "La recuperación fue aprobada correctamente."
-                ),
+                )
           );
 
         } else {
@@ -425,84 +589,130 @@ export function RecuperacionesJefePage() {
             response.correo_enviado
               ? (
                   "La recuperación fue rechazada correctamente " +
-                  "y se notificó al oncólogo por correo."
+                  "y el usuario fue notificado por correo."
                 )
               : (
-                  response.mensaje ||
+                  response.mensaje
+                  ||
                   "La recuperación fue rechazada correctamente."
-                ),
+                )
           );
+
         }
 
 
-        // ==================================================
-        // CERRAR MODAL
-        // ==================================================
+        /* ================================================
+           CERRAR MODAL
+           ================================================ */
 
-        setSeleccionada(null);
-
-        setDecision(null);
-
-        setObservacion("");
-
-
-        // ==================================================
-        // RECARGAR LISTADO DESDE BACKEND
-        // ==================================================
-
-        await cargarSolicitudes(
-          filtro,
+        setSeleccionada(
+          null
         );
 
 
-      } catch (err) {
+        setDecision(
+          null
+        );
+
+
+        setObservacion(
+          ""
+        );
+
+
+        /* ================================================
+           RECARGAR
+           ================================================ */
+
+        await cargarSolicitudes(
+          filtro
+        );
+
+      } catch (
+        err
+      ) {
 
         setError(
           mensajeErrorRecuperacion(
-            err,
-          ),
+            err
+          )
         );
 
       } finally {
 
-        setProcesando(false);
+        setProcesando(
+          false
+        );
+
       }
+
     };
 
 
-  // ========================================================
-  // REFRESCAR
-  // ========================================================
+  /* =======================================================
+     REFRESCAR
+     ======================================================= */
 
   const refrescar =
     async () => {
 
-      setMensaje("");
+      setMensaje(
+        ""
+      );
+
+
+      setError(
+        ""
+      );
+
 
       await cargarSolicitudes(
-        filtro,
+        filtro
       );
+
     };
 
 
-  // ========================================================
-  // RENDER
-  // ========================================================
+  /* =======================================================
+     CONTADOR DE SOLICITUDES PROPIAS
+     ======================================================= */
+
+  const propiasPendientes =
+    solicitudes.filter(
+      (
+        solicitud
+      ) =>
+        solicitud.estado ===
+        "PENDIENTE"
+        &&
+        solicitud
+          .es_solicitud_propia
+    ).length;
+
+
+  /* =======================================================
+     RENDER
+     ======================================================= */
 
   return (
 
-    <div className="recovery-admin-page">
+    <div
+      className="recovery-admin-page"
+    >
 
-
-      {/* ====================================================
+      {/* =================================================
           CABECERA
-          ==================================================== */}
+          ================================================= */}
 
-      <section className="recovery-admin-header">
+      <section
+        className="recovery-admin-header"
+      >
 
         <div>
 
-          <div className="recovery-admin-eyebrow">
+          <div
+            className="recovery-admin-eyebrow"
+          >
 
             <ShieldCheck
               size={17}
@@ -519,28 +729,32 @@ export function RecuperacionesJefePage() {
 
 
           <p>
-            Revise las solicitudes realizadas
-            por los oncólogos y autorice o
-            rechace el restablecimiento de
-            credenciales.
+            Revise las solicitudes de recuperación.
+            Por seguridad, una solicitud realizada por
+            un Jefe de Oncología debe ser resuelta por
+            otro Jefe autorizado.
           </p>
 
         </div>
 
 
-        <div className="recovery-admin-header__counter">
+        <div
+          className="recovery-admin-header__counter"
+        >
 
           <strong>
             {solicitudes.length}
           </strong>
 
           <span>
+
             {
               filtro ===
               "PENDIENTE"
                 ? "pendientes"
                 : "solicitudes"
             }
+
           </span>
 
         </div>
@@ -548,14 +762,50 @@ export function RecuperacionesJefePage() {
       </section>
 
 
-      {/* ====================================================
-          MENSAJES
-          ==================================================== */}
+      {/* =================================================
+          AVISO DE SOLICITUD PROPIA
+          ================================================= */}
 
       {
-        error && (
+        propiasPendientes > 0
+        &&
+        (
+          <div
+            className="recovery-admin-self-alert"
+          >
 
-          <div className="recovery-admin-alert recovery-admin-alert--error">
+            <LockKeyhole
+              size={18}
+            />
+
+            <div>
+
+              <strong>
+                Tiene una solicitud propia pendiente
+              </strong>
+
+              <span>
+                Por seguridad debe ser revisada por otro Jefe de Oncología.
+              </span>
+
+            </div>
+
+          </div>
+        )
+      }
+
+
+      {/* =================================================
+          MENSAJES
+          ================================================= */}
+
+      {
+        error
+        &&
+        (
+          <div
+            className="recovery-admin-alert recovery-admin-alert--error"
+          >
 
             <AlertCircle
               size={18}
@@ -571,9 +821,12 @@ export function RecuperacionesJefePage() {
 
 
       {
-        mensaje && (
-
-          <div className="recovery-admin-alert recovery-admin-alert--success">
+        mensaje
+        &&
+        (
+          <div
+            className="recovery-admin-alert recovery-admin-alert--success"
+          >
 
             <Check
               size={18}
@@ -588,13 +841,17 @@ export function RecuperacionesJefePage() {
       }
 
 
-      {/* ====================================================
+      {/* =================================================
           HERRAMIENTAS
-          ==================================================== */}
+          ================================================= */}
 
-      <section className="recovery-admin-toolbar">
+      <section
+        className="recovery-admin-toolbar"
+      >
 
-        <div className="recovery-admin-toolbar__filter">
+        <div
+          className="recovery-admin-toolbar__filter"
+        >
 
           <label
             htmlFor="recovery-filter"
@@ -607,14 +864,11 @@ export function RecuperacionesJefePage() {
             id="recovery-filter"
             value={filtro}
             onChange={(event) => {
-              const nuevoFiltro =
-                event.target.value as FiltroEstado;
+              const nuevoFiltro = event.target.value as FiltroEstado;
 
               setMensaje("");
-
-              setFiltro(
-                nuevoFiltro,
-              );
+              setError("");
+              setFiltro(nuevoFiltro);
             }}
             disabled={
               cargando ||
@@ -649,39 +903,31 @@ export function RecuperacionesJefePage() {
 
 
         <button
-
           type="button"
-
           className="recovery-admin-refresh"
-
           onClick={
             () =>
               void refrescar()
           }
-
           disabled={
-            cargando ||
+            cargando
+            ||
             procesando
           }
-
         >
 
           {
             cargando
               ? (
-
                   <LoaderCircle
                     size={17}
                     className="recovery-admin-spin"
                   />
-
                 )
               : (
-
                   <RefreshCcw
                     size={17}
                   />
-
                 )
           }
 
@@ -692,14 +938,17 @@ export function RecuperacionesJefePage() {
       </section>
 
 
-      {/* ====================================================
+      {/* =================================================
           CARGANDO
-          ==================================================== */}
+          ================================================= */}
 
       {
-        cargando && (
-
-          <section className="recovery-admin-loading">
+        cargando
+        &&
+        (
+          <section
+            className="recovery-admin-loading"
+          >
 
             <LoaderCircle
               size={28}
@@ -723,15 +972,19 @@ export function RecuperacionesJefePage() {
       }
 
 
-      {/* ====================================================
-          SIN RESULTADOS
-          ==================================================== */}
+      {/* =================================================
+          VACÍO
+          ================================================= */}
 
       {
-        !cargando &&
-        solicitudes.length === 0 && (
-
-          <section className="recovery-admin-empty">
+        !cargando
+        &&
+        solicitudes.length === 0
+        &&
+        (
+          <section
+            className="recovery-admin-empty"
+          >
 
             <RotateCcw
               size={32}
@@ -751,43 +1004,58 @@ export function RecuperacionesJefePage() {
       }
 
 
-      {/* ====================================================
+      {/* =================================================
           LISTADO
-          ==================================================== */}
+          ================================================= */}
 
       {
-        !cargando &&
-        solicitudes.length > 0 && (
-
-          <section className="recovery-admin-list">
+        !cargando
+        &&
+        solicitudes.length > 0
+        &&
+        (
+          <section
+            className="recovery-admin-list"
+          >
 
             {
               solicitudes.map(
                 (
-                  solicitud,
+                  solicitud
                 ) => (
 
                   <article
-
                     key={
                       solicitud
                         .id_solicitud
                     }
-
-                    className="recovery-request"
-
+                    className={
+                      solicitud
+                        .es_solicitud_propia
+                        ? (
+                            "recovery-request recovery-request--self"
+                          )
+                        : (
+                            "recovery-request"
+                          )
+                    }
                   >
 
+                    {/* =====================================
+                        CABECERA
+                        ===================================== */}
 
-                    {/* ========================================
-                        CABECERA TARJETA
-                        ======================================== */}
+                    <header
+                      className="recovery-request__header"
+                    >
 
-                    <header className="recovery-request__header">
+                      <div
+                        className="recovery-request__user"
+                      >
 
-                      <div className="recovery-request__user">
-
-                        <div className="recovery-request__avatar">
+                        <div
+                          className="recovery-request__avatar"
+                        >
 
                           <UserRound
                             size={22}
@@ -798,15 +1066,35 @@ export function RecuperacionesJefePage() {
 
                         <div>
 
-                          <h2>
+                          <div
+                            className="recovery-request__identity"
+                          >
+
+                            <h2>
+
+                              {
+                                solicitud
+                                  .usuario
+                                  .nombre_completo
+                              }
+
+                            </h2>
+
 
                             {
                               solicitud
-                                .usuario
-                                .nombre_completo
+                                .es_solicitud_propia
+                              &&
+                              (
+                                <span
+                                  className="recovery-request__self-badge"
+                                >
+                                  Tu solicitud
+                                </span>
+                              )
                             }
 
-                          </h2>
+                          </div>
 
 
                           <span>
@@ -828,14 +1116,14 @@ export function RecuperacionesJefePage() {
                       <span
                         className={
                           claseEstado(
-                            solicitud.estado,
+                            solicitud.estado
                           )
                         }
                       >
 
                         {
                           textoEstado(
-                            solicitud.estado,
+                            solicitud.estado
                           )
                         }
 
@@ -844,14 +1132,17 @@ export function RecuperacionesJefePage() {
                     </header>
 
 
-                    {/* ========================================
+                    {/* =====================================
                         INFORMACIÓN
-                        ======================================== */}
+                        ===================================== */}
 
-                    <div className="recovery-request__information">
+                    <div
+                      className="recovery-request__information"
+                    >
 
-
-                      <div className="recovery-request__information-item">
+                      <div
+                        className="recovery-request__information-item"
+                      >
 
                         <Mail
                           size={17}
@@ -864,11 +1155,13 @@ export function RecuperacionesJefePage() {
                           </span>
 
                           <strong>
+
                             {
                               solicitud
                                 .usuario
                                 .correo
                             }
+
                           </strong>
 
                         </div>
@@ -876,7 +1169,9 @@ export function RecuperacionesJefePage() {
                       </div>
 
 
-                      <div className="recovery-request__information-item">
+                      <div
+                        className="recovery-request__information-item"
+                      >
 
                         <Clock3
                           size={17}
@@ -889,12 +1184,14 @@ export function RecuperacionesJefePage() {
                           </span>
 
                           <strong>
+
                             {
                               fecha(
                                 solicitud
-                                  .fecha_solicitud,
+                                  .fecha_solicitud
                               )
                             }
+
                           </strong>
 
                         </div>
@@ -902,7 +1199,9 @@ export function RecuperacionesJefePage() {
                       </div>
 
 
-                      <div className="recovery-request__information-item">
+                      <div
+                        className="recovery-request__information-item"
+                      >
 
                         <Clock3
                           size={17}
@@ -915,12 +1214,14 @@ export function RecuperacionesJefePage() {
                           </span>
 
                           <strong>
+
                             {
                               fecha(
                                 solicitud
-                                  .fecha_expiracion,
+                                  .fecha_expiracion
                               )
                             }
+
                           </strong>
 
                         </div>
@@ -930,43 +1231,88 @@ export function RecuperacionesJefePage() {
                     </div>
 
 
-                    {/* ========================================
+                    {/* =====================================
                         ID
-                        ======================================== */}
+                        ===================================== */}
 
-                    <div className="recovery-request__id">
+                    <div
+                      className="recovery-request__id"
+                    >
 
                       <span>
                         ID de solicitud
                       </span>
 
                       <code>
+
                         {
                           solicitud
                             .id_solicitud
                         }
+
                       </code>
 
                     </div>
 
 
-                    {/* ========================================
-                        BOTONES PENDIENTE
-                        ======================================== */}
+                    {/* =====================================
+                        SOLICITUD PROPIA
+                        ===================================== */}
 
                     {
                       solicitud.estado ===
-                        "PENDIENTE" && (
+                      "PENDIENTE"
+                      &&
+                      solicitud
+                        .es_solicitud_propia
+                      &&
+                      (
+                        <div
+                          className="recovery-request__self-notice"
+                        >
 
-                        <div className="recovery-request__actions">
+                          <LockKeyhole
+                            size={19}
+                          />
 
+                          <div>
+
+                            <strong>
+                              Esta es su solicitud
+                            </strong>
+
+                            <span>
+                              No puede aprobarla ni rechazarla usted mismo. Debe ser revisada por otro Jefe de Oncología.
+                            </span>
+
+                          </div>
+
+                        </div>
+                      )
+                    }
+
+
+                    {/* =====================================
+                        ACCIONES
+                        ===================================== */}
+
+                    {
+                      solicitud.estado ===
+                      "PENDIENTE"
+                      &&
+                      solicitud.puede_resolver
+                      &&
+                      !solicitud
+                        .es_solicitud_propia
+                      &&
+                      (
+                        <div
+                          className="recovery-request__actions"
+                        >
 
                           <button
-
                             type="button"
-
                             className="recovery-request__approve"
-
                             onClick={
                               () =>
                                 abrirResolucion(
@@ -974,7 +1320,6 @@ export function RecuperacionesJefePage() {
                                   "APROBADA",
                                 )
                             }
-
                           >
 
                             <Check
@@ -987,11 +1332,8 @@ export function RecuperacionesJefePage() {
 
 
                           <button
-
                             type="button"
-
                             className="recovery-request__reject"
-
                             onClick={
                               () =>
                                 abrirResolucion(
@@ -999,7 +1341,6 @@ export function RecuperacionesJefePage() {
                                   "RECHAZADA",
                                 )
                             }
-
                           >
 
                             <X
@@ -1015,14 +1356,17 @@ export function RecuperacionesJefePage() {
                     }
 
 
-                    {/* ========================================
+                    {/* =====================================
                         RESOLUCIÓN
-                        ======================================== */}
+                        ===================================== */}
 
                     {
-                      solicitud.resolucion && (
-
-                        <div className="recovery-request__resolution">
+                      solicitud.resolucion
+                      &&
+                      (
+                        <div
+                          className="recovery-request__resolution"
+                        >
 
                           <RotateCcw
                             size={16}
@@ -1051,12 +1395,14 @@ export function RecuperacionesJefePage() {
 
                             <span>
 
-                              Resuelto por:{" "}
+                              Resuelto por:
+                              {" "}
 
                               {
                                 solicitud
                                   .resolucion
-                                  .resuelto_por ||
+                                  .resuelto_por
+                                ||
                                 "Jefatura"
                               }
 
@@ -1069,7 +1415,7 @@ export function RecuperacionesJefePage() {
                                 fecha(
                                   solicitud
                                     .resolucion
-                                    .fecha_resolucion,
+                                    .fecha_resolucion
                                 )
                               }
 
@@ -1079,8 +1425,9 @@ export function RecuperacionesJefePage() {
                             {
                               solicitud
                                 .resolucion
-                                .observacion && (
-
+                                .observacion
+                              &&
+                              (
                                 <p>
 
                                   {
@@ -1100,7 +1447,8 @@ export function RecuperacionesJefePage() {
                     }
 
                   </article>
-                ),
+
+                )
               )
             }
 
@@ -1109,23 +1457,22 @@ export function RecuperacionesJefePage() {
       }
 
 
-      {/* ====================================================
-          MODAL DE CONFIRMACIÓN
-          ==================================================== */}
+      {/* =================================================
+          MODAL
+          ================================================= */}
 
       {
-        seleccionada &&
-        decision && (
-
+        seleccionada
+        &&
+        decision
+        &&
+        (
           <div
-
             className="recovery-decision-modal__overlay"
-
             role="presentation"
-
             onMouseDown={
               (
-                event,
+                event
               ) => {
 
                 if (
@@ -1134,45 +1481,30 @@ export function RecuperacionesJefePage() {
                 ) {
 
                   cerrarResolucion();
+
                 }
+
               }
             }
-
           >
 
             <section
-
               className="recovery-decision-modal"
-
               role="dialog"
-
               aria-modal="true"
-
               aria-labelledby="recovery-decision-title"
-
             >
 
-
-              {/* ==============================================
-                  CERRAR
-                  ============================================== */}
-
               <button
-
                 type="button"
-
                 className="recovery-decision-modal__close"
-
                 onClick={
                   cerrarResolucion
                 }
-
                 disabled={
                   procesando
                 }
-
                 aria-label="Cerrar"
-
               >
 
                 <X
@@ -1181,10 +1513,6 @@ export function RecuperacionesJefePage() {
 
               </button>
 
-
-              {/* ==============================================
-                  ICONO
-                  ============================================== */}
 
               <div
                 className={`
@@ -1200,29 +1528,21 @@ export function RecuperacionesJefePage() {
 
                 {
                   decision ===
-                    "APROBADA"
+                  "APROBADA"
                     ? (
-
                         <Check
                           size={27}
                         />
-
                       )
                     : (
-
                         <X
                           size={27}
                         />
-
                       )
                 }
 
               </div>
 
-
-              {/* ==============================================
-                  TÍTULO
-                  ============================================== */}
 
               <h2
                 id="recovery-decision-title"
@@ -1230,13 +1550,9 @@ export function RecuperacionesJefePage() {
 
                 {
                   decision ===
-                    "APROBADA"
-                    ? (
-                        "Aprobar recuperación"
-                      )
-                    : (
-                        "Rechazar recuperación"
-                      )
+                  "APROBADA"
+                    ? "Aprobar recuperación"
+                    : "Rechazar recuperación"
                 }
 
               </h2>
@@ -1244,7 +1560,8 @@ export function RecuperacionesJefePage() {
 
               <p>
 
-                Solicitud de{" "}
+                Solicitud de
+                {" "}
 
                 <strong>
 
@@ -1259,7 +1576,9 @@ export function RecuperacionesJefePage() {
               </p>
 
 
-              <div className="recovery-decision-modal__email">
+              <div
+                className="recovery-decision-modal__email"
+              >
 
                 <Mail
                   size={16}
@@ -1274,81 +1593,60 @@ export function RecuperacionesJefePage() {
               </div>
 
 
-              {/* ==============================================
-                  INFORMACIÓN SEGÚN DECISIÓN
-                  ============================================== */}
-
               {
                 decision ===
-                  "APROBADA"
+                "APROBADA"
                   ? (
-
-                      <div className="recovery-decision-modal__notice recovery-decision-modal__notice--approve">
+                      <div
+                        className="recovery-decision-modal__notice recovery-decision-modal__notice--approve"
+                      >
 
                         <ShieldCheck
                           size={18}
                         />
 
                         <p>
-
-                          Al aprobar la solicitud,
-                          el sistema generará un
-                          enlace seguro y temporal
-                          para cambiar la contraseña
-                          y lo enviará al correo
-                          institucional del oncólogo.
-
+                          Al aprobar, el sistema generará un enlace seguro y temporal que será enviado al correo institucional.
                         </p>
 
                       </div>
-
                     )
                   : (
-
-                      <div className="recovery-decision-modal__notice recovery-decision-modal__notice--reject">
+                      <div
+                        className="recovery-decision-modal__notice recovery-decision-modal__notice--reject"
+                      >
 
                         <AlertCircle
                           size={18}
                         />
 
                         <p>
-
-                          Al rechazar la solicitud,
-                          el usuario no podrá cambiar
-                          su contraseña mediante esta
-                          recuperación y será
-                          notificado por correo.
-
+                          Al rechazar, esta solicitud quedará invalidada y el usuario será notificado por correo.
                         </p>
 
                       </div>
-
                     )
               }
 
 
-              {/* ==============================================
-                  OBSERVACIÓN
-                  ============================================== */}
-
-              <label className="recovery-decision-modal__field">
+              <label
+                className="recovery-decision-modal__field"
+              >
 
                 <span>
 
                   {
                     decision ===
-                      "APROBADA"
-                      ? (
-                          "Observación"
-                        )
-                      : (
-                          "Motivo del rechazo"
-                        )
+                    "APROBADA"
+                      ? "Observación"
+                      : "Motivo del rechazo"
                   }
 
                   {
                     decision ===
-                      "RECHAZADA" && (
+                    "RECHAZADA"
+                    &&
+                    (
                       <strong>
                         {" "}*
                       </strong>
@@ -1359,42 +1657,32 @@ export function RecuperacionesJefePage() {
 
 
                 <textarea
-
                   value={
                     observacion
                   }
-
                   onChange={
                     (
-                      event,
+                      event
                     ) =>
-
                       setObservacion(
-                        event
-                          .target
-                          .value,
+                        event.target.value
                       )
                   }
-
                   rows={4}
-
                   maxLength={500}
-
                   disabled={
                     procesando
                   }
-
                   placeholder={
                     decision ===
-                      "APROBADA"
+                    "APROBADA"
                       ? (
-                          "Ej.: Solicitud verificada y aprobada por Jefatura."
+                          "Ej.: Solicitud verificada por Jefatura."
                         )
                       : (
                           "Indique el motivo del rechazo..."
                         )
                   }
-
                 />
 
 
@@ -1410,14 +1698,13 @@ export function RecuperacionesJefePage() {
               </label>
 
 
-              {/* ==============================================
-                  ERROR DENTRO DEL MODAL
-                  ============================================== */}
-
               {
-                error && (
-
-                  <div className="recovery-decision-modal__error">
+                error
+                &&
+                (
+                  <div
+                    className="recovery-decision-modal__error"
+                  >
 
                     <AlertCircle
                       size={16}
@@ -1430,45 +1717,29 @@ export function RecuperacionesJefePage() {
               }
 
 
-              {/* ==============================================
-                  BOTONES
-                  ============================================== */}
-
-              <div className="recovery-decision-modal__actions">
-
+              <div
+                className="recovery-decision-modal__actions"
+              >
 
                 <button
-
                   type="button"
-
                   className="recovery-admin-cancel"
-
                   onClick={
                     cerrarResolucion
                   }
-
                   disabled={
                     procesando
                   }
-
                 >
-
                   Cancelar
-
                 </button>
 
 
-                {/* ============================================
-                    ESTE ES EL BOTÓN QUE HACE EL POST REAL
-                    ============================================ */}
-
                 <button
-
                   type="button"
-
                   className={
                     decision ===
-                      "APROBADA"
+                    "APROBADA"
                       ? (
                           "recovery-admin-confirm recovery-admin-confirm--approve"
                         )
@@ -1476,68 +1747,52 @@ export function RecuperacionesJefePage() {
                           "recovery-admin-confirm recovery-admin-confirm--reject"
                         )
                   }
-
                   onClick={
                     () =>
                       void resolver()
                   }
-
                   disabled={
-                    procesando ||
+                    procesando
+                    ||
                     (
                       decision ===
-                        "RECHAZADA" &&
+                      "RECHAZADA"
+                      &&
                       !observacion.trim()
                     )
                   }
-
                 >
 
                   {
                     procesando
                       ? (
-
                           <LoaderCircle
-
                             size={17}
-
                             className="recovery-admin-spin"
-
                           />
-
                         )
                       : decision ===
-                          "APROBADA"
+                        "APROBADA"
                         ? (
-
                             <Check
                               size={17}
                             />
-
                           )
                         : (
-
                             <X
                               size={17}
                             />
-
                           )
                   }
 
 
                   {
                     procesando
-                      ? (
-                          "Procesando..."
-                        )
+                      ? "Procesando..."
                       : decision ===
-                          "APROBADA"
-                        ? (
-                            "Sí, aprobar"
-                          )
-                        : (
-                            "Sí, rechazar"
-                          )
+                        "APROBADA"
+                        ? "Sí, aprobar"
+                        : "Sí, rechazar"
                   }
 
                 </button>
@@ -1551,5 +1806,7 @@ export function RecuperacionesJefePage() {
       }
 
     </div>
+
   );
+
 }

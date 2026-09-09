@@ -890,7 +890,8 @@ class RecuperacionesJefaturaAPIView(
         resultado = (
             ListarRecuperacionesUseCase()
             .ejecutar(
-                estado=estado
+                estado=estado,
+                usuario_revisor=request.user,
             )
         )
 
