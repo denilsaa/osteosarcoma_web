@@ -1606,3 +1606,483 @@
   justify-content: center;
   flex: 0 0 auto;
 }
+
+/* =========================================================
+   FORMULARIO PROFESIONAL DE ONCOLOGÍA
+   ========================================================= */
+
+
+/* =========================================================
+   SELECTS
+   ========================================================= */
+
+.oncologist-form-grid select,
+.oncologists-edit-grid select {
+  width: 100%;
+  height: 43px;
+
+  box-sizing: border-box;
+
+  padding:
+    0
+    38px
+    0
+    12px;
+
+  border:
+    1px solid
+    #d7e2e7;
+
+  border-radius: 9px;
+
+  outline: none;
+
+  appearance: none;
+
+  background:
+    #ffffff
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23778d98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat
+    right 12px
+    center;
+
+  color: #2d4755;
+
+  cursor: pointer;
+
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+
+.oncologist-form-grid select:focus,
+.oncologists-edit-grid select:focus {
+  border-color: #43a9c4;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      29,
+      151,
+      183,
+      0.08
+    );
+}
+
+
+.oncologist-form-grid select[aria-invalid="true"],
+.oncologists-edit-grid select[aria-invalid="true"] {
+  border-color: #d65a5a;
+
+  background-color: #fffafa;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      214,
+      90,
+      90,
+      0.08
+    );
+}
+
+
+/* =========================================================
+   CAMPOS AUTOMÁTICOS
+   ========================================================= */
+
+.oncologist-readonly-field {
+  display: flex;
+
+  width: 100%;
+  min-height: 43px;
+
+  box-sizing: border-box;
+
+  align-items: center;
+
+  gap: 8px;
+
+  padding:
+    0
+    12px;
+
+  border:
+    1px solid
+    #dce8ec;
+
+  border-radius: 9px;
+
+  background: #f7fafb;
+
+  color: #466371;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+
+.oncologist-readonly-field > svg:first-child {
+  color: #1885a3;
+}
+
+
+.oncologist-readonly-field > svg:last-child {
+  margin-left: auto;
+
+  color: #2e9a69;
+}
+
+
+.oncologist-readonly-field--accent {
+  border-color: #cde8df;
+
+  background: #f3faf7;
+
+  color: #34705b;
+}
+
+
+.oncologist-readonly-field--accent svg {
+  color: #278660;
+}
+
+
+/* =========================================================
+   AYUDA Y VALIDACIONES
+   ========================================================= */
+
+.oncologist-form-grid
+label
+>
+small.oncologist-field-help {
+  color: #8297a2;
+
+  font-size: 10px;
+  font-weight: 500;
+
+  line-height: 1.45;
+}
+
+
+.oncologist-form-grid
+label
+>
+small.oncologist-field-success {
+  color: #26875d;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+
+.oncologist-field-check {
+  display: inline-flex;
+
+  width: fit-content;
+
+  align-items: center;
+
+  gap: 5px;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  line-height: 1.4;
+}
+
+
+.oncologist-form-grid
+label
+>
+small.oncologist-field-check--checking {
+  color: #698895;
+}
+
+
+.oncologist-form-grid
+label
+>
+small.oncologist-field-check--success {
+  color: #25835b;
+}
+
+
+.oncologist-form-grid
+label
+>
+small.oncologist-field-check--warning {
+  color: #b17a25;
+}
+
+
+/* =========================================================
+   INPUT CON ERROR
+   ========================================================= */
+
+.oncologist-form-grid
+input[aria-invalid="true"] {
+  border-color: #d65a5a;
+
+  background: #fffafa;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      214,
+      90,
+      90,
+      0.08
+    );
+}
+
+
+/* =========================================================
+   TARJETA DE CREACIÓN EXITOSA
+   ========================================================= */
+
+.oncologist-created-card {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 13px;
+
+  padding:
+    16px
+    18px;
+
+  border:
+    1px solid
+    #b9e3ce;
+
+  border-radius: 13px;
+
+  background: #f2fbf6;
+
+  box-shadow:
+    0 8px 24px
+    rgba(
+      28,
+      122,
+      78,
+      0.045
+    );
+}
+
+
+.oncologist-created-card__icon {
+  display: grid;
+
+  flex:
+    0
+    0
+    auto;
+
+  width: 42px;
+  height: 42px;
+
+  place-items: center;
+
+  border-radius: 11px;
+
+  background: #e0f5e9;
+
+  color: #29885d;
+}
+
+
+.oncologist-created-card
+strong,
+.oncologist-created-card
+span {
+  display: block;
+}
+
+
+.oncologist-created-card
+strong {
+  color: #286448;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+
+.oncologist-created-card
+span {
+  margin-top: 4px;
+
+  color: #608275;
+
+  font-size: 11px;
+
+  line-height: 1.55;
+}
+
+
+.oncologist-created-card
+span
+b {
+  color: #2a654a;
+
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   NOTA DE CREDENCIALES
+   ========================================================= */
+
+.oncologist-form-note {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 11px;
+
+  margin-top: 25px;
+
+  padding: 15px;
+
+  border:
+    1px solid
+    #cbe8ef;
+
+  border-radius: 12px;
+
+  background: #f3fbfd;
+
+  color: #1684a2;
+}
+
+
+.oncologist-form-note
+>
+svg {
+  flex:
+    0
+    0
+    auto;
+
+  margin-top: 1px;
+}
+
+
+.oncologist-form-note
+strong,
+.oncologist-form-note
+span {
+  display: block;
+}
+
+
+.oncologist-form-note
+strong {
+  color: #277086;
+
+  font-size: 12px;
+  font-weight: 800;
+}
+
+
+.oncologist-form-note
+span {
+  margin-top: 4px;
+
+  max-width: 800px;
+
+  color: #678995;
+
+  font-size: 11px;
+
+  line-height: 1.6;
+}
+
+
+/* =========================================================
+   BOTÓN
+   ========================================================= */
+
+.oncologists-button-icon {
+  display: inline-flex;
+
+  flex:
+    0
+    0
+    auto;
+
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* =========================================================
+   MEJORA DEL FORMULARIO
+   ========================================================= */
+
+.oncologist-form-card {
+  position: relative;
+}
+
+
+.oncologist-form-grid label {
+  align-self: start;
+}
+
+
+.oncologist-form-grid
+input::placeholder {
+  color: #a0b0b8;
+}
+
+
+.oncologist-form-grid
+select {
+  min-width: 0;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (
+  max-width: 900px
+) {
+
+  .oncologist-created-card {
+    align-items: flex-start;
+  }
+
+}
+
+
+@media (
+  max-width: 620px
+) {
+
+  .oncologist-created-card {
+    padding:
+      14px;
+  }
+
+
+  .oncologist-created-card__icon {
+    width: 38px;
+    height: 38px;
+  }
+
+
+  .oncologist-readonly-field {
+    min-height: 45px;
+  }
+
+
+  .oncologist-form-grid
+  select {
+    height: 45px;
+  }
+
+}

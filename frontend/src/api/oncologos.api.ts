@@ -3,6 +3,31 @@ import axios from "axios";
 import api from "./axios";
 
 
+/* =========================================================
+   TIPOS GENERALES
+   ========================================================= */
+
+export type RolOncologia =
+  | "ONCOLOGO"
+  | "JEFE_ONCOLOGIA";
+
+
+export type ExpedicionBolivia =
+  | "LP"
+  | "CB"
+  | "SC"
+  | "OR"
+  | "PT"
+  | "CH"
+  | "TJ"
+  | "BE"
+  | "PD";
+
+
+/* =========================================================
+   RESUMEN DE ONCÓLOGO
+   ========================================================= */
+
 export interface OncologoResumen {
 
   id_usuario: string;
@@ -14,6 +39,14 @@ export interface OncologoResumen {
   apellido_materno: string | null;
 
   nombre_completo: string;
+
+  ci_numero: string | null;
+
+  ci_complemento: string | null;
+
+  ci_expedido: ExpedicionBolivia | null;
+
+  ci_completo: string | null;
 
   correo: string;
 
@@ -29,16 +62,26 @@ export interface OncologoResumen {
 
   subespecialidad: string | null;
 
+  area_clinica: string | null;
+
   matricula_profesional: string | null;
 
   telefono_institucional: string | null;
 
   rol: string;
 
+  rol_codigo: RolOncologia;
+
+  roles: string[];
+
   fecha_creacion: string;
 
 }
 
+
+/* =========================================================
+   PERFIL PROFESIONAL
+   ========================================================= */
 
 export interface PerfilOncologo {
 
@@ -48,12 +91,18 @@ export interface PerfilOncologo {
 
   subespecialidad: string | null;
 
+  area_clinica: string | null;
+
   cargo: string | null;
 
   telefono_institucional: string | null;
 
 }
 
+
+/* =========================================================
+   DETALLE
+   ========================================================= */
 
 export interface OncologoDetalle {
 
@@ -67,15 +116,27 @@ export interface OncologoDetalle {
 
   nombre_completo: string;
 
+  telefono: string | null;
+
+  ci_numero: string | null;
+
+  ci_complemento: string | null;
+
+  ci_expedido: ExpedicionBolivia | null;
+
+  ci_completo: string | null;
+
   correo: string;
 
   nombre_usuario: string;
 
-  telefono: string | null;
-
   estado: string;
 
   estado_nombre: string;
+
+  rol_codigo: RolOncologia;
+
+  rol_nombre: string;
 
   perfil: PerfilOncologo;
 
@@ -90,6 +151,10 @@ export interface OncologoDetalle {
 }
 
 
+/* =========================================================
+   LISTADO
+   ========================================================= */
+
 export interface ListadoOncologosResponse {
 
   total: number;
@@ -99,6 +164,10 @@ export interface ListadoOncologosResponse {
 }
 
 
+/* =========================================================
+   CREAR ONCÓLOGO
+   ========================================================= */
+
 export interface CrearOncologoPayload {
 
   nombres: string;
@@ -107,24 +176,30 @@ export interface CrearOncologoPayload {
 
   apellido_materno?: string | null;
 
-  correo: string;
-
-  nombre_usuario: string;
-
   telefono?: string | null;
 
-  password: string;
+  ci_numero: string;
 
-  matricula_profesional?: string | null;
+  ci_complemento?: string | null;
 
-  especialidad?: string | null;
+  ci_expedido: ExpedicionBolivia;
 
-  subespecialidad?: string | null;
+  correo: string;
+
+  matricula_profesional: string;
+
+  subespecialidad: string;
 
   telefono_institucional?: string | null;
 
+  rol_codigo: RolOncologia;
+
 }
 
+
+/* =========================================================
+   EDITAR ONCÓLOGO
+   ========================================================= */
 
 export interface EditarOncologoPayload {
 
@@ -134,22 +209,71 @@ export interface EditarOncologoPayload {
 
   apellido_materno?: string | null;
 
-  correo?: string;
-
-  nombre_usuario?: string;
-
   telefono?: string | null;
 
-  matricula_profesional?: string | null;
+  ci_numero?: string;
 
-  especialidad?: string | null;
+  ci_complemento?: string | null;
 
-  subespecialidad?: string | null;
+  ci_expedido?: ExpedicionBolivia;
+
+  correo?: string;
+
+  matricula_profesional?: string;
+
+  subespecialidad?: string;
 
   telefono_institucional?: string | null;
 
+  rol_codigo?: RolOncologia;
+
+  /*
+   * Compatibilidad temporal con la pantalla
+   * de edición existente.
+   *
+   * Más adelante la actualizaremos para que
+   * nombre_usuario y especialidad tampoco
+   * puedan editarse manualmente.
+   */
+  nombre_usuario?: string;
+
+  especialidad?: string | null;
+
+  area_clinica?: string | null;
+
 }
 
+
+/* =========================================================
+   RESPUESTA DE CREACIÓN
+   ========================================================= */
+
+export interface CrearOncologoResponse {
+
+  mensaje: string;
+
+  oncologo: {
+
+    id_usuario: string;
+
+    nombre_usuario: string;
+
+    correo: string;
+
+    rol_codigo: RolOncologia;
+
+    nombre_completo: string;
+
+  };
+
+  correo_credenciales_enviado: boolean;
+
+}
+
+
+/* =========================================================
+   RESPUESTA DE EDICIÓN
+   ========================================================= */
 
 export interface OperacionOncologoResponse {
 
@@ -159,6 +283,10 @@ export interface OperacionOncologoResponse {
 
 }
 
+
+/* =========================================================
+   CAMBIO DE ESTADO
+   ========================================================= */
 
 export interface CambiarEstadoResponse {
 
@@ -175,13 +303,22 @@ export interface CambiarEstadoResponse {
 }
 
 
+/* =========================================================
+   ERRORES
+   ========================================================= */
+
 export type ErroresFormulario =
   Record<string, string>;
 
 
+/* =========================================================
+   LISTAR
+   ========================================================= */
+
 export async function listarOncologos(
   buscar = "",
   estado = "",
+  rol = "",
 ): Promise<ListadoOncologosResponse> {
 
   const params: Record<
@@ -202,6 +339,14 @@ export async function listarOncologos(
 
     params.estado =
       estado.trim();
+
+  }
+
+
+  if (rol.trim()) {
+
+    params.rol =
+      rol.trim();
 
   }
 
@@ -235,6 +380,10 @@ export async function listarOncologos(
 }
 
 
+/* =========================================================
+   OBTENER
+   ========================================================= */
+
 export async function obtenerOncologo(
   idUsuario: string,
 ): Promise<OncologoDetalle> {
@@ -250,12 +399,16 @@ export async function obtenerOncologo(
 }
 
 
+/* =========================================================
+   CREAR
+   ========================================================= */
+
 export async function crearOncologo(
   data: CrearOncologoPayload,
-): Promise<OperacionOncologoResponse> {
+): Promise<CrearOncologoResponse> {
 
   const response =
-    await api.post<OperacionOncologoResponse>(
+    await api.post<CrearOncologoResponse>(
       "/oncologos/",
       data,
     );
@@ -265,6 +418,10 @@ export async function crearOncologo(
 
 }
 
+
+/* =========================================================
+   EDITAR
+   ========================================================= */
 
 export async function editarOncologo(
   idUsuario: string,
@@ -282,6 +439,10 @@ export async function editarOncologo(
 
 }
 
+
+/* =========================================================
+   CAMBIAR ESTADO
+   ========================================================= */
 
 export async function cambiarEstadoOncologo(
   idUsuario: string,
@@ -301,6 +462,131 @@ export async function cambiarEstadoOncologo(
 
 }
 
+
+/* =========================================================
+   VERIFICACIÓN AUTOMÁTICA DE CI
+   ========================================================= */
+
+export async function verificarCiOncologo(
+  ciNumero: string,
+  ciComplemento?: string | null,
+): Promise<boolean> {
+
+  const numero =
+    ciNumero.trim();
+
+  const complemento =
+    ciComplemento
+      ?.trim()
+      .toUpperCase() || null;
+
+
+  if (!numero) {
+
+    return true;
+
+  }
+
+
+  const response =
+    await listarOncologos(
+      numero,
+    );
+
+
+  return !response.resultados.some(
+    (oncologo) =>
+      oncologo.ci_numero === numero
+      &&
+      (
+        oncologo.ci_complemento
+          ?.trim()
+          .toUpperCase() || null
+      ) === complemento,
+  );
+
+}
+
+
+/* =========================================================
+   VERIFICACIÓN AUTOMÁTICA DE MATRÍCULA
+   ========================================================= */
+
+export async function verificarMatriculaOncologo(
+  matricula: string,
+): Promise<boolean> {
+
+  const valor =
+    matricula
+      .trim()
+      .toUpperCase();
+
+
+  if (!valor) {
+
+    return true;
+
+  }
+
+
+  const response =
+    await listarOncologos(
+      valor,
+    );
+
+
+  return !response.resultados.some(
+    (oncologo) =>
+      oncologo
+        .matricula_profesional
+        ?.trim()
+        .toUpperCase() === valor,
+  );
+
+}
+
+
+/* =========================================================
+   VERIFICACIÓN AUTOMÁTICA DE CORREO
+   ========================================================= */
+
+export async function verificarCorreoOncologo(
+  correo: string,
+): Promise<boolean> {
+
+  const valor =
+    correo
+      .trim()
+      .toLowerCase();
+
+
+  if (!valor) {
+
+    return true;
+
+  }
+
+
+  const response =
+    await listarOncologos(
+      valor,
+    );
+
+
+  return !response.resultados.some(
+    (oncologo) =>
+      oncologo
+        .correo
+        .trim()
+        .toLowerCase() === valor,
+  );
+
+}
+
+
+/* =========================================================
+   STATUS DE ERROR
+   ========================================================= */
 
 export function obtenerStatusError(
   error: unknown,
@@ -322,6 +608,78 @@ export function obtenerStatusError(
 
 }
 
+
+/* =========================================================
+   OBTENER TEXTO DE ERROR
+   ========================================================= */
+
+function obtenerTextoError(
+  valor: unknown,
+): string | null {
+
+  if (
+    typeof valor === "string"
+  ) {
+
+    return valor;
+
+  }
+
+
+  if (
+    Array.isArray(valor)
+  ) {
+
+    return valor
+      .map(String)
+      .join(" ");
+
+  }
+
+
+  if (
+    valor
+    &&
+    typeof valor === "object"
+  ) {
+
+    const mensajes =
+      Object.values(
+        valor as Record<
+          string,
+          unknown
+        >
+      )
+        .map(
+          obtenerTextoError
+        )
+        .filter(
+          (
+            mensaje,
+          ): mensaje is string =>
+            Boolean(mensaje),
+        );
+
+
+    if (
+      mensajes.length > 0
+    ) {
+
+      return mensajes.join(" ");
+
+    }
+
+  }
+
+
+  return null;
+
+}
+
+
+/* =========================================================
+   NORMALIZAR ERRORES DE API
+   ========================================================= */
 
 export function normalizarErroresApi(
   error: unknown,
@@ -358,7 +716,8 @@ export function normalizarErroresApi(
   ) {
 
     return {
-      general: data,
+      general:
+        data,
     };
 
   }
@@ -388,14 +747,13 @@ export function normalizarErroresApi(
   ).forEach(
     ([campo, valor]) => {
 
-      if (
-        Array.isArray(valor)
-      ) {
-
-        resultado[campo] =
+      const mensaje =
+        obtenerTextoError(
           valor
-            .map(String)
-            .join(" ");
+        );
+
+
+      if (!mensaje) {
 
         return;
 
@@ -403,35 +761,32 @@ export function normalizarErroresApi(
 
 
       if (
-        typeof valor === "string"
+        campo === "error"
+        ||
+        campo === "detail"
+        ||
+        campo === "non_field_errors"
       ) {
 
-        if (
-          campo === "error" ||
-          campo === "detail" ||
-          campo ===
-            "non_field_errors"
-        ) {
+        resultado.general =
+          mensaje;
 
-          resultado.general =
-            valor;
-
-        } else {
-
-          resultado[campo] =
-            valor;
-
-        }
+        return;
 
       }
+
+
+      resultado[campo] =
+        mensaje;
 
     },
   );
 
 
   if (
-    Object.keys(resultado)
-      .length === 0
+    Object.keys(
+      resultado
+    ).length === 0
   ) {
 
     resultado.general =
