@@ -13,6 +13,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+
 import {
   useEffect,
   useMemo,
@@ -29,23 +30,53 @@ import {
   getPatientCatalogs,
   updatePatient,
   type PatientCatalogs,
-  type PatientDetail,
   type PatientChange,
+  type PatientDetail,
 } from "../../api/pacientes.api";
 
 import {
   PatientAuditHistory,
 } from "../../components/pacientes/PatientAuditHistory";
 
-import "./PacienteDetallePage.css";
+import {
+  PatientClinicalCases,
+} from "../../components/pacientes/PatientClinicalCases";
 
 import {
   PatientRadiographies,
 } from "../../components/pacientes/PatientRadiographies";
 
-import {
-  PatientClinicalCases,
-} from "../../components/pacientes/PatientClinicalCases";
+import "./PacienteDetallePage.css";
+
+
+// ==========================================================
+// DEPARTAMENTOS
+// ==========================================================
+
+const DEPARTAMENTOS:
+  Record<string, string> = {
+
+    LP: "La Paz",
+
+    CB: "Cochabamba",
+
+    SC: "Santa Cruz",
+
+    OR: "Oruro",
+
+    PT: "Potosí",
+
+    CH: "Chuquisaca",
+
+    TJ: "Tarija",
+
+    BE: "Beni",
+
+    PD: "Pando",
+
+  };
+
+
 // ==========================================================
 // HELPERS
 // ==========================================================
@@ -55,7 +86,9 @@ function formatDate(
 ): string {
 
   if (!value) {
+
     return "—";
+
   }
 
 
@@ -70,7 +103,9 @@ function formatDate(
       date.getTime(),
     )
   ) {
+
     return value;
+
   }
 
 
@@ -78,7 +113,9 @@ function formatDate(
     "es-BO",
     {
       day: "2-digit",
+
       month: "2-digit",
+
       year: "numeric",
     },
   ).format(
@@ -93,12 +130,16 @@ function formatDateTime(
 ): string {
 
   if (!value) {
+
     return "—";
+
   }
 
 
   const date =
-    new Date(value);
+    new Date(
+      value,
+    );
 
 
   if (
@@ -106,7 +147,9 @@ function formatDateTime(
       date.getTime(),
     )
   ) {
+
     return value;
+
   }
 
 
@@ -114,9 +157,13 @@ function formatDateTime(
     "es-BO",
     {
       day: "2-digit",
+
       month: "2-digit",
+
       year: "numeric",
+
       hour: "2-digit",
+
       minute: "2-digit",
     },
   ).format(
@@ -140,6 +187,28 @@ function normalizeText(
 }
 
 
+function departmentName(
+  code?: string | null,
+): string {
+
+  if (!code) {
+
+    return "—";
+
+  }
+
+
+  return (
+    DEPARTAMENTOS[
+      code
+    ]
+    ??
+    code
+  );
+
+}
+
+
 function extractErrorMessage(
   error: unknown,
 ): string {
@@ -156,29 +225,57 @@ function extractErrorMessage(
       error as {
         response?: {
           data?: {
-            error?: {
-              message?: string;
-            };
+            error?:
+              | {
+                  message?: string;
+                }
+              | string;
+
             detail?: string;
           };
         };
       };
 
 
-    return (
+    const data =
       maybeAxios
         .response
-        ?.data
-        ?.error
-        ?.message
-      ??
-      maybeAxios
-        .response
-        ?.data
-        ?.detail
-      ??
-      "No fue posible completar la operación."
-    );
+        ?.data;
+
+
+    if (
+      typeof data?.error ===
+      "string"
+    ) {
+
+      return data.error;
+
+    }
+
+
+    if (
+      data?.error
+      &&
+      typeof data.error ===
+      "object"
+      &&
+      typeof data.error.message ===
+      "string"
+    ) {
+
+      return data.error.message;
+
+    }
+
+
+    if (
+      typeof data?.detail ===
+      "string"
+    ) {
+
+      return data.detail;
+
+    }
 
   }
 
@@ -223,28 +320,28 @@ type EditForm = {
 const emptyForm:
   EditForm = {
 
-  first_names:
-    "",
+    first_names:
+      "",
 
-  paternal_surname:
-    "",
+    paternal_surname:
+      "",
 
-  maternal_surname:
-    "",
+    maternal_surname:
+      "",
 
-  birth_date:
-    "",
+    birth_date:
+      "",
 
-  sex_id:
-    "",
+    sex_id:
+      "",
 
-  active:
-    true,
+    active:
+      true,
 
-  reason:
-    "",
+    reason:
+      "",
 
-};
+  };
 
 
 // ==========================================================
@@ -273,7 +370,9 @@ export function PacienteDetallePage() {
     setPatient,
   ] = useState<
     PatientDetail | null
-  >(null);
+  >(
+    null,
+  );
 
 
   const [
@@ -281,7 +380,9 @@ export function PacienteDetallePage() {
     setCatalogs,
   ] = useState<
     PatientCatalogs | null
-  >(null);
+  >(
+    null,
+  );
 
 
   const [
@@ -323,7 +424,9 @@ export function PacienteDetallePage() {
     setError,
   ] = useState<
     string | null
-  >(null);
+  >(
+    null,
+  );
 
 
   const [
@@ -331,7 +434,9 @@ export function PacienteDetallePage() {
     setSuccess,
   ] = useState<
     string | null
-  >(null);
+  >(
+    null,
+  );
 
 
   const [
@@ -339,7 +444,9 @@ export function PacienteDetallePage() {
     setLastChanges,
   ] = useState<
     PatientChange[]
-  >([]);
+  >(
+    [],
+  );
 
 
   // ========================================================
@@ -355,9 +462,11 @@ export function PacienteDetallePage() {
           "No se recibió un identificador de paciente válido.",
         );
 
+
         setLoading(
           false,
         );
+
 
         return;
 
@@ -373,6 +482,7 @@ export function PacienteDetallePage() {
         setLoading(
           true,
         );
+
 
         setError(
           null,
@@ -397,7 +507,9 @@ export function PacienteDetallePage() {
 
 
           if (!mounted) {
+
             return;
+
           }
 
 
@@ -425,7 +537,8 @@ export function PacienteDetallePage() {
               maternal_surname:
                 patientData
                   .maternal_surname
-                ?? "",
+                ??
+                "",
 
               birth_date:
                 patientData
@@ -436,7 +549,8 @@ export function PacienteDetallePage() {
                   patientData
                     .sex
                     .id
-                  ?? "",
+                  ??
+                  "",
                 ),
 
               active:
@@ -508,7 +622,8 @@ export function PacienteDetallePage() {
       () =>
         patient
           ?.documents[0]
-        ?? null,
+        ??
+        null,
       [
         patient,
       ],
@@ -542,13 +657,45 @@ export function PacienteDetallePage() {
 
 
   // ========================================================
+  // CONTACTO EMERGENCIA PRINCIPAL
+  // ========================================================
+
+  const primaryEmergencyContact =
+    useMemo(
+      () =>
+        patient
+          ?.primary_emergency_contact
+        ??
+        patient
+          ?.emergency_contacts
+          ?.find(
+            (
+              contact,
+            ) =>
+              contact.primary,
+          )
+        ??
+        patient
+          ?.emergency_contacts
+          ?.[0]
+        ??
+        null,
+      [
+        patient,
+      ],
+    );
+
+
+  // ========================================================
   // INICIAR EDICIÓN
   // ========================================================
 
   function startEditing() {
 
     if (!patient) {
+
       return;
+
     }
 
 
@@ -566,7 +713,8 @@ export function PacienteDetallePage() {
         maternal_surname:
           patient
             .maternal_surname
-          ?? "",
+          ??
+          "",
 
         birth_date:
           patient
@@ -577,7 +725,8 @@ export function PacienteDetallePage() {
             patient
               .sex
               .id
-            ?? "",
+            ??
+            "",
           ),
 
         active:
@@ -674,7 +823,9 @@ export function PacienteDetallePage() {
       ||
       !patient
     ) {
+
       return;
+
     }
 
 
@@ -702,6 +853,7 @@ export function PacienteDetallePage() {
         "Los nombres deben contener al menos 2 caracteres.",
       );
 
+
       return;
 
     }
@@ -717,6 +869,35 @@ export function PacienteDetallePage() {
         "El apellido paterno debe contener al menos 2 caracteres.",
       );
 
+
+      return;
+
+    }
+
+
+    if (
+      !editForm.birth_date
+    ) {
+
+      setError(
+        "Debe seleccionar una fecha de nacimiento.",
+      );
+
+
+      return;
+
+    }
+
+
+    if (
+      !editForm.sex_id
+    ) {
+
+      setError(
+        "Debe seleccionar el sexo del paciente.",
+      );
+
+
       return;
 
     }
@@ -731,6 +912,7 @@ export function PacienteDetallePage() {
       setError(
         "Debe indicar un motivo de edición de al menos 5 caracteres.",
       );
+
 
       return;
 
@@ -766,7 +948,8 @@ export function PacienteDetallePage() {
                 editForm
                   .maternal_surname,
               )
-                || null,
+              ||
+              null,
 
             birth_date:
               editForm
@@ -931,7 +1114,6 @@ export function PacienteDetallePage() {
       className="patient-detail-page"
     >
 
-
       {/* ==================================================
           HEADER
           ================================================== */}
@@ -976,7 +1158,10 @@ export function PacienteDetallePage() {
             >
 
               <h1>
-                {patient.full_name}
+                {
+                  patient
+                    .full_name
+                }
               </h1>
 
 
@@ -987,18 +1172,21 @@ export function PacienteDetallePage() {
                     : "patient-detail-status patient-detail-status--inactive"
                 }
               >
+
                 {
                   patient.active
                     ? "Activo"
                     : "Inactivo"
                 }
+
               </span>
 
             </div>
 
 
             <p>
-              Información general y seguimiento del paciente.
+              Información general, contactos,
+              casos clínicos, radiografías e historial.
             </p>
 
           </div>
@@ -1006,25 +1194,29 @@ export function PacienteDetallePage() {
         </div>
 
 
-        {!editing && (
+        {
+          !editing
+          &&
+          (
 
-          <button
-            type="button"
-            className="patient-detail-edit-button"
-            onClick={
-              startEditing
-            }
-          >
+            <button
+              type="button"
+              className="patient-detail-edit-button"
+              onClick={
+                startEditing
+              }
+            >
 
-            <Edit3
-              size={17}
-            />
+              <Edit3
+                size={17}
+              />
 
-            Editar paciente
+              Editar paciente
 
-          </button>
+            </button>
 
-        )}
+          )
+        }
 
       </header>
 
@@ -1033,48 +1225,56 @@ export function PacienteDetallePage() {
           MENSAJE ERROR
           ================================================== */}
 
-      {error && (
+      {
+        error
+        &&
+        (
 
-        <div
-          className="patient-detail-message patient-detail-message--error"
-        >
+          <div
+            className="patient-detail-message patient-detail-message--error"
+          >
 
-          <CircleAlert
-            size={19}
-          />
+            <CircleAlert
+              size={19}
+            />
 
 
-          <span>
-            {error}
-          </span>
+            <span>
+              {error}
+            </span>
 
-        </div>
+          </div>
 
-      )}
+        )
+      }
 
 
       {/* ==================================================
           MENSAJE ÉXITO
           ================================================== */}
 
-      {success && (
+      {
+        success
+        &&
+        (
 
-        <div
-          className="patient-detail-message patient-detail-message--success"
-        >
+          <div
+            className="patient-detail-message patient-detail-message--success"
+          >
 
-          <CheckCircle2
-            size={19}
-          />
+            <CheckCircle2
+              size={19}
+            />
 
 
-          <span>
-            {success}
-          </span>
+            <span>
+              {success}
+            </span>
 
-        </div>
+          </div>
 
-      )}
+        )
+      }
 
 
       {/* ==================================================
@@ -1088,9 +1288,11 @@ export function PacienteDetallePage() {
         <article>
 
           <div>
+
             <Activity
               size={21}
             />
+
           </div>
 
 
@@ -1112,9 +1314,11 @@ export function PacienteDetallePage() {
         <article>
 
           <div>
+
             <CalendarDays
               size={21}
             />
+
           </div>
 
 
@@ -1126,12 +1330,14 @@ export function PacienteDetallePage() {
           <strong
             className="patient-detail-kpi-date"
           >
+
             {
               formatDateTime(
                 patient
                   .registration_date,
               )
             }
+
           </strong>
 
         </article>
@@ -1140,9 +1346,11 @@ export function PacienteDetallePage() {
         <article>
 
           <div>
+
             <ShieldCheck
               size={21}
             />
+
           </div>
 
 
@@ -1168,360 +1376,1152 @@ export function PacienteDetallePage() {
           EDICIÓN
           ================================================== */}
 
-      {editing ? (
+      {
+        editing
+          ? (
 
-        <form
-          className="patient-detail-edit-card"
-          onSubmit={
-            handleSave
-          }
-        >
-
-          <div
-            className="patient-detail-section-header"
-          >
-
-            <div>
-
-              <h2>
-                Editar datos personales
-              </h2>
-
-
-              <p>
-                Toda modificación requiere un motivo y será enviada al historial de auditoría.
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <div
-            className="patient-detail-edit-grid"
-          >
-
-            <label>
-
-              <span>
-                Nombres
-              </span>
-
-
-              <input
-                type="text"
-                value={
-                  editForm
-                    .first_names
-                }
-                onChange={
-                  (
-                    event,
-                  ) =>
-                    updateField(
-                      "first_names",
-                      event
-                        .target
-                        .value,
-                    )
-                }
-              />
-
-            </label>
-
-
-            <label>
-
-              <span>
-                Apellido paterno
-              </span>
-
-
-              <input
-                type="text"
-                value={
-                  editForm
-                    .paternal_surname
-                }
-                onChange={
-                  (
-                    event,
-                  ) =>
-                    updateField(
-                      "paternal_surname",
-                      event
-                        .target
-                        .value,
-                    )
-                }
-              />
-
-            </label>
-
-
-            <label>
-
-              <span>
-                Apellido materno
-              </span>
-
-
-              <input
-                type="text"
-                value={
-                  editForm
-                    .maternal_surname
-                }
-                onChange={
-                  (
-                    event,
-                  ) =>
-                    updateField(
-                      "maternal_surname",
-                      event
-                        .target
-                        .value,
-                    )
-                }
-              />
-
-            </label>
-
-
-            <label>
-
-              <span>
-                Fecha de nacimiento
-              </span>
-
-
-              <input
-                type="date"
-                value={
-                  editForm
-                    .birth_date
-                }
-                onChange={
-                  (
-                    event,
-                  ) =>
-                    updateField(
-                      "birth_date",
-                      event
-                        .target
-                        .value,
-                    )
-                }
-              />
-
-            </label>
-
-
-            <label>
-
-              <span>
-                Sexo
-              </span>
-
-
-              <select
-                value={
-                  editForm
-                    .sex_id
-                }
-                onChange={
-                  (
-                    event,
-                  ) =>
-                    updateField(
-                      "sex_id",
-                      event
-                        .target
-                        .value,
-                    )
+              <form
+                className="patient-detail-edit-card"
+                onSubmit={
+                  handleSave
                 }
               >
+
+                <div
+                  className="patient-detail-section-header"
+                >
+
+                  <div
+                    className="patient-detail-section-icon"
+                  >
+
+                    <Edit3
+                      size={20}
+                    />
+
+                  </div>
+
+
+                  <div>
+
+                    <h2>
+                      Editar datos personales
+                    </h2>
+
+
+                    <p>
+                      Toda modificación requiere un motivo
+                      y será enviada al historial de auditoría.
+                    </p>
+
+                  </div>
+
+                </div>
+
+
+                <div
+                  className="patient-detail-edit-grid"
+                >
+
+                  <label>
+
+                    <span>
+                      Nombres *
+                    </span>
+
+
+                    <input
+                      type="text"
+                      value={
+                        editForm
+                          .first_names
+                      }
+                      onChange={
+                        (
+                          event,
+                        ) =>
+                          updateField(
+                            "first_names",
+                            event
+                              .target
+                              .value,
+                          )
+                      }
+                      maxLength={100}
+                    />
+
+                  </label>
+
+
+                  <label>
+
+                    <span>
+                      Apellido paterno *
+                    </span>
+
+
+                    <input
+                      type="text"
+                      value={
+                        editForm
+                          .paternal_surname
+                      }
+                      onChange={
+                        (
+                          event,
+                        ) =>
+                          updateField(
+                            "paternal_surname",
+                            event
+                              .target
+                              .value,
+                          )
+                      }
+                      maxLength={80}
+                    />
+
+                  </label>
+
+
+                  <label>
+
+                    <span>
+                      Apellido materno
+                    </span>
+
+
+                    <input
+                      type="text"
+                      value={
+                        editForm
+                          .maternal_surname
+                      }
+                      onChange={
+                        (
+                          event,
+                        ) =>
+                          updateField(
+                            "maternal_surname",
+                            event
+                              .target
+                              .value,
+                          )
+                      }
+                      maxLength={80}
+                    />
+
+                  </label>
+
+
+                  <label>
+
+                    <span>
+                      Fecha de nacimiento *
+                    </span>
+
+
+                    <input
+                      type="date"
+                      value={
+                        editForm
+                          .birth_date
+                      }
+                      onChange={
+                        (
+                          event,
+                        ) =>
+                          updateField(
+                            "birth_date",
+                            event
+                              .target
+                              .value,
+                          )
+                      }
+                    />
+
+                  </label>
+
+
+                  <label>
+
+                    <span>
+                      Sexo *
+                    </span>
+
+
+                    <select
+                      value={
+                        editForm
+                          .sex_id
+                      }
+                      onChange={
+                        (
+                          event,
+                        ) =>
+                          updateField(
+                            "sex_id",
+                            event
+                              .target
+                              .value,
+                          )
+                      }
+                    >
+
+                      {
+                        catalogs
+                          ?.sexes
+                          .map(
+                            (
+                              item,
+                            ) => (
+
+                              <option
+                                key={
+                                  item.id
+                                }
+                                value={
+                                  item.id
+                                }
+                              >
+
+                                {
+                                  item.name
+                                }
+
+                              </option>
+
+                            ),
+                          )
+                      }
+
+                    </select>
+
+                  </label>
+
+
+                  <label>
+
+                    <span>
+                      Estado
+                    </span>
+
+
+                    <select
+                      value={
+                        editForm
+                          .active
+                          ? "true"
+                          : "false"
+                      }
+                      onChange={
+                        (
+                          event,
+                        ) =>
+                          updateField(
+                            "active",
+                            event
+                              .target
+                              .value
+                            ===
+                            "true",
+                          )
+                      }
+                    >
+
+                      <option
+                        value="true"
+                      >
+                        Activo
+                      </option>
+
+
+                      <option
+                        value="false"
+                      >
+                        Inactivo
+                      </option>
+
+                    </select>
+
+                  </label>
+
+
+                  <label
+                    className="patient-detail-reason"
+                  >
+
+                    <span>
+                      Motivo de la modificación *
+                    </span>
+
+
+                    <textarea
+                      value={
+                        editForm
+                          .reason
+                      }
+                      onChange={
+                        (
+                          event,
+                        ) =>
+                          updateField(
+                            "reason",
+                            event
+                              .target
+                              .value,
+                          )
+                      }
+                      rows={3}
+                      maxLength={500}
+                      placeholder="Ej. Corrección de nombres solicitada por actualización de datos."
+                    />
+
+                  </label>
+
+                </div>
+
+
+                <footer
+                  className="patient-detail-edit-actions"
+                >
+
+                  <button
+                    type="button"
+                    className="patient-detail-cancel"
+                    disabled={
+                      saving
+                    }
+                    onClick={
+                      cancelEditing
+                    }
+                  >
+
+                    <X
+                      size={17}
+                    />
+
+                    Cancelar
+
+                  </button>
+
+
+                  <button
+                    type="submit"
+                    className="patient-detail-save"
+                    disabled={
+                      saving
+                    }
+                  >
+
+                    {
+                      saving
+                        ? (
+
+                            <LoaderCircle
+                              size={18}
+                              className="patient-detail-spin"
+                            />
+
+                          )
+                        : (
+
+                            <Save
+                              size={18}
+                            />
+
+                          )
+                    }
+
+
+                    {
+                      saving
+                        ? "Guardando..."
+                        : "Guardar cambios"
+                    }
+
+                  </button>
+
+                </footer>
+
+              </form>
+
+            )
+          : (
+
+              <>
+
+                {/* ==========================================
+                    DATOS PERSONALES
+                    ========================================== */}
+
+                <article
+                  className="patient-detail-card"
+                >
+
+                  <div
+                    className="patient-detail-section-header"
+                  >
+
+                    <div
+                      className="patient-detail-section-icon"
+                    >
+
+                      <UserRound
+                        size={20}
+                      />
+
+                    </div>
+
+
+                    <div>
+
+                      <h2>
+                        Datos personales
+                      </h2>
+
+
+                      <p>
+                        Información principal del paciente.
+                      </p>
+
+                    </div>
+
+                  </div>
+
+
+                  <div
+                    className="patient-detail-info-grid"
+                  >
+
+                    <div>
+
+                      <span>
+                        Nombres
+                      </span>
+
+
+                      <strong>
+                        {
+                          patient
+                            .first_names
+                        }
+                      </strong>
+
+                    </div>
+
+
+                    <div>
+
+                      <span>
+                        Apellido paterno
+                      </span>
+
+
+                      <strong>
+                        {
+                          patient
+                            .paternal_surname
+                        }
+                      </strong>
+
+                    </div>
+
+
+                    <div>
+
+                      <span>
+                        Apellido materno
+                      </span>
+
+
+                      <strong>
+                        {
+                          patient
+                            .maternal_surname
+                          ||
+                          "—"
+                        }
+                      </strong>
+
+                    </div>
+
+
+                    <div>
+
+                      <span>
+                        Fecha de nacimiento
+                      </span>
+
+
+                      <strong>
+                        {
+                          formatDate(
+                            patient
+                              .birth_date,
+                          )
+                        }
+                      </strong>
+
+                    </div>
+
+
+                    <div>
+
+                      <span>
+                        Sexo
+                      </span>
+
+
+                      <strong>
+                        {
+                          patient
+                            .sex
+                            .name
+                        }
+                      </strong>
+
+                    </div>
+
+
+                    <div>
+
+                      <span>
+                        Identificador
+                      </span>
+
+
+                      <strong
+                        className="patient-detail-uuid"
+                      >
+
+                        {
+                          patient
+                            .id_patient
+                        }
+
+                      </strong>
+
+                    </div>
+
+                  </div>
+
+                </article>
+
+
+                {/* ==========================================
+                    DOCUMENTO + CONTACTOS
+                    ========================================== */}
+
+                <div
+                  className="patient-detail-two-columns"
+                >
+
+                  {/* ========================================
+                      DOCUMENTO
+                      ======================================== */}
+
+                  <article
+                    className="patient-detail-card"
+                  >
+
+                    <div
+                      className="patient-detail-section-header"
+                    >
+
+                      <div
+                        className="patient-detail-section-icon"
+                      >
+
+                        <IdCard
+                          size={20}
+                        />
+
+                      </div>
+
+
+                      <div>
+
+                        <h2>
+                          Documento
+                        </h2>
+
+
+                        <p>
+                          Documento principal registrado.
+                        </p>
+
+                      </div>
+
+                    </div>
+
+
+                    {
+                      primaryDocument
+                        ? (
+
+                            <div
+                              className="patient-detail-info-grid patient-detail-info-grid--compact"
+                            >
+
+                              <div>
+
+                                <span>
+                                  Tipo
+                                </span>
+
+
+                                <strong>
+                                  {
+                                    primaryDocument
+                                      .document_type_name
+                                  }
+                                </strong>
+
+                              </div>
+
+
+                              <div>
+
+                                <span>
+                                  Número
+                                </span>
+
+
+                                <strong>
+                                  {
+                                    primaryDocument
+                                      .document_number
+                                  }
+                                </strong>
+
+                              </div>
+
+
+                              <div>
+
+                                <span>
+                                  Complemento
+                                </span>
+
+
+                                <strong>
+                                  {
+                                    primaryDocument
+                                      .complement
+                                    ||
+                                    "—"
+                                  }
+                                </strong>
+
+                              </div>
+
+
+                              <div>
+
+                                <span>
+                                  Expedido en
+                                </span>
+
+
+                                <strong>
+                                  {
+                                    departmentName(
+                                      primaryDocument
+                                        .issued_in,
+                                    )
+                                  }
+                                </strong>
+
+                              </div>
+
+                            </div>
+
+                          )
+                        : (
+
+                            <div
+                              className="patient-detail-empty-small"
+                            >
+                              Sin documento registrado.
+                            </div>
+
+                          )
+                    }
+
+                  </article>
+
+
+                  {/* ========================================
+                      CONTACTOS DEL PACIENTE
+                      ======================================== */}
+
+                  <article
+                    className="patient-detail-card"
+                  >
+
+                    <div
+                      className="patient-detail-section-header"
+                    >
+
+                      <div
+                        className="patient-detail-section-icon"
+                      >
+
+                        <ContactRound
+                          size={20}
+                        />
+
+                      </div>
+
+
+                      <div>
+
+                        <h2>
+                          Contactos del paciente
+                        </h2>
+
+
+                        <p>
+                          Medios disponibles para comunicación.
+                        </p>
+
+                      </div>
+
+                    </div>
+
+
+                    {
+                      patient
+                        .contacts
+                        .length > 0
+                        ? (
+
+                            <div
+                              className="patient-detail-contact-list"
+                            >
+
+                              {
+                                patient
+                                  .contacts
+                                  .map(
+                                    (
+                                      contact,
+                                    ) => (
+
+                                      <div
+                                        key={
+                                          contact
+                                            .id_contact
+                                          ??
+                                          `${contact.contact_type_code}-${contact.value}`
+                                        }
+                                        className="patient-detail-contact-item"
+                                      >
+
+                                        <div>
+
+                                          <span>
+                                            {
+                                              contact
+                                                .contact_type_name
+                                            }
+                                          </span>
+
+
+                                          <strong>
+                                            {
+                                              contact
+                                                .value
+                                            }
+                                          </strong>
+
+                                        </div>
+
+
+                                        {
+                                          contact
+                                            .primary
+                                          &&
+                                          (
+
+                                            <span
+                                              className="patient-detail-primary-badge"
+                                            >
+                                              Principal
+                                            </span>
+
+                                          )
+                                        }
+
+                                      </div>
+
+                                    ),
+                                  )
+                              }
+
+                            </div>
+
+                          )
+                        : (
+
+                            <div
+                              className="patient-detail-empty-small"
+                            >
+                              Sin contactos registrados.
+                            </div>
+
+                          )
+                    }
+
+                  </article>
+
+                </div>
+
+
+                {/* ==========================================
+                    CONTACTO EMERGENCIA
+                    ========================================== */}
+
+                <article
+                  className="patient-detail-card patient-detail-emergency-card"
+                >
+
+                  <div
+                    className="patient-detail-section-header"
+                  >
+
+                    <div
+                      className="patient-detail-section-icon"
+                    >
+
+                      <ShieldCheck
+                        size={20}
+                      />
+
+                    </div>
+
+
+                    <div>
+
+                      <h2>
+                        Contacto de emergencia
+                      </h2>
+
+
+                      <p>
+                        Familiar, tutor o responsable del paciente.
+                      </p>
+
+                    </div>
+
+                  </div>
+
+
+                  {
+                    patient
+                      .emergency_contacts
+                      .length > 0
+                      ? (
+
+                          <div
+                            className="patient-detail-emergency-list"
+                          >
+
+                            {
+                              patient
+                                .emergency_contacts
+                                .map(
+                                  (
+                                    contact,
+                                  ) => (
+
+                                    <div
+                                      key={
+                                        contact
+                                          .id_emergency_contact
+                                        ??
+                                        `${contact.full_name}-${contact.phone}`
+                                      }
+                                      className={
+                                        contact
+                                          .primary
+                                          ? "patient-detail-emergency-item patient-detail-emergency-item--primary"
+                                          : "patient-detail-emergency-item"
+                                      }
+                                    >
+
+                                      <div
+                                        className="patient-detail-emergency-item__main"
+                                      >
+
+                                        <div
+                                          className="patient-detail-emergency-avatar"
+                                        >
+
+                                          {
+                                            contact
+                                              .full_name
+                                              .charAt(
+                                                0,
+                                              )
+                                              .toUpperCase()
+                                          }
+
+                                        </div>
+
+
+                                        <div>
+
+                                          <strong>
+                                            {
+                                              contact
+                                                .full_name
+                                            }
+                                          </strong>
+
+
+                                          <span>
+                                            {
+                                              contact
+                                                .relationship
+                                            }
+                                          </span>
+
+                                        </div>
+
+                                      </div>
+
+
+                                      <div
+                                        className="patient-detail-emergency-data"
+                                      >
+
+                                        <div>
+
+                                          <span>
+                                            Teléfono
+                                          </span>
+
+
+                                          <strong>
+                                            {
+                                              contact
+                                                .phone
+                                            }
+                                          </strong>
+
+                                        </div>
+
+
+                                        <div>
+
+                                          <span>
+                                            Correo
+                                          </span>
+
+
+                                          <strong>
+                                            {
+                                              contact
+                                                .email
+                                              ??
+                                              "—"
+                                            }
+                                          </strong>
+
+                                        </div>
+
+                                      </div>
+
+
+                                      {
+                                        contact
+                                          .primary
+                                        &&
+                                        (
+
+                                          <span
+                                            className="patient-detail-primary-badge"
+                                          >
+                                            Principal
+                                          </span>
+
+                                        )
+                                      }
+
+                                    </div>
+
+                                  ),
+                                )
+                            }
+
+                          </div>
+
+                        )
+                      : (
+
+                          <div
+                            className="patient-detail-empty"
+                          >
+
+                            <ContactRound
+                              size={28}
+                            />
+
+
+                            <strong>
+                              Sin contacto de emergencia
+                            </strong>
+
+
+                            <span>
+                              Este paciente todavía no tiene
+                              un familiar o responsable de emergencia registrado.
+                            </span>
+
+                          </div>
+
+                        )
+                  }
+
+                </article>
+
+
+                {/* ==========================================
+                    RESUMEN CONTACTO PRINCIPAL
+                    ========================================== */}
 
                 {
-                  catalogs
-                    ?.sexes
-                    .map(
-                      (
-                        item,
-                      ) => (
-
-                        <option
-                          key={
-                            item.id
-                          }
-                          value={
-                            item.id
-                          }
-                        >
-                          {item.name}
-                        </option>
-
-                      ),
-                    )
-                }
-
-              </select>
-
-            </label>
-
-
-            <label>
-
-              <span>
-                Estado
-              </span>
-
-
-              <select
-                value={
-                  editForm
-                    .active
-                    ? "true"
-                    : "false"
-                }
-                onChange={
                   (
-                    event,
-                  ) =>
-                    updateField(
-                      "active",
-                      event
-                        .target
-                        .value
-                      === "true",
-                    )
-                }
-              >
-
-                <option
-                  value="true"
-                >
-                  Activo
-                </option>
-
-
-                <option
-                  value="false"
-                >
-                  Inactivo
-                </option>
-
-              </select>
-
-            </label>
-
-
-            <label
-              className="patient-detail-reason"
-            >
-
-              <span>
-                Motivo de la modificación *
-              </span>
-
-
-              <textarea
-                value={
-                  editForm
-                    .reason
-                }
-                onChange={
+                    primaryContact
+                    ||
+                    primaryEmergencyContact
+                  )
+                  &&
                   (
-                    event,
-                  ) =>
-                    updateField(
-                      "reason",
-                      event
-                        .target
-                        .value,
-                    )
+
+                    <div
+                      className="patient-detail-contact-summary"
+                    >
+
+                      {
+                        primaryContact
+                        &&
+                        (
+
+                          <div>
+
+                            <ContactRound
+                              size={18}
+                            />
+
+
+                            <div>
+
+                              <span>
+                                Contacto principal
+                              </span>
+
+
+                              <strong>
+                                {
+                                  primaryContact
+                                    .value
+                                }
+                              </strong>
+
+                            </div>
+
+                          </div>
+
+                        )
+                      }
+
+
+                      {
+                        primaryEmergencyContact
+                        &&
+                        (
+
+                          <div>
+
+                            <ShieldCheck
+                              size={18}
+                            />
+
+
+                            <div>
+
+                              <span>
+                                Emergencia principal
+                              </span>
+
+
+                              <strong>
+                                {
+                                  primaryEmergencyContact
+                                    .full_name
+                                }
+                                {" · "}
+                                {
+                                  primaryEmergencyContact
+                                    .phone
+                                }
+                              </strong>
+
+                            </div>
+
+                          </div>
+
+                        )
+                      }
+
+                    </div>
+
+                  )
                 }
-                rows={3}
-                maxLength={500}
-                placeholder="Ej. Corrección de nombres solicitada por actualización de datos."
-              />
-
-            </label>
-
-          </div>
 
 
-          <footer
-            className="patient-detail-edit-actions"
-          >
+                {/* ==========================================
+                    CASOS CLÍNICOS
+                    ========================================== */}
 
-            <button
-              type="button"
-              className="patient-detail-cancel"
-              disabled={
-                saving
-              }
-              onClick={
-                cancelEditing
-              }
-            >
-
-              <X
-                size={17}
-              />
-
-              Cancelar
-
-            </button>
+                <PatientClinicalCases
+                  patientId={
+                    patient
+                      .id_patient
+                  }
+                />
 
 
-            <button
-              type="submit"
-              className="patient-detail-save"
-              disabled={
-                saving
-              }
-            >
+                {/* ==========================================
+                    RADIOGRAFÍAS
+                    ========================================== */}
 
-              {
-                saving
-                  ? (
-                    <LoaderCircle
-                      size={18}
-                      className="patient-detail-spin"
-                    />
-                  )
-                  : (
-                    <Save
-                      size={18}
-                    />
-                  )
-              }
+                <PatientRadiographies
+                  patientId={
+                    patient
+                      .id_patient
+                  }
+                />
+
+              </>
+
+            )
+      }
 
 
-              {
-                saving
-                  ? "Guardando..."
-                  : "Guardar cambios"
-              }
+      {/* ==================================================
+          ÚLTIMO CAMBIO
+          ================================================== */}
 
-            </button>
-
-          </footer>
-
-        </form>
-
-      ) : (
-
-        <>
-
-
-          {/* ==============================================
-              DATOS PERSONALES
-              ============================================== */}
+      {
+        lastChanges.length > 0
+        &&
+        (
 
           <article
-            className="patient-detail-card"
+            className="patient-detail-card patient-detail-changes-card"
           >
 
             <div
@@ -1531,21 +2531,23 @@ export function PacienteDetallePage() {
               <div
                 className="patient-detail-section-icon"
               >
-                <UserRound
+
+                <ShieldCheck
                   size={20}
                 />
+
               </div>
 
 
               <div>
 
                 <h2>
-                  Datos personales
+                  Cambios registrados
                 </h2>
 
 
                 <p>
-                  Información principal del paciente.
+                  Resumen de la última modificación realizada.
                 </p>
 
               </div>
@@ -1554,491 +2556,95 @@ export function PacienteDetallePage() {
 
 
             <div
-              className="patient-detail-info-grid"
+              className="patient-detail-changes"
             >
 
-              <div>
+              {
+                lastChanges.map(
+                  (
+                    change,
+                    index,
+                  ) => (
 
-                <span>
-                  Nombres
-                </span>
+                    <div
+                      key={
+                        `${change.field}-${index}`
+                      }
+                      className="patient-detail-change"
+                    >
 
+                      <span
+                        className="patient-detail-change__field"
+                      >
 
-                <strong>
-                  {
-                    patient
-                      .first_names
-                  }
-                </strong>
+                        {
+                          change.field
+                        }
 
-              </div>
-
-
-              <div>
-
-                <span>
-                  Apellido paterno
-                </span>
-
-
-                <strong>
-                  {
-                    patient
-                      .paternal_surname
-                  }
-                </strong>
-
-              </div>
+                      </span>
 
 
-              <div>
+                      <div>
 
-                <span>
-                  Apellido materno
-                </span>
-
-
-                <strong>
-                  {
-                    patient
-                      .maternal_surname
-                    || "—"
-                  }
-                </strong>
-
-              </div>
+                        <span>
+                          Anterior
+                        </span>
 
 
-              <div>
+                        <strong>
+                          {
+                            change
+                              .old_value
+                            ??
+                            "—"
+                          }
+                        </strong>
 
-                <span>
-                  Fecha de nacimiento
-                </span>
-
-
-                <strong>
-                  {
-                    formatDate(
-                      patient
-                        .birth_date,
-                    )
-                  }
-                </strong>
-
-              </div>
+                      </div>
 
 
-              <div>
+                      <div>
 
-                <span>
-                  Sexo
-                </span>
-
-
-                <strong>
-                  {
-                    patient
-                      .sex
-                      .name
-                  }
-                </strong>
-
-              </div>
+                        <span>
+                          Nuevo
+                        </span>
 
 
-              <div>
+                        <strong>
+                          {
+                            change
+                              .new_value
+                            ??
+                            "—"
+                          }
+                        </strong>
 
-                <span>
-                  Identificador
-                </span>
+                      </div>
 
+                    </div>
 
-                <strong
-                  className="patient-detail-uuid"
-                >
-                  {
-                    patient
-                      .id_patient
-                  }
-                </strong>
-
-              </div>
+                  ),
+                )
+              }
 
             </div>
 
           </article>
 
-
-          {/* ==============================================
-              DOCUMENTO + CONTACTO
-              ============================================== */}
-
-          <div
-            className="patient-detail-two-columns"
-          >
-
-            {/* DOCUMENTO */}
-
-            <article
-              className="patient-detail-card"
-            >
-
-              <div
-                className="patient-detail-section-header"
-              >
-
-                <div
-                  className="patient-detail-section-icon"
-                >
-                  <IdCard
-                    size={20}
-                  />
-                </div>
-
-
-                <div>
-
-                  <h2>
-                    Documento
-                  </h2>
-
-
-                  <p>
-                    Documento principal registrado.
-                  </p>
-
-                </div>
-
-              </div>
-
-
-              {primaryDocument ? (
-
-                <div
-                  className="patient-detail-info-grid patient-detail-info-grid--compact"
-                >
-
-                  <div>
-
-                    <span>
-                      Tipo
-                    </span>
-
-
-                    <strong>
-                      {
-                        primaryDocument
-                          .document_type_name
-                      }
-                    </strong>
-
-                  </div>
-
-
-                  <div>
-
-                    <span>
-                      Número
-                    </span>
-
-
-                    <strong>
-                      {
-                        primaryDocument
-                          .document_number
-                      }
-                    </strong>
-
-                  </div>
-
-
-                  <div>
-
-                    <span>
-                      Complemento
-                    </span>
-
-
-                    <strong>
-                      {
-                        primaryDocument
-                          .complement
-                        || "—"
-                      }
-                    </strong>
-
-                  </div>
-
-
-                  <div>
-
-                    <span>
-                      Expedido en
-                    </span>
-
-
-                    <strong>
-                      {
-                        primaryDocument
-                          .issued_in
-                        || "—"
-                      }
-                    </strong>
-
-                  </div>
-
-                </div>
-
-              ) : (
-
-                <div
-                  className="patient-detail-empty-small"
-                >
-                  Sin documento registrado.
-                </div>
-
-              )}
-
-            </article>
-
-
-            {/* CONTACTO */}
-
-            <article
-              className="patient-detail-card"
-            >
-
-              <div
-                className="patient-detail-section-header"
-              >
-
-                <div
-                  className="patient-detail-section-icon"
-                >
-                  <ContactRound
-                    size={20}
-                  />
-                </div>
-
-
-                <div>
-
-                  <h2>
-                    Contacto principal
-                  </h2>
-
-
-                  <p>
-                    Medio de contacto registrado.
-                  </p>
-
-                </div>
-
-              </div>
-
-
-              {primaryContact ? (
-
-                <div
-                  className="patient-detail-info-grid patient-detail-info-grid--compact"
-                >
-
-                  <div>
-
-                    <span>
-                      Tipo
-                    </span>
-
-
-                    <strong>
-                      {
-                        primaryContact
-                          .contact_type_name
-                      }
-                    </strong>
-
-                  </div>
-
-
-                  <div>
-
-                    <span>
-                      Valor
-                    </span>
-
-
-                    <strong>
-                      {
-                        primaryContact
-                          .value
-                      }
-                    </strong>
-
-                  </div>
-
-                </div>
-
-              ) : (
-
-                <div
-                  className="patient-detail-empty-small"
-                >
-                  Sin contacto registrado.
-                </div>
-
-              )}
-
-            </article>
-
-          </div>
-
-
-              {/* ==============================================
-                  CASOS CLÍNICOS REALES
-                  ============================================== */}
-
-              <PatientClinicalCases
-                patientId={
-                  patient.id_patient
-                }
-              />
-
-
-              {/* ==============================================
-                  RADIOGRAFÍAS REALES
-                  ============================================== */}
-
-              <PatientRadiographies
-                patientId={
-                  patient.id_patient
-                }
-              />
-
-              </>
-
-      )}
+        )
+      }
 
 
       {/* ==================================================
-          ÚLTIMO CAMBIO DEVUELTO POR EL BACKEND
-          ================================================== */}
-
-      {lastChanges.length > 0 && (
-
-        <article
-          className="patient-detail-card patient-detail-changes-card"
-        >
-
-          <div
-            className="patient-detail-section-header"
-          >
-
-            <div
-              className="patient-detail-section-icon"
-            >
-              <ShieldCheck
-                size={20}
-              />
-            </div>
-
-
-            <div>
-
-              <h2>
-                Cambios registrados
-              </h2>
-
-
-              <p>
-                Resumen de la última modificación realizada.
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <div
-            className="patient-detail-changes"
-          >
-
-            {
-              lastChanges.map(
-                (
-                  change,
-                  index,
-                ) => (
-
-                  <div
-                    key={
-                      `${change.field}-${index}`
-                    }
-                    className="patient-detail-change"
-                  >
-
-                    <span
-                      className="patient-detail-change__field"
-                    >
-                      {change.field}
-                    </span>
-
-
-                    <div>
-
-                      <span>
-                        Anterior
-                      </span>
-
-
-                      <strong>
-                        {
-                          change.old_value
-                          ?? "—"
-                        }
-                      </strong>
-
-                    </div>
-
-
-                    <div>
-
-                      <span>
-                        Nuevo
-                      </span>
-
-
-                      <strong>
-                        {
-                          change.new_value
-                          ?? "—"
-                        }
-                      </strong>
-
-                    </div>
-
-                  </div>
-
-                ),
-              )
-            }
-
-          </div>
-
-        </article>
-
-      )}
-
-
-      {/* ==================================================
-          HISTORIAL COMPLETO DE AUDITORÍA
+          AUDITORÍA
           ================================================== */}
 
       <PatientAuditHistory
         patientId={
-          patient.id_patient
+          patient
+            .id_patient
         }
       />
-
 
     </section>
 
