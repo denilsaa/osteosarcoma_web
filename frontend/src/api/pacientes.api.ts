@@ -61,42 +61,52 @@ export interface BoliviaDepartment {
 
 export const BOLIVIA_DEPARTMENTS:
   BoliviaDepartment[] = [
+
     {
       code: "LP",
       name: "La Paz",
     },
+
     {
       code: "CB",
       name: "Cochabamba",
     },
+
     {
       code: "SC",
       name: "Santa Cruz",
     },
+
     {
       code: "OR",
       name: "Oruro",
     },
+
     {
       code: "PT",
       name: "Potosí",
     },
+
     {
       code: "CH",
       name: "Chuquisaca",
     },
+
     {
       code: "TJ",
       name: "Tarija",
     },
+
     {
       code: "BE",
       name: "Beni",
     },
+
     {
       code: "PD",
       name: "Pando",
     },
+
   ];
 
 
@@ -124,12 +134,14 @@ export interface PatientDocument {
     string | null;
 
   issued_in:
-    BoliviaDepartmentCode | string | null;
+    BoliviaDepartmentCode
+    | string
+    | null;
 }
 
 
 // ==========================================================
-// CONTACTO DEL PACIENTE
+// CONTACTO
 // ==========================================================
 
 export interface PatientContact {
@@ -140,10 +152,7 @@ export interface PatientContact {
     number;
 
   contact_type_code:
-    "CELULAR"
-    | "TELEFONO"
-    | "CORREO"
-    | string;
+    string;
 
   contact_type_name:
     string;
@@ -189,7 +198,8 @@ export interface PatientEmergencyContact {
 // ==========================================================
 
 export interface PatientSex {
-  id?: number;
+  id?:
+    number;
 
   code:
     string;
@@ -218,6 +228,9 @@ export interface PatientSummary {
 
   active:
     boolean;
+
+  photo_url?:
+    string | null;
 
   primary_document:
     PatientDocument | null;
@@ -261,6 +274,9 @@ export interface PatientDetail {
 
   active:
     boolean;
+
+  photo_url?:
+    string | null;
 
   registration_date:
     string | null;
@@ -503,6 +519,19 @@ export interface PossibleDuplicateResponse {
     total:
       number;
   };
+}
+
+
+// ==========================================================
+// FOTO
+// ==========================================================
+
+export interface PatientPhotoResponse {
+  message:
+    string;
+
+  photo_url:
+    string | null;
 }
 
 
@@ -767,4 +796,124 @@ export async function findPossibleDuplicates(
 
 
   return response.data;
+}
+
+
+// ==========================================================
+// SUBIR / CAMBIAR FOTO
+// ==========================================================
+
+export async function uploadPatientPhoto(
+  idPatient:
+    string,
+
+  file:
+    File,
+): Promise<PatientPhotoResponse> {
+
+  const formData =
+    new FormData();
+
+
+  formData.append(
+    "foto",
+    file,
+    file.name,
+  );
+
+
+  const response =
+    await apiClinico
+      .post<PatientPhotoResponse>(
+        `/pacientes/${idPatient}/foto/`,
+
+        formData,
+
+        {
+          headers: {
+            "Content-Type":
+              "multipart/form-data",
+          },
+        },
+      );
+
+
+  return response.data;
+}
+
+// ==========================================================
+// ELIMINAR FOTO
+// ==========================================================
+
+export async function deletePatientPhoto(
+  idPatient:
+    string,
+): Promise<PatientPhotoResponse> {
+
+  const response =
+    await apiClinico
+      .delete<PatientPhotoResponse>(
+        `/pacientes/${idPatient}/foto/`,
+      );
+
+
+  return response.data;
+}
+
+
+// ==========================================================
+// RESOLVER URL DE MEDIA
+// ==========================================================
+
+export function resolvePatientPhotoUrl(
+  value?:
+    string | null,
+): string | null {
+
+  if (!value) {
+
+    return null;
+
+  }
+
+
+  if (
+    /^https?:\/\//i.test(
+      value,
+    )
+  ) {
+
+    return value;
+
+  }
+
+
+  try {
+
+    const baseURL =
+      apiClinico
+        .defaults
+        .baseURL
+      ??
+      "http://localhost:8001/api";
+
+
+    const base =
+      new URL(
+        baseURL,
+        window.location.origin,
+      );
+
+
+    return new URL(
+      value,
+      base.origin,
+    ).toString();
+
+  } catch {
+
+    return value;
+
+  }
+
 }

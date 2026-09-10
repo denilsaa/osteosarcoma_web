@@ -2,14 +2,17 @@ import {
   Activity,
   ArrowLeft,
   CalendarDays,
+  Camera,
   CheckCircle2,
   CircleAlert,
   ContactRound,
   Edit3,
   IdCard,
+  ImagePlus,
   LoaderCircle,
   Save,
   ShieldCheck,
+  Trash2,
   UserRound,
   X,
 } from "lucide-react";
@@ -17,6 +20,7 @@ import {
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -26,9 +30,12 @@ import {
 } from "react-router-dom";
 
 import {
+  deletePatientPhoto,
   getPatient,
   getPatientCatalogs,
+  resolvePatientPhotoUrl,
   updatePatient,
+  uploadPatientPhoto,
   type PatientCatalogs,
   type PatientChange,
   type PatientDetail,
@@ -54,27 +61,58 @@ import "./PacienteDetallePage.css";
 // ==========================================================
 
 const DEPARTAMENTOS:
-  Record<string, string> = {
+  Record<
+    string,
+    string
+  > = {
 
-    LP: "La Paz",
+    LP:
+      "La Paz",
 
-    CB: "Cochabamba",
+    CB:
+      "Cochabamba",
 
-    SC: "Santa Cruz",
+    SC:
+      "Santa Cruz",
 
-    OR: "Oruro",
+    OR:
+      "Oruro",
 
-    PT: "Potosí",
+    PT:
+      "Potosí",
 
-    CH: "Chuquisaca",
+    CH:
+      "Chuquisaca",
 
-    TJ: "Tarija",
+    TJ:
+      "Tarija",
 
-    BE: "Beni",
+    BE:
+      "Beni",
 
-    PD: "Pando",
+    PD:
+      "Pando",
 
   };
+
+
+// ==========================================================
+// CONFIG FOTO
+// ==========================================================
+
+const MAX_PHOTO_SIZE =
+  5
+  *
+  1024
+  *
+  1024;
+
+
+const ALLOWED_PHOTO_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
 
 
 // ==========================================================
@@ -82,7 +120,8 @@ const DEPARTAMENTOS:
 // ==========================================================
 
 function formatDate(
-  value?: string | null,
+  value?:
+    string | null,
 ): string {
 
   if (!value) {
@@ -109,24 +148,31 @@ function formatDate(
   }
 
 
-  return new Intl.DateTimeFormat(
-    "es-BO",
-    {
-      day: "2-digit",
+  return (
+    new Intl.DateTimeFormat(
+      "es-BO",
+      {
+        day:
+          "2-digit",
 
-      month: "2-digit",
+        month:
+          "2-digit",
 
-      year: "numeric",
-    },
-  ).format(
-    date,
+        year:
+          "numeric",
+      },
+    )
+    .format(
+      date,
+    )
   );
 
 }
 
 
 function formatDateTime(
-  value?: string | null,
+  value?:
+    string | null,
 ): string {
 
   if (!value) {
@@ -153,28 +199,37 @@ function formatDateTime(
   }
 
 
-  return new Intl.DateTimeFormat(
-    "es-BO",
-    {
-      day: "2-digit",
+  return (
+    new Intl.DateTimeFormat(
+      "es-BO",
+      {
+        day:
+          "2-digit",
 
-      month: "2-digit",
+        month:
+          "2-digit",
 
-      year: "numeric",
+        year:
+          "numeric",
 
-      hour: "2-digit",
+        hour:
+          "2-digit",
 
-      minute: "2-digit",
-    },
-  ).format(
-    date,
+        minute:
+          "2-digit",
+      },
+    )
+    .format(
+      date,
+    )
   );
 
 }
 
 
 function normalizeText(
-  value: string,
+  value:
+    string,
 ): string {
 
   return value
@@ -188,7 +243,8 @@ function normalizeText(
 
 
 function departmentName(
-  code?: string | null,
+  code?:
+    string | null,
 ): string {
 
   if (!code) {
@@ -209,12 +265,90 @@ function departmentName(
 }
 
 
+function relationshipName(
+  value:
+    string,
+): string {
+
+  const names:
+    Record<
+      string,
+      string
+    > = {
+
+      MADRE:
+        "Madre",
+
+      PADRE:
+        "Padre",
+
+      HERMANO:
+        "Hermano",
+
+      HERMANA:
+        "Hermana",
+
+      HIJO:
+        "Hijo",
+
+      HIJA:
+        "Hija",
+
+      ESPOSO:
+        "Esposo",
+
+      ESPOSA:
+        "Esposa",
+
+      TUTOR:
+        "Tutor",
+
+      TUTORA:
+        "Tutora",
+
+      ABUELO:
+        "Abuelo",
+
+      ABUELA:
+        "Abuela",
+
+      TIO:
+        "Tío",
+
+      TIA:
+        "Tía",
+
+      PRIMO:
+        "Primo",
+
+      PRIMA:
+        "Prima",
+
+      OTRO:
+        "Otro",
+
+    };
+
+
+  return (
+    names[
+      value
+    ]
+    ??
+    value
+  );
+
+}
+
+
 function extractErrorMessage(
-  error: unknown,
+  error:
+    unknown,
 ): string {
 
   if (
-    typeof error === "object"
+    typeof error ===
+    "object"
     &&
     error !== null
     &&
@@ -231,7 +365,8 @@ function extractErrorMessage(
                 }
               | string;
 
-            detail?: string;
+            detail?:
+              string;
           };
         };
       };
@@ -283,6 +418,45 @@ function extractErrorMessage(
   return (
     "No fue posible completar la operación."
   );
+
+}
+
+
+function patientInitials(
+  patient:
+    PatientDetail,
+): string {
+
+  const parts = [
+    patient.first_names,
+    patient.paternal_surname,
+  ]
+    .filter(
+      Boolean,
+    );
+
+
+  return parts
+    .map(
+      (
+        value,
+      ) =>
+        value
+          .trim()
+          .charAt(
+            0,
+          )
+          .toUpperCase(),
+    )
+    .join(
+      "",
+    )
+    .slice(
+      0,
+      2,
+    )
+    ||
+    "P";
 
 }
 
@@ -354,6 +528,12 @@ export function PacienteDetallePage() {
     useNavigate();
 
 
+  const fileInputRef =
+    useRef<HTMLInputElement>(
+      null,
+    );
+
+
   const {
     id,
   } = useParams<{
@@ -362,7 +542,7 @@ export function PacienteDetallePage() {
 
 
   // ========================================================
-  // ESTADO
+  // ESTADO PRINCIPAL
   // ========================================================
 
   const [
@@ -450,6 +630,46 @@ export function PacienteDetallePage() {
 
 
   // ========================================================
+  // FOTO
+  // ========================================================
+
+  const [
+    selectedPhoto,
+    setSelectedPhoto,
+  ] = useState<
+    File | null
+  >(
+    null,
+  );
+
+
+  const [
+    photoPreview,
+    setPhotoPreview,
+  ] = useState<
+    string | null
+  >(
+    null,
+  );
+
+
+  const [
+    uploadingPhoto,
+    setUploadingPhoto,
+  ] = useState(
+    false,
+  );
+
+
+  const [
+    deletingPhoto,
+    setDeletingPhoto,
+  ] = useState(
+    false,
+  );
+
+
+  // ========================================================
   // CARGAR PACIENTE
   // ========================================================
 
@@ -519,7 +739,23 @@ export function PacienteDetallePage() {
 
 
           setCatalogs(
-            catalogData,
+            {
+              ...catalogData,
+
+              sexes:
+                catalogData
+                  .sexes
+                  .filter(
+                    (
+                      item,
+                    ) =>
+                      item.code ===
+                      "M"
+                      ||
+                      item.code ===
+                      "F",
+                  ),
+            },
           );
 
 
@@ -614,6 +850,34 @@ export function PacienteDetallePage() {
 
 
   // ========================================================
+  // LIMPIAR PREVIEW
+  // ========================================================
+
+  useEffect(
+    () => {
+
+      return () => {
+
+        if (
+          photoPreview
+        ) {
+
+          URL.revokeObjectURL(
+            photoPreview,
+          );
+
+        }
+
+      };
+
+    },
+    [
+      photoPreview,
+    ],
+  );
+
+
+  // ========================================================
   // DOCUMENTO PRINCIPAL
   // ========================================================
 
@@ -657,7 +921,7 @@ export function PacienteDetallePage() {
 
 
   // ========================================================
-  // CONTACTO EMERGENCIA PRINCIPAL
+  // EMERGENCIA PRINCIPAL
   // ========================================================
 
   const primaryEmergencyContact =
@@ -684,6 +948,363 @@ export function PacienteDetallePage() {
         patient,
       ],
     );
+
+
+  // ========================================================
+  // FOTO ACTUAL
+  // ========================================================
+
+  const currentPhoto =
+    useMemo(
+      () => {
+
+        if (
+          photoPreview
+        ) {
+
+          return photoPreview;
+
+        }
+
+
+        return (
+          resolvePatientPhotoUrl(
+            patient
+              ?.photo_url,
+          )
+        );
+
+      },
+      [
+        patient,
+        photoPreview,
+      ],
+    );
+
+
+  // ========================================================
+  // SELECCIONAR FOTO
+  // ========================================================
+
+  function handlePhotoSelected(
+    event:
+      React.ChangeEvent<HTMLInputElement>,
+  ) {
+
+    const file =
+      event
+        .target
+        .files
+        ?.[0];
+
+
+    if (!file) {
+
+      return;
+
+    }
+
+
+    setError(
+      null,
+    );
+
+
+    setSuccess(
+      null,
+    );
+
+
+    if (
+      !ALLOWED_PHOTO_TYPES
+        .includes(
+          file.type,
+        )
+    ) {
+
+      setError(
+        "Solo se permiten imágenes JPG, JPEG, PNG o WEBP.",
+      );
+
+
+      event.target.value =
+        "";
+
+
+      return;
+
+    }
+
+
+    if (
+      file.size >
+      MAX_PHOTO_SIZE
+    ) {
+
+      setError(
+        "La imagen no puede superar los 5 MB.",
+      );
+
+
+      event.target.value =
+        "";
+
+
+      return;
+
+    }
+
+
+    if (
+      photoPreview
+    ) {
+
+      URL.revokeObjectURL(
+        photoPreview,
+      );
+
+    }
+
+
+    const preview =
+      URL.createObjectURL(
+        file,
+      );
+
+
+    setSelectedPhoto(
+      file,
+    );
+
+
+    setPhotoPreview(
+      preview,
+    );
+
+
+    event.target.value =
+      "";
+
+  }
+
+
+  // ========================================================
+  // CANCELAR FOTO SELECCIONADA
+  // ========================================================
+
+  function cancelPhotoSelection() {
+
+    if (
+      photoPreview
+    ) {
+
+      URL.revokeObjectURL(
+        photoPreview,
+      );
+
+    }
+
+
+    setSelectedPhoto(
+      null,
+    );
+
+
+    setPhotoPreview(
+      null,
+    );
+
+  }
+
+
+  // ========================================================
+  // SUBIR FOTO
+  // ========================================================
+
+  async function handleUploadPhoto() {
+
+    if (
+      !id
+      ||
+      !patient
+      ||
+      !selectedPhoto
+    ) {
+
+      return;
+
+    }
+
+
+    setUploadingPhoto(
+      true,
+    );
+
+
+    setError(
+      null,
+    );
+
+
+    setSuccess(
+      null,
+    );
+
+
+    try {
+
+      const response =
+        await uploadPatientPhoto(
+          id,
+          selectedPhoto,
+        );
+
+
+      if (
+        photoPreview
+      ) {
+
+        URL.revokeObjectURL(
+          photoPreview,
+        );
+
+      }
+
+
+      setPatient(
+        {
+          ...patient,
+
+          photo_url:
+            response.photo_url,
+        },
+      );
+
+
+      setSelectedPhoto(
+        null,
+      );
+
+
+      setPhotoPreview(
+        null,
+      );
+
+
+      setSuccess(
+        response.message,
+      );
+
+    } catch (
+      requestError
+    ) {
+
+      setError(
+        extractErrorMessage(
+          requestError,
+        ),
+      );
+
+    } finally {
+
+      setUploadingPhoto(
+        false,
+      );
+
+    }
+
+  }
+
+
+  // ========================================================
+  // ELIMINAR FOTO
+  // ========================================================
+
+  async function handleDeletePhoto() {
+
+    if (
+      !id
+      ||
+      !patient
+    ) {
+
+      return;
+
+    }
+
+
+    const confirmed =
+      window.confirm(
+        "¿Desea eliminar la foto del paciente?",
+      );
+
+
+    if (!confirmed) {
+
+      return;
+
+    }
+
+
+    setDeletingPhoto(
+      true,
+    );
+
+
+    setError(
+      null,
+    );
+
+
+    setSuccess(
+      null,
+    );
+
+
+    try {
+
+      const response =
+        await deletePatientPhoto(
+          id,
+        );
+
+
+      cancelPhotoSelection();
+
+
+      setPatient(
+        {
+          ...patient,
+
+          photo_url:
+            null,
+        },
+      );
+
+
+      setSuccess(
+        response.message,
+      );
+
+    } catch (
+      requestError
+    ) {
+
+      setError(
+        extractErrorMessage(
+          requestError,
+        ),
+      );
+
+    } finally {
+
+      setDeletingPhoto(
+        false,
+      );
+
+    }
+
+  }
 
 
   // ========================================================
@@ -762,10 +1383,6 @@ export function PacienteDetallePage() {
   }
 
 
-  // ========================================================
-  // CANCELAR EDICIÓN
-  // ========================================================
-
   function cancelEditing() {
 
     setEditing(
@@ -779,10 +1396,6 @@ export function PacienteDetallePage() {
 
   }
 
-
-  // ========================================================
-  // ACTUALIZAR INPUT
-  // ========================================================
 
   function updateField(
     field:
@@ -838,10 +1451,6 @@ export function PacienteDetallePage() {
       null,
     );
 
-
-    // ======================================================
-    // VALIDACIONES
-    // ======================================================
 
     if (
       normalizeText(
@@ -930,7 +1539,6 @@ export function PacienteDetallePage() {
         await updatePatient(
           id,
           {
-
             first_names:
               normalizeText(
                 editForm
@@ -970,7 +1578,6 @@ export function PacienteDetallePage() {
                 editForm
                   .reason,
               ),
-
           },
         );
 
@@ -1048,9 +1655,7 @@ export function PacienteDetallePage() {
   // ERROR SIN PACIENTE
   // ========================================================
 
-  if (
-    !patient
-  ) {
+  if (!patient) {
 
     return (
 
@@ -1144,6 +1749,232 @@ export function PacienteDetallePage() {
           </button>
 
 
+          {/* FOTO */}
+
+          <div
+            className="patient-detail-photo-area"
+          >
+
+            <div
+              className={
+                currentPhoto
+                  ? "patient-detail-photo patient-detail-photo--image"
+                  : "patient-detail-photo"
+              }
+            >
+
+              {
+                currentPhoto
+                  ? (
+
+                      <img
+                        src={
+                          currentPhoto
+                        }
+                        alt={
+                          `Foto de ${patient.full_name}`
+                        }
+                      />
+
+                    )
+                  : (
+
+                      <span>
+                        {
+                          patientInitials(
+                            patient,
+                          )
+                        }
+                      </span>
+
+                    )
+              }
+
+
+              {
+                uploadingPhoto
+                &&
+                (
+
+                  <div
+                    className="patient-detail-photo-loading"
+                  >
+                    <LoaderCircle
+                      size={24}
+                      className="patient-detail-spin"
+                    />
+                  </div>
+
+                )
+              }
+
+            </div>
+
+
+            <input
+              ref={
+                fileInputRef
+              }
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+              className="patient-detail-photo-input"
+              onChange={
+                handlePhotoSelected
+              }
+            />
+
+
+            <div
+              className="patient-detail-photo-actions"
+            >
+
+              <button
+                type="button"
+                className="patient-detail-photo-select"
+                disabled={
+                  uploadingPhoto
+                  ||
+                  deletingPhoto
+                }
+                onClick={
+                  () =>
+                    fileInputRef
+                      .current
+                      ?.click()
+                }
+              >
+
+                {
+                  patient.photo_url
+                    ? (
+                        <Camera
+                          size={14}
+                        />
+                      )
+                    : (
+                        <ImagePlus
+                          size={14}
+                        />
+                      )
+                }
+
+                {
+                  patient.photo_url
+                    ? "Cambiar"
+                    : "Subir foto"
+                }
+
+              </button>
+
+
+              {
+                selectedPhoto
+                &&
+                (
+
+                  <>
+                    <button
+                      type="button"
+                      className="patient-detail-photo-save"
+                      disabled={
+                        uploadingPhoto
+                      }
+                      onClick={
+                        () =>
+                          void handleUploadPhoto()
+                      }
+                    >
+
+                      {
+                        uploadingPhoto
+                          ? (
+                              <LoaderCircle
+                                size={14}
+                                className="patient-detail-spin"
+                              />
+                            )
+                          : (
+                              <Save
+                                size={14}
+                              />
+                            )
+                      }
+
+                      Guardar
+
+                    </button>
+
+
+                    <button
+                      type="button"
+                      className="patient-detail-photo-cancel"
+                      disabled={
+                        uploadingPhoto
+                      }
+                      onClick={
+                        cancelPhotoSelection
+                      }
+                      title="Cancelar"
+                    >
+
+                      <X
+                        size={14}
+                      />
+
+                    </button>
+                  </>
+
+                )
+              }
+
+
+              {
+                patient.photo_url
+                &&
+                !selectedPhoto
+                &&
+                (
+
+                  <button
+                    type="button"
+                    className="patient-detail-photo-delete"
+                    disabled={
+                      deletingPhoto
+                      ||
+                      uploadingPhoto
+                    }
+                    onClick={
+                      () =>
+                        void handleDeletePhoto()
+                    }
+                    title="Eliminar foto"
+                  >
+
+                    {
+                      deletingPhoto
+                        ? (
+                            <LoaderCircle
+                              size={14}
+                              className="patient-detail-spin"
+                            />
+                          )
+                        : (
+                            <Trash2
+                              size={14}
+                            />
+                          )
+                    }
+
+                  </button>
+
+                )
+              }
+
+            </div>
+
+          </div>
+
+
           <div>
 
             <span
@@ -1221,10 +2052,6 @@ export function PacienteDetallePage() {
       </header>
 
 
-      {/* ==================================================
-          MENSAJE ERROR
-          ================================================== */}
-
       {
         error
         &&
@@ -1238,7 +2065,6 @@ export function PacienteDetallePage() {
               size={19}
             />
 
-
             <span>
               {error}
             </span>
@@ -1248,10 +2074,6 @@ export function PacienteDetallePage() {
         )
       }
 
-
-      {/* ==================================================
-          MENSAJE ÉXITO
-          ================================================== */}
 
       {
         success
@@ -1266,7 +2088,6 @@ export function PacienteDetallePage() {
               size={19}
             />
 
-
             <span>
               {success}
             </span>
@@ -1277,9 +2098,7 @@ export function PacienteDetallePage() {
       }
 
 
-      {/* ==================================================
-          KPIS
-          ================================================== */}
+      {/* KPIS */}
 
       <div
         className="patient-detail-kpis"
@@ -1288,18 +2107,14 @@ export function PacienteDetallePage() {
         <article>
 
           <div>
-
             <Activity
               size={21}
             />
-
           </div>
-
 
           <span>
             Casos clínicos
           </span>
-
 
           <strong>
             {
@@ -1314,30 +2129,23 @@ export function PacienteDetallePage() {
         <article>
 
           <div>
-
             <CalendarDays
               size={21}
             />
-
           </div>
-
 
           <span>
             Registrado
           </span>
 
-
           <strong
             className="patient-detail-kpi-date"
           >
-
             {
               formatDateTime(
-                patient
-                  .registration_date,
+                patient.registration_date,
               )
             }
-
           </strong>
 
         </article>
@@ -1346,18 +2154,14 @@ export function PacienteDetallePage() {
         <article>
 
           <div>
-
             <ShieldCheck
               size={21}
             />
-
           </div>
-
 
           <span>
             Estado
           </span>
-
 
           <strong>
             {
@@ -1394,26 +2198,21 @@ export function PacienteDetallePage() {
                   <div
                     className="patient-detail-section-icon"
                   >
-
                     <Edit3
                       size={20}
                     />
-
                   </div>
 
 
                   <div>
-
                     <h2>
                       Editar datos personales
                     </h2>
-
 
                     <p>
                       Toda modificación requiere un motivo
                       y será enviada al historial de auditoría.
                     </p>
-
                   </div>
 
                 </div>
@@ -1429,12 +2228,10 @@ export function PacienteDetallePage() {
                       Nombres *
                     </span>
 
-
                     <input
                       type="text"
                       value={
-                        editForm
-                          .first_names
+                        editForm.first_names
                       }
                       onChange={
                         (
@@ -1442,9 +2239,7 @@ export function PacienteDetallePage() {
                         ) =>
                           updateField(
                             "first_names",
-                            event
-                              .target
-                              .value,
+                            event.target.value,
                           )
                       }
                       maxLength={100}
@@ -1459,12 +2254,10 @@ export function PacienteDetallePage() {
                       Apellido paterno *
                     </span>
 
-
                     <input
                       type="text"
                       value={
-                        editForm
-                          .paternal_surname
+                        editForm.paternal_surname
                       }
                       onChange={
                         (
@@ -1472,9 +2265,7 @@ export function PacienteDetallePage() {
                         ) =>
                           updateField(
                             "paternal_surname",
-                            event
-                              .target
-                              .value,
+                            event.target.value,
                           )
                       }
                       maxLength={80}
@@ -1489,12 +2280,10 @@ export function PacienteDetallePage() {
                       Apellido materno
                     </span>
 
-
                     <input
                       type="text"
                       value={
-                        editForm
-                          .maternal_surname
+                        editForm.maternal_surname
                       }
                       onChange={
                         (
@@ -1502,9 +2291,7 @@ export function PacienteDetallePage() {
                         ) =>
                           updateField(
                             "maternal_surname",
-                            event
-                              .target
-                              .value,
+                            event.target.value,
                           )
                       }
                       maxLength={80}
@@ -1519,12 +2306,10 @@ export function PacienteDetallePage() {
                       Fecha de nacimiento *
                     </span>
 
-
                     <input
                       type="date"
                       value={
-                        editForm
-                          .birth_date
+                        editForm.birth_date
                       }
                       onChange={
                         (
@@ -1532,9 +2317,7 @@ export function PacienteDetallePage() {
                         ) =>
                           updateField(
                             "birth_date",
-                            event
-                              .target
-                              .value,
+                            event.target.value,
                           )
                       }
                     />
@@ -1548,11 +2331,9 @@ export function PacienteDetallePage() {
                       Sexo *
                     </span>
 
-
                     <select
                       value={
-                        editForm
-                          .sex_id
+                        editForm.sex_id
                       }
                       onChange={
                         (
@@ -1560,9 +2341,7 @@ export function PacienteDetallePage() {
                         ) =>
                           updateField(
                             "sex_id",
-                            event
-                              .target
-                              .value,
+                            event.target.value,
                           )
                       }
                     >
@@ -1583,11 +2362,7 @@ export function PacienteDetallePage() {
                                   item.id
                                 }
                               >
-
-                                {
-                                  item.name
-                                }
-
+                                {item.name}
                               </option>
 
                             ),
@@ -1605,11 +2380,9 @@ export function PacienteDetallePage() {
                       Estado
                     </span>
 
-
                     <select
                       value={
-                        editForm
-                          .active
+                        editForm.active
                           ? "true"
                           : "false"
                       }
@@ -1619,9 +2392,7 @@ export function PacienteDetallePage() {
                         ) =>
                           updateField(
                             "active",
-                            event
-                              .target
-                              .value
+                            event.target.value
                             ===
                             "true",
                           )
@@ -1633,7 +2404,6 @@ export function PacienteDetallePage() {
                       >
                         Activo
                       </option>
-
 
                       <option
                         value="false"
@@ -1654,11 +2424,9 @@ export function PacienteDetallePage() {
                       Motivo de la modificación *
                     </span>
 
-
                     <textarea
                       value={
-                        editForm
-                          .reason
+                        editForm.reason
                       }
                       onChange={
                         (
@@ -1666,9 +2434,7 @@ export function PacienteDetallePage() {
                         ) =>
                           updateField(
                             "reason",
-                            event
-                              .target
-                              .value,
+                            event.target.value,
                           )
                       }
                       rows={3}
@@ -1716,22 +2482,17 @@ export function PacienteDetallePage() {
                     {
                       saving
                         ? (
-
                             <LoaderCircle
                               size={18}
                               className="patient-detail-spin"
                             />
-
                           )
                         : (
-
                             <Save
                               size={18}
                             />
-
                           )
                     }
-
 
                     {
                       saving
@@ -1750,9 +2511,7 @@ export function PacienteDetallePage() {
 
               <>
 
-                {/* ==========================================
-                    DATOS PERSONALES
-                    ========================================== */}
+                {/* DATOS PERSONALES */}
 
                 <article
                   className="patient-detail-card"
@@ -1765,25 +2524,20 @@ export function PacienteDetallePage() {
                     <div
                       className="patient-detail-section-icon"
                     >
-
                       <UserRound
                         size={20}
                       />
-
                     </div>
 
 
                     <div>
-
                       <h2>
                         Datos personales
                       </h2>
 
-
                       <p>
                         Información principal del paciente.
                       </p>
-
                     </div>
 
                   </div>
@@ -1794,113 +2548,78 @@ export function PacienteDetallePage() {
                   >
 
                     <div>
-
                       <span>
                         Nombres
                       </span>
 
-
                       <strong>
-                        {
-                          patient
-                            .first_names
-                        }
+                        {patient.first_names}
                       </strong>
-
                     </div>
 
 
                     <div>
-
                       <span>
                         Apellido paterno
                       </span>
 
-
                       <strong>
-                        {
-                          patient
-                            .paternal_surname
-                        }
+                        {patient.paternal_surname}
                       </strong>
-
                     </div>
 
 
                     <div>
-
                       <span>
                         Apellido materno
                       </span>
 
-
                       <strong>
                         {
-                          patient
-                            .maternal_surname
+                          patient.maternal_surname
                           ||
                           "—"
                         }
                       </strong>
-
                     </div>
 
 
                     <div>
-
                       <span>
                         Fecha de nacimiento
                       </span>
 
-
                       <strong>
                         {
                           formatDate(
-                            patient
-                              .birth_date,
+                            patient.birth_date,
                           )
                         }
                       </strong>
-
                     </div>
 
 
                     <div>
-
                       <span>
                         Sexo
                       </span>
 
-
                       <strong>
-                        {
-                          patient
-                            .sex
-                            .name
-                        }
+                        {patient.sex.name}
                       </strong>
-
                     </div>
 
 
                     <div>
-
                       <span>
                         Identificador
                       </span>
 
-
                       <strong
                         className="patient-detail-uuid"
                       >
-
-                        {
-                          patient
-                            .id_patient
-                        }
-
+                        {patient.id_patient}
                       </strong>
-
                     </div>
 
                   </div>
@@ -1908,17 +2627,11 @@ export function PacienteDetallePage() {
                 </article>
 
 
-                {/* ==========================================
-                    DOCUMENTO + CONTACTOS
-                    ========================================== */}
+                {/* DOCUMENTO + CONTACTOS */}
 
                 <div
                   className="patient-detail-two-columns"
                 >
-
-                  {/* ========================================
-                      DOCUMENTO
-                      ======================================== */}
 
                   <article
                     className="patient-detail-card"
@@ -1931,25 +2644,20 @@ export function PacienteDetallePage() {
                       <div
                         className="patient-detail-section-icon"
                       >
-
                         <IdCard
                           size={20}
                         />
-
                       </div>
 
 
                       <div>
-
                         <h2>
                           Documento
                         </h2>
 
-
                         <p>
                           Documento principal registrado.
                         </p>
-
                       </div>
 
                     </div>
@@ -1964,11 +2672,9 @@ export function PacienteDetallePage() {
                             >
 
                               <div>
-
                                 <span>
                                   Tipo
                                 </span>
-
 
                                 <strong>
                                   {
@@ -1976,16 +2682,13 @@ export function PacienteDetallePage() {
                                       .document_type_name
                                   }
                                 </strong>
-
                               </div>
 
 
                               <div>
-
                                 <span>
                                   Número
                                 </span>
-
 
                                 <strong>
                                   {
@@ -1993,16 +2696,13 @@ export function PacienteDetallePage() {
                                       .document_number
                                   }
                                 </strong>
-
                               </div>
 
 
                               <div>
-
                                 <span>
                                   Complemento
                                 </span>
-
 
                                 <strong>
                                   {
@@ -2012,16 +2712,13 @@ export function PacienteDetallePage() {
                                     "—"
                                   }
                                 </strong>
-
                               </div>
 
 
                               <div>
-
                                 <span>
                                   Expedido en
                                 </span>
-
 
                                 <strong>
                                   {
@@ -2031,7 +2728,6 @@ export function PacienteDetallePage() {
                                     )
                                   }
                                 </strong>
-
                               </div>
 
                             </div>
@@ -2051,10 +2747,6 @@ export function PacienteDetallePage() {
                   </article>
 
 
-                  {/* ========================================
-                      CONTACTOS DEL PACIENTE
-                      ======================================== */}
-
                   <article
                     className="patient-detail-card"
                   >
@@ -2066,34 +2758,27 @@ export function PacienteDetallePage() {
                       <div
                         className="patient-detail-section-icon"
                       >
-
                         <ContactRound
                           size={20}
                         />
-
                       </div>
 
 
                       <div>
-
                         <h2>
                           Contactos del paciente
                         </h2>
 
-
                         <p>
                           Medios disponibles para comunicación.
                         </p>
-
                       </div>
 
                     </div>
 
 
                     {
-                      patient
-                        .contacts
-                        .length > 0
+                      patient.contacts.length > 0
                         ? (
 
                             <div
@@ -2101,62 +2786,47 @@ export function PacienteDetallePage() {
                             >
 
                               {
-                                patient
-                                  .contacts
-                                  .map(
-                                    (
-                                      contact,
-                                    ) => (
+                                patient.contacts.map(
+                                  (
+                                    contact,
+                                  ) => (
 
-                                      <div
-                                        key={
-                                          contact
-                                            .id_contact
-                                          ??
-                                          `${contact.contact_type_code}-${contact.value}`
-                                        }
-                                        className="patient-detail-contact-item"
-                                      >
+                                    <div
+                                      key={
+                                        contact.id_contact
+                                        ??
+                                        `${contact.contact_type_code}-${contact.value}`
+                                      }
+                                      className="patient-detail-contact-item"
+                                    >
 
-                                        <div>
+                                      <div>
+                                        <span>
+                                          {contact.contact_type_name}
+                                        </span>
 
-                                          <span>
-                                            {
-                                              contact
-                                                .contact_type_name
-                                            }
-                                          </span>
-
-
-                                          <strong>
-                                            {
-                                              contact
-                                                .value
-                                            }
-                                          </strong>
-
-                                        </div>
-
-
-                                        {
-                                          contact
-                                            .primary
-                                          &&
-                                          (
-
-                                            <span
-                                              className="patient-detail-primary-badge"
-                                            >
-                                              Principal
-                                            </span>
-
-                                          )
-                                        }
-
+                                        <strong>
+                                          {contact.value}
+                                        </strong>
                                       </div>
 
-                                    ),
-                                  )
+
+                                      {
+                                        contact.primary
+                                        &&
+                                        (
+                                          <span
+                                            className="patient-detail-primary-badge"
+                                          >
+                                            Principal
+                                          </span>
+                                        )
+                                      }
+
+                                    </div>
+
+                                  ),
+                                )
                               }
 
                             </div>
@@ -2178,9 +2848,7 @@ export function PacienteDetallePage() {
                 </div>
 
 
-                {/* ==========================================
-                    CONTACTO EMERGENCIA
-                    ========================================== */}
+                {/* EMERGENCIAS */}
 
                 <article
                   className="patient-detail-card patient-detail-emergency-card"
@@ -2193,34 +2861,27 @@ export function PacienteDetallePage() {
                     <div
                       className="patient-detail-section-icon"
                     >
-
                       <ShieldCheck
                         size={20}
                       />
-
                     </div>
 
 
                     <div>
-
                       <h2>
-                        Contacto de emergencia
+                        Contactos de emergencia
                       </h2>
 
-
                       <p>
-                        Familiar, tutor o responsable del paciente.
+                        Familiares, tutores o responsables del paciente.
                       </p>
-
                     </div>
 
                   </div>
 
 
                   {
-                    patient
-                      .emergency_contacts
-                      .length > 0
+                    patient.emergency_contacts.length > 0
                       ? (
 
                           <div
@@ -2228,131 +2889,106 @@ export function PacienteDetallePage() {
                           >
 
                             {
-                              patient
-                                .emergency_contacts
-                                .map(
-                                  (
-                                    contact,
-                                  ) => (
+                              patient.emergency_contacts.map(
+                                (
+                                  contact,
+                                ) => (
+
+                                  <div
+                                    key={
+                                      contact.id_emergency_contact
+                                      ??
+                                      `${contact.full_name}-${contact.phone}`
+                                    }
+                                    className={
+                                      contact.primary
+                                        ? "patient-detail-emergency-item patient-detail-emergency-item--primary"
+                                        : "patient-detail-emergency-item"
+                                    }
+                                  >
 
                                     <div
-                                      key={
-                                        contact
-                                          .id_emergency_contact
-                                        ??
-                                        `${contact.full_name}-${contact.phone}`
-                                      }
-                                      className={
-                                        contact
-                                          .primary
-                                          ? "patient-detail-emergency-item patient-detail-emergency-item--primary"
-                                          : "patient-detail-emergency-item"
-                                      }
+                                      className="patient-detail-emergency-item__main"
                                     >
 
                                       <div
-                                        className="patient-detail-emergency-item__main"
+                                        className="patient-detail-emergency-avatar"
                                       >
+                                        {
+                                          contact.full_name
+                                            .charAt(
+                                              0,
+                                            )
+                                            .toUpperCase()
+                                        }
+                                      </div>
 
-                                        <div
-                                          className="patient-detail-emergency-avatar"
-                                        >
 
+                                      <div>
+                                        <strong>
+                                          {contact.full_name}
+                                        </strong>
+
+                                        <span>
                                           {
-                                            contact
-                                              .full_name
-                                              .charAt(
-                                                0,
-                                              )
-                                              .toUpperCase()
+                                            relationshipName(
+                                              contact.relationship,
+                                            )
                                           }
-
-                                        </div>
-
-
-                                        <div>
-
-                                          <strong>
-                                            {
-                                              contact
-                                                .full_name
-                                            }
-                                          </strong>
-
-
-                                          <span>
-                                            {
-                                              contact
-                                                .relationship
-                                            }
-                                          </span>
-
-                                        </div>
-
+                                        </span>
                                       </div>
-
-
-                                      <div
-                                        className="patient-detail-emergency-data"
-                                      >
-
-                                        <div>
-
-                                          <span>
-                                            Teléfono
-                                          </span>
-
-
-                                          <strong>
-                                            {
-                                              contact
-                                                .phone
-                                            }
-                                          </strong>
-
-                                        </div>
-
-
-                                        <div>
-
-                                          <span>
-                                            Correo
-                                          </span>
-
-
-                                          <strong>
-                                            {
-                                              contact
-                                                .email
-                                              ??
-                                              "—"
-                                            }
-                                          </strong>
-
-                                        </div>
-
-                                      </div>
-
-
-                                      {
-                                        contact
-                                          .primary
-                                        &&
-                                        (
-
-                                          <span
-                                            className="patient-detail-primary-badge"
-                                          >
-                                            Principal
-                                          </span>
-
-                                        )
-                                      }
 
                                     </div>
 
-                                  ),
-                                )
+
+                                    <div
+                                      className="patient-detail-emergency-data"
+                                    >
+
+                                      <div>
+                                        <span>
+                                          Teléfono
+                                        </span>
+
+                                        <strong>
+                                          {contact.phone}
+                                        </strong>
+                                      </div>
+
+
+                                      <div>
+                                        <span>
+                                          Correo
+                                        </span>
+
+                                        <strong>
+                                          {
+                                            contact.email
+                                            ??
+                                            "—"
+                                          }
+                                        </strong>
+                                      </div>
+
+                                    </div>
+
+
+                                    {
+                                      contact.primary
+                                      &&
+                                      (
+                                        <span
+                                          className="patient-detail-primary-badge"
+                                        >
+                                          Principal
+                                        </span>
+                                      )
+                                    }
+
+                                  </div>
+
+                                ),
+                              )
                             }
 
                           </div>
@@ -2368,15 +3004,13 @@ export function PacienteDetallePage() {
                               size={28}
                             />
 
-
                             <strong>
                               Sin contacto de emergencia
                             </strong>
 
-
                             <span>
                               Este paciente todavía no tiene
-                              un familiar o responsable de emergencia registrado.
+                              un familiar o responsable registrado.
                             </span>
 
                           </div>
@@ -2386,10 +3020,6 @@ export function PacienteDetallePage() {
 
                 </article>
 
-
-                {/* ==========================================
-                    RESUMEN CONTACTO PRINCIPAL
-                    ========================================== */}
 
                 {
                   (
@@ -2408,32 +3038,23 @@ export function PacienteDetallePage() {
                         primaryContact
                         &&
                         (
-
                           <div>
 
                             <ContactRound
                               size={18}
                             />
 
-
                             <div>
-
                               <span>
                                 Contacto principal
                               </span>
 
-
                               <strong>
-                                {
-                                  primaryContact
-                                    .value
-                                }
+                                {primaryContact.value}
                               </strong>
-
                             </div>
 
                           </div>
-
                         )
                       }
 
@@ -2442,37 +3063,25 @@ export function PacienteDetallePage() {
                         primaryEmergencyContact
                         &&
                         (
-
                           <div>
 
                             <ShieldCheck
                               size={18}
                             />
 
-
                             <div>
-
                               <span>
                                 Emergencia principal
                               </span>
 
-
                               <strong>
-                                {
-                                  primaryEmergencyContact
-                                    .full_name
-                                }
+                                {primaryEmergencyContact.full_name}
                                 {" · "}
-                                {
-                                  primaryEmergencyContact
-                                    .phone
-                                }
+                                {primaryEmergencyContact.phone}
                               </strong>
-
                             </div>
 
                           </div>
-
                         )
                       }
 
@@ -2482,26 +3091,16 @@ export function PacienteDetallePage() {
                 }
 
 
-                {/* ==========================================
-                    CASOS CLÍNICOS
-                    ========================================== */}
-
                 <PatientClinicalCases
                   patientId={
-                    patient
-                      .id_patient
+                    patient.id_patient
                   }
                 />
 
 
-                {/* ==========================================
-                    RADIOGRAFÍAS
-                    ========================================== */}
-
                 <PatientRadiographies
                   patientId={
-                    patient
-                      .id_patient
+                    patient.id_patient
                   }
                 />
 
@@ -2510,10 +3109,6 @@ export function PacienteDetallePage() {
             )
       }
 
-
-      {/* ==================================================
-          ÚLTIMO CAMBIO
-          ================================================== */}
 
       {
         lastChanges.length > 0
@@ -2531,25 +3126,20 @@ export function PacienteDetallePage() {
               <div
                 className="patient-detail-section-icon"
               >
-
                 <ShieldCheck
                   size={20}
                 />
-
               </div>
 
 
               <div>
-
                 <h2>
                   Cambios registrados
                 </h2>
 
-
                 <p>
                   Resumen de la última modificación realizada.
                 </p>
-
               </div>
 
             </div>
@@ -2576,49 +3166,37 @@ export function PacienteDetallePage() {
                       <span
                         className="patient-detail-change__field"
                       >
-
-                        {
-                          change.field
-                        }
-
+                        {change.field}
                       </span>
 
 
                       <div>
-
                         <span>
                           Anterior
                         </span>
 
-
                         <strong>
                           {
-                            change
-                              .old_value
+                            change.old_value
                             ??
                             "—"
                           }
                         </strong>
-
                       </div>
 
 
                       <div>
-
                         <span>
                           Nuevo
                         </span>
 
-
                         <strong>
                           {
-                            change
-                              .new_value
+                            change.new_value
                             ??
                             "—"
                           }
                         </strong>
-
                       </div>
 
                     </div>
@@ -2635,14 +3213,9 @@ export function PacienteDetallePage() {
       }
 
 
-      {/* ==================================================
-          AUDITORÍA
-          ================================================== */}
-
       <PatientAuditHistory
         patientId={
-          patient
-            .id_patient
+          patient.id_patient
         }
       />
 

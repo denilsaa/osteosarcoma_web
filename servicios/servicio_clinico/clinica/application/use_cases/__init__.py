@@ -38,22 +38,51 @@ from .list_patients import (
     ListPatientsUseCase,
 )
 
+from .patient_photo import (
+    DeletePatientPhotoUseCase,
+    UpdatePatientPhotoUseCase,
+)
+
 from .update_patient import (
     UpdatePatientUseCase,
 )
 
 
 __all__ = [
+
+    # ======================================================
+    # PACIENTES
+    # ======================================================
+
     "CreatePatientUseCase",
+
     "GetPatientUseCase",
+
     "GetPatientCatalogsUseCase",
+
     "ListPatientsUseCase",
+
     "FindPatientDuplicatesUseCase",
+
     "UpdatePatientUseCase",
 
+    "UpdatePatientPhotoUseCase",
+
+    "DeletePatientPhotoUseCase",
+
+
+    # ======================================================
+    # CASOS CLÍNICOS
+    # ======================================================
+
     "ListPatientCasesUseCase",
+
     "CreateClinicalCaseUseCase",
+
     "ListClinicalCasesUseCase",
+
     "GetClinicalCaseUseCase",
+
     "GetClinicalCaseCatalogsUseCase",
+
 ]

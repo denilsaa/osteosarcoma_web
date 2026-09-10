@@ -12,6 +12,7 @@ from .views import (
     patient_detail_view,
     patient_duplicates_view,
     patient_list_view,
+    patient_photo_view,
     patient_update_view,
 )
 
@@ -61,6 +62,17 @@ urlpatterns = [
         "pacientes/<uuid:patient_id>/editar/",
         patient_update_view,
         name="patient-update",
+    ),
+
+
+    # ======================================================
+    # FOTO DEL PACIENTE
+    # ======================================================
+
+    path(
+        "pacientes/<uuid:patient_id>/foto/",
+        patient_photo_view,
+        name="patient-photo",
     ),
 
 

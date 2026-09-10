@@ -9,6 +9,7 @@ from clinica.application.services import (
 from clinica.application.use_cases import (
     CreateClinicalCaseUseCase,
     CreatePatientUseCase,
+    DeletePatientPhotoUseCase,
     FindPatientDuplicatesUseCase,
     GetClinicalCaseCatalogsUseCase,
     GetClinicalCaseUseCase,
@@ -17,6 +18,7 @@ from clinica.application.use_cases import (
     ListClinicalCasesUseCase,
     ListPatientCasesUseCase,
     ListPatientsUseCase,
+    UpdatePatientPhotoUseCase,
     UpdatePatientUseCase,
 )
 
@@ -32,9 +34,6 @@ from clinica.infrastructure.persistence.repositories import (
 
 
 class ApplicationContainer:
-    """
-    Composition Root del microservicio Clínico.
-    """
 
     def __init__(
         self,
@@ -126,6 +125,20 @@ class ApplicationContainer:
 
 
         # ==================================================
+        # FOTO DE PACIENTE
+        # ==================================================
+
+        self.update_patient_photo = (
+            UpdatePatientPhotoUseCase()
+        )
+
+
+        self.delete_patient_photo = (
+            DeletePatientPhotoUseCase()
+        )
+
+
+        # ==================================================
         # CASOS CLÍNICOS
         # ==================================================
 
@@ -178,4 +191,6 @@ class ApplicationContainer:
 def get_container(
 ) -> ApplicationContainer:
 
-    return ApplicationContainer()
+    return (
+        ApplicationContainer()
+    )

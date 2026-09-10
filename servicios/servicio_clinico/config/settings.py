@@ -1,5 +1,8 @@
 import os
-from pathlib import Path
+
+from pathlib import (
+    Path,
+)
 
 
 # ==========================================================
@@ -31,7 +34,8 @@ DEBUG = (
         "False",
     )
     .lower()
-    == "true"
+    ==
+    "true"
 )
 
 
@@ -48,13 +52,10 @@ ALLOWED_HOSTS = [
 
 INSTALLED_APPS = [
 
-    # Django REST Framework
     "rest_framework",
 
-    # CORS
     "corsheaders",
 
-    # Aplicación clínica
     "clinica",
 
 ]
@@ -68,7 +69,6 @@ MIDDLEWARE = [
 
     "django.middleware.security.SecurityMiddleware",
 
-    # Debe estar antes de CommonMiddleware
     "corsheaders.middleware.CorsMiddleware",
 
     "django.middleware.common.CommonMiddleware",
@@ -80,7 +80,9 @@ MIDDLEWARE = [
 # URLS / WSGI / ASGI
 # ==========================================================
 
-ROOT_URLCONF = "config.urls"
+ROOT_URLCONF = (
+    "config.urls"
+)
 
 
 WSGI_APPLICATION = (
@@ -95,9 +97,6 @@ ASGI_APPLICATION = (
 
 # ==========================================================
 # TEMPLATES
-#
-# Aunque este microservicio funciona como API y no utiliza
-# Django Admin, mantenemos una configuración mínima válida.
 # ==========================================================
 
 TEMPLATES = [
@@ -110,10 +109,12 @@ TEMPLATES = [
 
         "DIRS": [],
 
-        "APP_DIRS": True,
+        "APP_DIRS":
+            True,
 
         "OPTIONS": {
-            "context_processors": [],
+            "context_processors":
+                [],
         },
     },
 ]
@@ -130,16 +131,24 @@ DATABASES = {
             "django.db.backends.postgresql",
 
         "NAME":
-            os.environ["DB_NAME"],
+            os.environ[
+                "DB_NAME"
+            ],
 
         "USER":
-            os.environ["DB_USER"],
+            os.environ[
+                "DB_USER"
+            ],
 
         "PASSWORD":
-            os.environ["DB_PASSWORD"],
+            os.environ[
+                "DB_PASSWORD"
+            ],
 
         "HOST":
-            os.environ["DB_HOST"],
+            os.environ[
+                "DB_HOST"
+            ],
 
         "PORT":
             os.environ.get(
@@ -157,14 +166,17 @@ DATABASES = {
 # INTERNACIONALIZACIÓN
 # ==========================================================
 
-LANGUAGE_CODE = "es-bo"
+LANGUAGE_CODE = (
+    "es-bo"
+)
 
 
-TIME_ZONE = "America/La_Paz"
+TIME_ZONE = (
+    "America/La_Paz"
+)
 
 
 USE_I18N = True
-
 
 USE_TZ = True
 
@@ -175,16 +187,14 @@ USE_TZ = True
 
 REST_FRAMEWORK = {
 
-    # La autenticación real del sistema pertenece a
-    # servicio_usuarios mediante JWT.
-    #
-    # servicio_clinico recibe el Bearer token y utiliza
-    # el contexto del request para integración/auditoría.
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_AUTHENTICATION_CLASSES":
+        [],
 
-    "DEFAULT_PERMISSION_CLASSES": [],
+    "DEFAULT_PERMISSION_CLASSES":
+        [],
 
-    "UNAUTHENTICATED_USER": None,
+    "UNAUTHENTICATED_USER":
+        None,
 }
 
 
@@ -199,11 +209,40 @@ DEFAULT_AUTO_FIELD = (
 
 # ==========================================================
 # ARCHIVOS ESTÁTICOS
-#
-# Requerido por Django aunque este microservicio sea API.
 # ==========================================================
 
-STATIC_URL = "/static/"
+STATIC_URL = (
+    "/static/"
+)
+
+
+# ==========================================================
+# ARCHIVOS MULTIMEDIA
+# ==========================================================
+
+MEDIA_URL = (
+    "/media/"
+)
+
+
+MEDIA_ROOT = (
+    BASE_DIR
+    /
+    "media"
+)
+
+
+# ==========================================================
+# LÍMITE DE SUBIDA
+# ==========================================================
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = (
+    6
+    *
+    1024
+    *
+    1024
+)
 
 
 # ==========================================================
@@ -219,15 +258,11 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = (
+    True
+)
 
 
-# ==========================================================
-# HEADERS CORS
-#
-# django-cors-headers ya permite Authorization y
-# Content-Type por defecto. Se deja explícito el origen
-# permitido, no habilitamos CORS global.
-# ==========================================================
-
-CORS_URLS_REGEX = r"^/api/.*$"
+CORS_URLS_REGEX = (
+    r"^/api/.*$"
+)
