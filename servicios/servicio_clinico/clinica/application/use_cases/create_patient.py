@@ -19,13 +19,17 @@ class CreatePatientUseCase:
 
     def __init__(
         self,
-        repository: PatientRepository,
+        repository:
+            PatientRepository,
     ):
 
-        self.repository = repository
+        self.repository = (
+            repository
+        )
+
 
     # ======================================================
-    # NORMALIZAR OPCIONAL
+    # OPCIONAL
     # ======================================================
 
     @staticmethod
@@ -37,11 +41,14 @@ class CreatePatientUseCase:
             None,
             "",
         ):
+
             return None
+
 
         value = str(
             value
         ).strip()
+
 
         return (
             value
@@ -49,13 +56,15 @@ class CreatePatientUseCase:
             else None
         )
 
+
     # ======================================================
     # EJECUTAR
     # ======================================================
 
     def execute(
         self,
-        dto: CreatePatientDTO,
+        dto:
+            CreatePatientDTO,
     ):
 
         # ==================================================
@@ -70,6 +79,7 @@ class CreatePatientUseCase:
             )
         )
 
+
         paternal_surname = (
             PatientDomainService
             .validate_name(
@@ -78,6 +88,7 @@ class CreatePatientUseCase:
             )
         )
 
+
         maternal_surname = (
             PatientDomainService
             .normalize_text(
@@ -85,9 +96,24 @@ class CreatePatientUseCase:
             )
         )
 
+
         PatientDomainService.validate_birth_date(
             dto.birth_date
         )
+        # ==================================================
+        # SEXO
+        # SOLO MASCULINO / FEMENINO
+        # ==================================================
+
+        if dto.sex_id not in (
+            1,
+            2,
+        ):
+
+            raise ValueError(
+                "Seleccione Masculino o Femenino."
+            )
+
 
         # ==================================================
         # DOCUMENTO
@@ -100,21 +126,23 @@ class CreatePatientUseCase:
             )
         )
 
+
         exact_duplicate = (
             self.repository
             .find_exact_document(
-                document_type_id=(
-                    dto.document_type_id
-                ),
-                document_number=(
-                    document_number
-                ),
+                document_type_id=
+                    dto.document_type_id,
+
+                document_number=
+                    document_number,
             )
         )
+
 
         if exact_duplicate:
 
             raise DuplicatePatientError()
+
 
         complement = (
             PatientDomainService
@@ -123,6 +151,7 @@ class CreatePatientUseCase:
             )
         )
 
+
         issued_in = (
             PatientDomainService
             .normalize_text(
@@ -130,127 +159,226 @@ class CreatePatientUseCase:
             )
         )
 
+
         if issued_in:
 
             issued_in = (
                 issued_in.upper()
             )
 
+
         # ==================================================
         # CONTACTOS DEL PACIENTE
         # ==================================================
 
-        mobile_phone = (
-            self._optional_text(
-                dto.mobile_phone
-            )
-        )
+        contacts: list[
+            dict
+        ] = []
 
-        landline_phone = (
-            self._optional_text(
-                dto.landline_phone
-            )
-        )
 
-        email = (
-            self._optional_text(
-                dto.email
-            )
-        )
+        principal_count = 0
 
-        if email:
+
+        for contact in dto.contacts:
+
+            value = (
+                self._optional_text(
+                    contact.value
+                )
+            )
+
+
+            if not value:
+
+                continue
+
+
+            if contact.primary:
+
+                principal_count += 1
+
+
+            contacts.append(
+                {
+                    "contact_type_id":
+                        contact.contact_type_id,
+
+                    "value":
+                        value,
+
+                    "primary":
+                        contact.primary,
+                }
+            )
+
+
+        if principal_count > 1:
+
+            raise ValueError(
+                "Solo un contacto del paciente "
+                "puede ser principal."
+            )
+
+
+        if (
+            contacts
+            and
+            principal_count == 0
+        ):
+
+            contacts[0][
+                "primary"
+            ] = True
+
+
+        # ==================================================
+        # CONTACTOS DE EMERGENCIA
+        # ==================================================
+
+        emergency_contacts: list[
+            dict
+        ] = []
+
+
+        emergency_principal_count = 0
+
+
+        for emergency in (
+            dto.emergency_contacts
+        ):
+
+            full_name = (
+                self._optional_text(
+                    emergency.full_name
+                )
+            )
+
+
+            relationship = (
+                self._optional_text(
+                    emergency.relationship
+                )
+            )
+
+
+            phone = (
+                self._optional_text(
+                    emergency.phone
+                )
+            )
+
 
             email = (
-                email.lower()
+                self._optional_text(
+                    emergency.email
+                )
             )
 
-        # ==================================================
-        # CONTACTO DE EMERGENCIA
-        # ==================================================
 
-        emergency_contact_name = (
-            self._optional_text(
-                dto.emergency_contact_name
+            if email:
+
+                email = (
+                    email.lower()
+                )
+
+
+            if (
+                not full_name
+                or
+                not relationship
+                or
+                not phone
+            ):
+
+                raise ValueError(
+                    "Cada contacto de emergencia "
+                    "debe incluir nombre, parentesco "
+                    "y teléfono."
+                )
+
+
+            if emergency.primary:
+
+                emergency_principal_count += 1
+
+
+            emergency_contacts.append(
+                {
+                    "full_name":
+                        full_name,
+
+                    "relationship":
+                        relationship,
+
+                    "phone":
+                        phone,
+
+                    "email":
+                        email,
+
+                    "primary":
+                        emergency.primary,
+                }
             )
-        )
 
-        emergency_relationship = (
-            self._optional_text(
-                dto.emergency_relationship
+
+        if emergency_principal_count > 1:
+
+            raise ValueError(
+                "Solo un contacto de emergencia "
+                "puede ser principal."
             )
-        )
 
-        emergency_phone = (
-            self._optional_text(
-                dto.emergency_phone
-            )
-        )
 
-        emergency_email = (
-            self._optional_text(
-                dto.emergency_email
-            )
-        )
+        if (
+            emergency_contacts
+            and
+            emergency_principal_count == 0
+        ):
 
-        if emergency_email:
+            emergency_contacts[0][
+                "primary"
+            ] = True
 
-            emergency_email = (
-                emergency_email.lower()
-            )
 
         # ==================================================
         # CREAR
         # ==================================================
 
-        return self.repository.create(
-            first_names=(
-                first_names
-            ),
-            paternal_surname=(
-                paternal_surname
-            ),
-            maternal_surname=(
-                maternal_surname
-            ),
-            birth_date=(
-                dto.birth_date
-            ),
-            sex_id=(
-                dto.sex_id
-            ),
-            document_type_id=(
-                dto.document_type_id
-            ),
-            document_number=(
-                document_number
-            ),
-            complement=(
-                complement
-            ),
-            issued_in=(
-                issued_in
-            ),
+        return (
+            self.repository
+            .create(
+                first_names=
+                    first_names,
 
-            mobile_phone=(
-                mobile_phone
-            ),
-            landline_phone=(
-                landline_phone
-            ),
-            email=(
-                email
-            ),
+                paternal_surname=
+                    paternal_surname,
 
-            emergency_contact_name=(
-                emergency_contact_name
-            ),
-            emergency_relationship=(
-                emergency_relationship
-            ),
-            emergency_phone=(
-                emergency_phone
-            ),
-            emergency_email=(
-                emergency_email
-            ),
+                maternal_surname=
+                    maternal_surname,
+
+                birth_date=
+                    dto.birth_date,
+
+                sex_id=
+                    dto.sex_id,
+
+                document_type_id=
+                    dto.document_type_id,
+
+                document_number=
+                    document_number,
+
+                complement=
+                    complement,
+
+                issued_in=
+                    issued_in,
+
+                contacts=
+                    contacts,
+
+                emergency_contacts=
+                    emergency_contacts,
+            )
         )

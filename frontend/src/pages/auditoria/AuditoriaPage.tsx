@@ -2,7 +2,6 @@ import {
   Activity,
   AlertCircle,
   ArrowRight,
-  Ban,
   CheckCircle2,
   ChevronDown,
   ChevronLeft,

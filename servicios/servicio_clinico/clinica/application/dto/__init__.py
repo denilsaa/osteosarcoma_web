@@ -14,6 +14,8 @@ from .clinical_case_dto import (
 )
 
 from .patient_dto import (
+    CreateEmergencyContactDTO,
+    CreatePatientContactDTO,
     CreatePatientDTO,
     PatientFiltersDTO,
     PossibleDuplicateDTO,
@@ -25,11 +27,15 @@ __all__ = [
     "AuditActorDTO",
     "AuditChangeDTO",
     "AuditEventDTO",
+    "FieldChangeDTO",
+
+    "CreateClinicalCaseDTO",
+    "ClinicalCaseFiltersDTO",
+
+    "CreatePatientContactDTO",
+    "CreateEmergencyContactDTO",
     "CreatePatientDTO",
     "UpdatePatientDTO",
     "PatientFiltersDTO",
     "PossibleDuplicateDTO",
-    "FieldChangeDTO",
-    "CreateClinicalCaseDTO",
-    "ClinicalCaseFiltersDTO",
 ]

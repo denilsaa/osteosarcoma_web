@@ -3,8 +3,10 @@ import {
   CheckCircle2,
   CircleAlert,
   LoaderCircle,
+  Plus,
   Save,
   ShieldAlert,
+  Trash2,
   UserPlus,
   X,
 } from "lucide-react";
@@ -26,6 +28,8 @@ import {
   getPatientCatalogs,
   type BoliviaDepartmentCode,
   type CatalogItem,
+  type CreateEmergencyContactRequest,
+  type CreatePatientContactRequest,
   type CreatePatientRequest,
   type PatientCatalogs,
   type PatientSummary,
@@ -35,7 +39,7 @@ import "./NuevoPacientePage.css";
 
 
 // ==========================================================
-// ESTADO DEL FORMULARIO
+// FORMULARIO BASE
 // ==========================================================
 
 type FormState = {
@@ -55,21 +59,8 @@ type FormState = {
 
   complement: string;
 
-  issued_in: BoliviaDepartmentCode;
-
-  mobile_phone: string;
-
-  landline_phone: string;
-
-  email: string;
-
-  emergency_contact_name: string;
-
-  emergency_relationship: string;
-
-  emergency_phone: string;
-
-  emergency_email: string;
+  issued_in:
+    BoliviaDepartmentCode;
 };
 
 
@@ -82,39 +73,104 @@ type FormErrors =
   >;
 
 
-const initialForm: FormState = {
-  first_names: "",
+const initialForm:
+  FormState = {
 
-  paternal_surname: "",
+    first_names: "",
 
-  maternal_surname: "",
+    paternal_surname: "",
 
-  birth_date: "",
+    maternal_surname: "",
 
-  sex_id: "",
+    birth_date: "",
 
-  document_type_id: "",
+    sex_id: "",
 
-  document_number: "",
+    document_type_id: "",
 
-  complement: "",
+    document_number: "",
 
-  issued_in: "LP",
+    complement: "",
 
-  mobile_phone: "",
+    issued_in: "LP",
 
-  landline_phone: "",
+  };
 
-  email: "",
 
-  emergency_contact_name: "",
+// ==========================================================
+// PARENTESCOS
+// ==========================================================
 
-  emergency_relationship: "",
-
-  emergency_phone: "",
-
-  emergency_email: "",
-};
+const RELATIONSHIPS = [
+  {
+    code: "MADRE",
+    name: "Madre",
+  },
+  {
+    code: "PADRE",
+    name: "Padre",
+  },
+  {
+    code: "HERMANO",
+    name: "Hermano",
+  },
+  {
+    code: "HERMANA",
+    name: "Hermana",
+  },
+  {
+    code: "HIJO",
+    name: "Hijo",
+  },
+  {
+    code: "HIJA",
+    name: "Hija",
+  },
+  {
+    code: "ESPOSO",
+    name: "Esposo",
+  },
+  {
+    code: "ESPOSA",
+    name: "Esposa",
+  },
+  {
+    code: "TUTOR",
+    name: "Tutor",
+  },
+  {
+    code: "TUTORA",
+    name: "Tutora",
+  },
+  {
+    code: "ABUELO",
+    name: "Abuelo",
+  },
+  {
+    code: "ABUELA",
+    name: "Abuela",
+  },
+  {
+    code: "TIO",
+    name: "Tío",
+  },
+  {
+    code: "TIA",
+    name: "Tía",
+  },
+  {
+    code: "PRIMO",
+    name: "Primo",
+  },
+  {
+    code: "PRIMA",
+    name: "Prima",
+  },
+  {
+    code: "OTRO",
+    name: "Otro",
+  },
+];
 
 
 // ==========================================================
@@ -122,21 +178,28 @@ const initialForm: FormState = {
 // ==========================================================
 
 function normalizeText(
-  value: string,
+  value:
+    string,
 ): string {
+
   return value
     .trim()
     .replace(
       /\s+/g,
       " ",
     );
+
 }
 
 
 function onlyNumbers(
-  value: string,
-  maxLength: number,
+  value:
+    string,
+
+  maxLength:
+    number,
 ): string {
+
   return value
     .replace(
       /\D/g,
@@ -146,12 +209,15 @@ function onlyNumbers(
       0,
       maxLength,
     );
+
 }
 
 
 function normalizeComplement(
-  value: string,
+  value:
+    string,
 ): string {
+
   return value
     .toUpperCase()
     .replace(
@@ -162,19 +228,24 @@ function normalizeComplement(
       0,
       20,
     );
+
 }
 
 
 function extractErrorMessage(
-  error: unknown,
+  error:
+    unknown,
 ): string {
+
   if (
-    typeof error === "object"
+    typeof error ===
+    "object"
     &&
     error !== null
     &&
     "response" in error
   ) {
+
     const maybeAxios =
       error as {
         response?: {
@@ -192,8 +263,10 @@ function extractErrorMessage(
     if (
       data
       &&
-      typeof data === "object"
+      typeof data ===
+      "object"
     ) {
+
       const object =
         data as Record<
           string,
@@ -205,7 +278,9 @@ function extractErrorMessage(
         typeof object.detail ===
         "string"
       ) {
+
         return object.detail;
+
       }
 
 
@@ -213,29 +288,9 @@ function extractErrorMessage(
         typeof object.error ===
         "string"
       ) {
+
         return object.error;
-      }
 
-
-      if (
-        object.error
-        &&
-        typeof object.error ===
-        "object"
-      ) {
-        const nested =
-          object.error as Record<
-            string,
-            unknown
-          >;
-
-
-        if (
-          typeof nested.message ===
-          "string"
-        ) {
-          return nested.message;
-        }
       }
 
 
@@ -245,14 +300,21 @@ function extractErrorMessage(
           object,
         )
       ) {
+
         if (
           Array.isArray(
             value,
           )
         ) {
+
           return value
-            .map(String)
-            .join(" ");
+            .map(
+              String,
+            )
+            .join(
+              " ",
+            );
+
         }
 
 
@@ -260,7 +322,9 @@ function extractErrorMessage(
           typeof value ===
           "string"
         ) {
+
           return value;
+
         }
 
 
@@ -270,7 +334,8 @@ function extractErrorMessage(
           typeof value ===
           "object"
         ) {
-          const nestedValues =
+
+          const nested =
             Object.values(
               value as Record<
                 string,
@@ -280,7 +345,7 @@ function extractErrorMessage(
 
 
           const first =
-            nestedValues[0];
+            nested[0];
 
 
           if (
@@ -288,9 +353,15 @@ function extractErrorMessage(
               first,
             )
           ) {
+
             return first
-              .map(String)
-              .join(" ");
+              .map(
+                String,
+              )
+              .join(
+                " ",
+              );
+
           }
 
 
@@ -298,17 +369,24 @@ function extractErrorMessage(
             typeof first ===
             "string"
           ) {
+
             return first;
+
           }
+
         }
+
       }
+
     }
+
   }
 
 
   return (
     "No fue posible registrar el paciente."
   );
+
 }
 
 
@@ -317,96 +395,158 @@ function extractErrorMessage(
 // ==========================================================
 
 export function NuevoPacientePage() {
+
   const navigate =
     useNavigate();
 
 
+  // ========================================================
+  // CATÁLOGOS
+  // ========================================================
+
   const [
     catalogs,
     setCatalogs,
-  ] = useState<
-    PatientCatalogs | null
-  >(
-    null,
-  );
+  ] =
+    useState<
+      PatientCatalogs | null
+    >(
+      null,
+    );
 
+
+  // ========================================================
+  // FORMULARIO BASE
+  // ========================================================
 
   const [
     form,
     setForm,
-  ] = useState<FormState>(
-    initialForm,
-  );
+  ] =
+    useState<FormState>(
+      initialForm,
+    );
 
 
   const [
     formErrors,
     setFormErrors,
-  ] = useState<FormErrors>(
-    {},
-  );
+  ] =
+    useState<FormErrors>(
+      {},
+    );
 
+
+  // ========================================================
+  // CONTACTOS
+  // ========================================================
+
+  const [
+    contacts,
+    setContacts,
+  ] =
+    useState<
+      CreatePatientContactRequest[]
+    >([
+      {
+        contact_type_id:
+          1,
+
+        value:
+          "",
+
+        primary:
+          true,
+      },
+    ]);
+
+
+  // ========================================================
+  // EMERGENCIA
+  // ========================================================
+
+  const [
+    emergencyContacts,
+    setEmergencyContacts,
+  ] =
+    useState<
+      CreateEmergencyContactRequest[]
+    >(
+      [],
+    );
+
+
+  // ========================================================
+  // ESTADOS
+  // ========================================================
 
   const [
     loadingCatalogs,
     setLoadingCatalogs,
-  ] = useState(
-    true,
-  );
+  ] =
+    useState(
+      true,
+    );
 
 
   const [
     saving,
     setSaving,
-  ] = useState(
-    false,
-  );
+  ] =
+    useState(
+      false,
+    );
 
 
   const [
     checkingDuplicates,
     setCheckingDuplicates,
-  ] = useState(
-    false,
-  );
+  ] =
+    useState(
+      false,
+    );
 
 
   const [
     duplicates,
     setDuplicates,
-  ] = useState<
-    PatientSummary[]
-  >(
-    [],
-  );
+  ] =
+    useState<
+      PatientSummary[]
+    >(
+      [],
+    );
 
 
   const [
     duplicateChecked,
     setDuplicateChecked,
-  ] = useState(
-    false,
-  );
+  ] =
+    useState(
+      false,
+    );
 
 
   const [
     error,
     setError,
-  ] = useState<
-    string | null
-  >(
-    null,
-  );
+  ] =
+    useState<
+      string | null
+    >(
+      null,
+    );
 
 
   const [
     success,
     setSuccess,
-  ] = useState<
-    string | null
-  >(
-    null,
-  );
+  ] =
+    useState<
+      string | null
+    >(
+      null,
+    );
 
 
   // ========================================================
@@ -415,16 +555,20 @@ export function NuevoPacientePage() {
 
   useEffect(
     () => {
-      let mounted = true;
+
+      let mounted =
+        true;
 
 
       async function loadCatalogs() {
+
         setLoadingCatalogs(
           true,
         );
 
 
         try {
+
           const data =
             await getPatientCatalogs();
 
@@ -432,27 +576,57 @@ export function NuevoPacientePage() {
           if (
             !mounted
           ) {
+
             return;
+
           }
 
 
+          // Solo Masculino / Femenino.
+
+          const filteredCatalogs:
+            PatientCatalogs = {
+
+              ...data,
+
+              sexes:
+                data.sexes.filter(
+                  (
+                    item,
+                  ) =>
+                    item.code === "M"
+                    ||
+                    item.code === "F",
+                ),
+
+            };
+
+
           setCatalogs(
-            data,
+            filteredCatalogs,
           );
 
 
           const defaultSex =
-            data.sexes[0];
+            filteredCatalogs
+              .sexes[0];
 
 
           const defaultDocument =
-            data.document_types[0];
+            filteredCatalogs
+              .document_types[0];
+
+
+          const defaultContact =
+            filteredCatalogs
+              .contact_types[0];
 
 
           setForm(
             (
               current,
             ) => ({
+
               ...current,
 
               sex_id:
@@ -476,25 +650,59 @@ export function NuevoPacientePage() {
                       )
                     : ""
                 ),
+
             }),
           );
+
+
+          if (
+            defaultContact
+          ) {
+
+            setContacts(
+              (
+                current,
+              ) =>
+                current.map(
+                  (
+                    item,
+                  ) => ({
+                    ...item,
+
+                    contact_type_id:
+                      defaultContact.id,
+                  }),
+                ),
+            );
+
+          }
+
         } catch {
+
           if (
             mounted
           ) {
+
             setError(
               "No fue posible cargar los catálogos de pacientes.",
             );
+
           }
+
         } finally {
+
           if (
             mounted
           ) {
+
             setLoadingCatalogs(
               false,
             );
+
           }
+
         }
+
       }
 
 
@@ -502,15 +710,19 @@ export function NuevoPacientePage() {
 
 
       return () => {
-        mounted = false;
+
+        mounted =
+          false;
+
       };
+
     },
     [],
   );
 
 
   // ========================================================
-  // ACTUALIZAR CAMPO
+  // ACTUALIZAR CAMPO BASE
   // ========================================================
 
   function updateField(
@@ -520,41 +732,16 @@ export function NuevoPacientePage() {
     originalValue:
       string,
   ) {
+
     let value =
       originalValue;
 
 
     if (
       field ===
-      "mobile_phone"
-      ||
-      field ===
-      "emergency_phone"
-    ) {
-      value =
-        onlyNumbers(
-          originalValue,
-          8,
-        );
-    }
-
-
-    if (
-      field ===
-      "landline_phone"
-    ) {
-      value =
-        onlyNumbers(
-          originalValue,
-          8,
-        );
-    }
-
-
-    if (
-      field ===
       "document_number"
     ) {
+
       value =
         originalValue
           .toUpperCase()
@@ -566,6 +753,7 @@ export function NuevoPacientePage() {
             0,
             50,
           );
+
     }
 
 
@@ -573,24 +761,12 @@ export function NuevoPacientePage() {
       field ===
       "complement"
     ) {
+
       value =
         normalizeComplement(
           originalValue,
         );
-    }
 
-
-    if (
-      field ===
-      "email"
-      ||
-      field ===
-      "emergency_email"
-    ) {
-      value =
-        originalValue
-          .toLowerCase()
-          .trimStart();
     }
 
 
@@ -598,9 +774,12 @@ export function NuevoPacientePage() {
       (
         current,
       ) => ({
+
         ...current,
+
         [field]:
           value,
+
       }),
     );
 
@@ -619,6 +798,7 @@ export function NuevoPacientePage() {
       (
         current,
       ) => {
+
         const next = {
           ...current,
         };
@@ -630,42 +810,637 @@ export function NuevoPacientePage() {
 
 
         return next;
+
       },
     );
 
 
     if (
-      field ===
-      "document_number"
+      field === "document_number"
       ||
-      field ===
-      "document_type_id"
+      field === "document_type_id"
       ||
-      field ===
-      "first_names"
+      field === "first_names"
       ||
-      field ===
-      "paternal_surname"
+      field === "paternal_surname"
       ||
-      field ===
-      "maternal_surname"
+      field === "maternal_surname"
       ||
-      field ===
-      "birth_date"
+      field === "birth_date"
     ) {
+
       setDuplicateChecked(
         false,
       );
 
+
       setDuplicates(
         [],
       );
+
     }
+
   }
 
 
   // ========================================================
-  // VALIDACIONES
+  // CONTACTOS - AGREGAR
+  // ========================================================
+
+  function addContact() {
+
+    const defaultType =
+      catalogs
+        ?.contact_types[0]
+        ?.id
+      ??
+      1;
+
+
+    setContacts(
+      (
+        current,
+      ) => [
+
+        ...current,
+
+        {
+          contact_type_id:
+            defaultType,
+
+          value:
+            "",
+
+          primary:
+            current.length === 0,
+        },
+
+      ],
+    );
+
+  }
+
+
+  // ========================================================
+  // CONTACTOS - MODIFICAR
+  // ========================================================
+
+  function updateContact(
+    index:
+      number,
+
+    field:
+      keyof CreatePatientContactRequest,
+
+    value:
+      string | number | boolean,
+  ) {
+
+    setContacts(
+      (
+        current,
+      ) =>
+        current.map(
+          (
+            item,
+            itemIndex,
+          ) => {
+
+            if (
+              itemIndex !==
+              index
+            ) {
+
+              return item;
+
+            }
+
+
+            return {
+
+              ...item,
+
+              [field]:
+                value,
+
+            };
+
+          },
+        ),
+    );
+
+
+    setError(
+      null,
+    );
+
+  }
+
+
+  // ========================================================
+  // CONTACTOS - PRINCIPAL
+  // ========================================================
+
+  function setPrimaryContact(
+    index:
+      number,
+  ) {
+
+    setContacts(
+      (
+        current,
+      ) =>
+        current.map(
+          (
+            item,
+            itemIndex,
+          ) => ({
+
+            ...item,
+
+            primary:
+              itemIndex ===
+              index,
+
+          }),
+        ),
+    );
+
+  }
+
+
+  // ========================================================
+  // CONTACTOS - ELIMINAR
+  // ========================================================
+
+  function removeContact(
+    index:
+      number,
+  ) {
+
+    setContacts(
+      (
+        current,
+      ) => {
+
+        const next =
+          current.filter(
+            (
+              _,
+              itemIndex,
+            ) =>
+              itemIndex !==
+              index,
+          );
+
+
+        if (
+          next.length > 0
+          &&
+          !next.some(
+            (
+              item,
+            ) =>
+              item.primary,
+          )
+        ) {
+
+          next[0] = {
+
+            ...next[0],
+
+            primary:
+              true,
+
+          };
+
+        }
+
+
+        return next;
+
+      },
+    );
+
+  }
+
+
+  // ========================================================
+  // CONTACTOS - NORMALIZAR VALOR
+  // ========================================================
+
+  function updateContactValue(
+    index:
+      number,
+
+    value:
+      string,
+  ) {
+
+    const contact =
+      contacts[
+        index
+      ];
+
+
+    const type =
+      catalogs
+        ?.contact_types
+        .find(
+          (
+            item,
+          ) =>
+            item.id ===
+            contact
+              ?.contact_type_id,
+        );
+
+
+    let normalized =
+      value;
+
+
+    if (
+      type?.code ===
+      "CELULAR"
+    ) {
+
+      normalized =
+        onlyNumbers(
+          value,
+          8,
+        );
+
+    }
+
+
+    if (
+      type?.code ===
+      "TELEFONO"
+    ) {
+
+      normalized =
+        onlyNumbers(
+          value,
+          8,
+        );
+
+    }
+
+
+    if (
+      type?.code ===
+      "CORREO"
+    ) {
+
+      normalized =
+        value
+          .toLowerCase()
+          .trimStart();
+
+    }
+
+
+    updateContact(
+      index,
+      "value",
+      normalized,
+    );
+
+  }
+
+
+  // ========================================================
+  // EMERGENCIA - AGREGAR
+  // ========================================================
+
+  function addEmergencyContact() {
+
+    setEmergencyContacts(
+      (
+        current,
+      ) => [
+
+        ...current,
+
+        {
+          full_name:
+            "",
+
+          relationship:
+            "MADRE",
+
+          phone:
+            "",
+
+          email:
+            "",
+
+          primary:
+            current.length === 0,
+        },
+
+      ],
+    );
+
+  }
+
+
+  // ========================================================
+  // EMERGENCIA - MODIFICAR
+  // ========================================================
+
+  function updateEmergencyContact(
+    index:
+      number,
+
+    field:
+      keyof CreateEmergencyContactRequest,
+
+    value:
+      string | boolean,
+  ) {
+
+    setEmergencyContacts(
+      (
+        current,
+      ) =>
+        current.map(
+          (
+            item,
+            itemIndex,
+          ) => {
+
+            if (
+              itemIndex !==
+              index
+            ) {
+
+              return item;
+
+            }
+
+
+            return {
+
+              ...item,
+
+              [field]:
+                value,
+
+            };
+
+          },
+        ),
+    );
+
+
+    setError(
+      null,
+    );
+
+  }
+
+
+  // ========================================================
+  // EMERGENCIA - PRINCIPAL
+  // ========================================================
+
+  function setPrimaryEmergencyContact(
+    index:
+      number,
+  ) {
+
+    setEmergencyContacts(
+      (
+        current,
+      ) =>
+        current.map(
+          (
+            item,
+            itemIndex,
+          ) => ({
+
+            ...item,
+
+            primary:
+              itemIndex ===
+              index,
+
+          }),
+        ),
+    );
+
+  }
+
+
+  // ========================================================
+  // EMERGENCIA - ELIMINAR
+  // ========================================================
+
+  function removeEmergencyContact(
+    index:
+      number,
+  ) {
+
+    setEmergencyContacts(
+      (
+        current,
+      ) => {
+
+        const next =
+          current.filter(
+            (
+              _,
+              itemIndex,
+            ) =>
+              itemIndex !==
+              index,
+          );
+
+
+        if (
+          next.length > 0
+          &&
+          !next.some(
+            (
+              item,
+            ) =>
+              item.primary,
+          )
+        ) {
+
+          next[0] = {
+
+            ...next[0],
+
+            primary:
+              true,
+
+          };
+
+        }
+
+
+        return next;
+
+      },
+    );
+
+  }
+
+
+  // ========================================================
+  // ERROR DE UN CONTACTO
+  // ========================================================
+
+  function getContactError(
+    contact:
+      CreatePatientContactRequest,
+  ): string | null {
+
+    if (
+      !contact.value.trim()
+    ) {
+
+      return null;
+
+    }
+
+
+    const type =
+      catalogs
+        ?.contact_types
+        .find(
+          (
+            item,
+          ) =>
+            item.id ===
+            contact.contact_type_id,
+        );
+
+
+    if (
+      type?.code ===
+      "CELULAR"
+      &&
+      !/^[67]\d{7}$/.test(
+        contact.value,
+      )
+    ) {
+
+      return (
+        "El celular debe tener 8 dígitos y comenzar con 6 o 7."
+      );
+
+    }
+
+
+    if (
+      type?.code ===
+      "TELEFONO"
+      &&
+      !/^\d{7,8}$/.test(
+        contact.value,
+      )
+    ) {
+
+      return (
+        "El teléfono fijo debe tener entre 7 y 8 dígitos."
+      );
+
+    }
+
+
+    if (
+      type?.code ===
+      "CORREO"
+      &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        contact.value,
+      )
+    ) {
+
+      return (
+        "Ingrese un correo válido."
+      );
+
+    }
+
+
+    return null;
+
+  }
+
+
+  // ========================================================
+  // ERROR DE EMERGENCIA
+  // ========================================================
+
+  function getEmergencyError(
+    contact:
+      CreateEmergencyContactRequest,
+  ): string | null {
+
+    if (
+      normalizeText(
+        contact.full_name,
+      ).length < 3
+    ) {
+
+      return (
+        "Ingrese el nombre completo."
+      );
+
+    }
+
+
+    if (
+      !contact.relationship
+    ) {
+
+      return (
+        "Seleccione el parentesco."
+      );
+
+    }
+
+
+    if (
+      !/^[67]\d{7}$/.test(
+        contact.phone,
+      )
+    ) {
+
+      return (
+        "El teléfono debe tener 8 dígitos y comenzar con 6 o 7."
+      );
+
+    }
+
+
+    if (
+      contact.email
+      &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        contact.email,
+      )
+    ) {
+
+      return (
+        "Ingrese un correo válido."
+      );
+
+    }
+
+
+    return null;
+
+  }
+
+
+  // ========================================================
+  // VALIDACIONES GENERALES
   // ========================================================
 
   function validateForm():
@@ -680,8 +1455,10 @@ export function NuevoPacientePage() {
         form.first_names,
       ).length < 2
     ) {
+
       errors.first_names =
         "Ingrese los nombres del paciente.";
+
     }
 
 
@@ -690,17 +1467,22 @@ export function NuevoPacientePage() {
         form.paternal_surname,
       ).length < 2
     ) {
+
       errors.paternal_surname =
         "Ingrese el apellido paterno.";
+
     }
 
 
     if (
       !form.birth_date
     ) {
+
       errors.birth_date =
         "Seleccione la fecha de nacimiento.";
+
     } else {
+
       const birthDate =
         new Date(
           `${form.birth_date}T00:00:00`,
@@ -719,25 +1501,32 @@ export function NuevoPacientePage() {
         birthDate >
         today
       ) {
+
         errors.birth_date =
           "La fecha de nacimiento no es válida.";
+
       }
+
     }
 
 
     if (
       !form.sex_id
     ) {
+
       errors.sex_id =
         "Seleccione el sexo.";
+
     }
 
 
     if (
       !form.document_type_id
     ) {
+
       errors.document_type_id =
         "Seleccione el tipo de documento.";
+
     }
 
 
@@ -746,130 +1535,71 @@ export function NuevoPacientePage() {
         form.document_number,
       ).length < 4
     ) {
+
       errors.document_number =
         "Ingrese un número de documento válido.";
+
     }
 
 
     if (
       !form.issued_in
     ) {
+
       errors.issued_in =
         "Seleccione el departamento de expedición.";
-    }
 
-
-    if (
-      form.mobile_phone
-      &&
-      !/^[67]\d{7}$/.test(
-        form.mobile_phone,
-      )
-    ) {
-      errors.mobile_phone =
-        (
-          "El celular debe tener 8 dígitos " +
-          "y comenzar con 6 o 7."
-        );
-    }
-
-
-    if (
-      form.landline_phone
-      &&
-      !/^\d{7,8}$/.test(
-        form.landline_phone,
-      )
-    ) {
-      errors.landline_phone =
-        (
-          "El teléfono fijo debe tener " +
-          "entre 7 y 8 dígitos."
-        );
-    }
-
-
-    if (
-      form.email
-      &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-        form.email,
-      )
-    ) {
-      errors.email =
-        "Ingrese un correo válido.";
-    }
-
-
-    const hasEmergencyData =
-      Boolean(
-        normalizeText(
-          form.emergency_contact_name,
-        )
-        ||
-        normalizeText(
-          form.emergency_relationship,
-        )
-        ||
-        form.emergency_phone
-        ||
-        normalizeText(
-          form.emergency_email,
-        )
-      );
-
-
-    if (
-      hasEmergencyData
-    ) {
-      if (
-        normalizeText(
-          form.emergency_contact_name,
-        ).length < 3
-      ) {
-        errors.emergency_contact_name =
-          "Ingrese el nombre del familiar o responsable.";
-      }
-
-
-      if (
-        normalizeText(
-          form.emergency_relationship,
-        ).length < 2
-      ) {
-        errors.emergency_relationship =
-          "Ingrese el parentesco.";
-      }
-
-
-      if (
-        !/^[67]\d{7}$/.test(
-          form.emergency_phone,
-        )
-      ) {
-        errors.emergency_phone =
-          (
-            "El teléfono de emergencia debe tener " +
-            "8 dígitos y comenzar con 6 o 7."
-          );
-      }
-
-
-      if (
-        form.emergency_email
-        &&
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-          form.emergency_email,
-        )
-      ) {
-        errors.emergency_email =
-          "Ingrese un correo válido.";
-      }
     }
 
 
     return errors;
+
   }
+
+
+  // ========================================================
+  // VALIDACIÓN COMPLETA
+  // ========================================================
+
+  const dynamicValid =
+    useMemo(
+      () => {
+
+        const contactsValid =
+          contacts.every(
+            (
+              item,
+            ) =>
+              !getContactError(
+                item,
+              ),
+          );
+
+
+        const emergencyValid =
+          emergencyContacts.every(
+            (
+              item,
+            ) =>
+              !getEmergencyError(
+                item,
+              ),
+          );
+
+
+        return (
+          contactsValid
+          &&
+          emergencyValid
+        );
+
+      },
+      [
+        contacts,
+        emergencyContacts,
+        catalogs,
+      ],
+    );
 
 
   const formValid =
@@ -877,9 +1607,12 @@ export function NuevoPacientePage() {
       () =>
         Object.keys(
           validateForm(),
-        ).length === 0,
+        ).length === 0
+        &&
+        dynamicValid,
       [
         form,
+        dynamicValid,
       ],
     );
 
@@ -890,10 +1623,13 @@ export function NuevoPacientePage() {
 
   useEffect(
     () => {
+
       if (
         loadingCatalogs
       ) {
+
         return;
+
       }
 
 
@@ -919,7 +1655,7 @@ export function NuevoPacientePage() {
         Boolean(
           form.document_type_id
           &&
-          documentNumber.length >= 4
+          documentNumber.length >= 4,
         );
 
 
@@ -929,7 +1665,7 @@ export function NuevoPacientePage() {
           &&
           paternalSurname.length >= 2
           &&
-          form.birth_date
+          form.birth_date,
         );
 
 
@@ -938,19 +1674,24 @@ export function NuevoPacientePage() {
         &&
         !canCheckByIdentity
       ) {
+
         setCheckingDuplicates(
           false,
         );
+
 
         setDuplicateChecked(
           false,
         );
 
+
         setDuplicates(
           [],
         );
 
+
         return;
+
       }
 
 
@@ -961,7 +1702,9 @@ export function NuevoPacientePage() {
       const timer =
         window.setTimeout(
           async () => {
+
             try {
+
               setCheckingDuplicates(
                 true,
               );
@@ -1015,7 +1758,9 @@ export function NuevoPacientePage() {
               if (
                 cancelled
               ) {
+
                 return;
+
               }
 
 
@@ -1031,11 +1776,15 @@ export function NuevoPacientePage() {
               setDuplicateChecked(
                 true,
               );
+
             } catch {
+
               if (
                 cancelled
               ) {
+
                 return;
+
               }
 
 
@@ -1052,27 +1801,38 @@ export function NuevoPacientePage() {
               setError(
                 "No fue posible verificar automáticamente posibles duplicados.",
               );
+
             } finally {
+
               if (
                 !cancelled
               ) {
+
                 setCheckingDuplicates(
                   false,
                 );
+
               }
+
             }
+
           },
           650,
         );
 
 
       return () => {
-        cancelled = true;
+
+        cancelled =
+          true;
+
 
         window.clearTimeout(
           timer,
         );
+
       };
+
     },
     [
       form.document_type_id,
@@ -1094,6 +1854,7 @@ export function NuevoPacientePage() {
     event:
       React.FormEvent,
   ) {
+
     event.preventDefault();
 
 
@@ -1116,6 +1877,7 @@ export function NuevoPacientePage() {
         errors,
       ).length > 0
     ) {
+
       setFormErrors(
         errors,
       );
@@ -1125,43 +1887,99 @@ export function NuevoPacientePage() {
         "Revise los campos marcados antes de registrar al paciente.",
       );
 
+
       return;
+
+    }
+
+
+    const contactError =
+      contacts
+        .map(
+          getContactError,
+        )
+        .find(
+          Boolean,
+        );
+
+
+    if (
+      contactError
+    ) {
+
+      setError(
+        contactError,
+      );
+
+
+      return;
+
+    }
+
+
+    const emergencyError =
+      emergencyContacts
+        .map(
+          getEmergencyError,
+        )
+        .find(
+          Boolean,
+        );
+
+
+    if (
+      emergencyError
+    ) {
+
+      setError(
+        emergencyError,
+      );
+
+
+      return;
+
     }
 
 
     if (
       checkingDuplicates
     ) {
+
       setError(
         "Espere a que termine la verificación automática de duplicados.",
       );
 
+
       return;
+
     }
 
 
     if (
       !duplicateChecked
     ) {
+
       setError(
         "El sistema aún no terminó de verificar posibles duplicados.",
       );
 
+
       return;
+
     }
 
 
     if (
       duplicates.length > 0
     ) {
+
       setError(
-        (
-          "Se encontraron posibles pacientes duplicados. " +
-          "Revise las coincidencias antes de continuar."
-        ),
+        "Se encontraron posibles pacientes duplicados. Revise las coincidencias antes de continuar.",
       );
 
+
       return;
+
     }
 
 
@@ -1213,50 +2031,64 @@ export function NuevoPacientePage() {
       issued_in:
         form.issued_in,
 
-      mobile_phone:
-        form.mobile_phone
-        ||
-        null,
+      contacts:
+        contacts
+          .filter(
+            (
+              item,
+            ) =>
+              item.value.trim(),
+          )
+          .map(
+            (
+              item,
+            ) => ({
 
-      landline_phone:
-        form.landline_phone
-        ||
-        null,
+              contact_type_id:
+                item.contact_type_id,
 
-      email:
-        normalizeText(
-          form.email,
-        )
-          .toLowerCase()
-        ||
-        null,
+              value:
+                item.value.trim(),
 
-      emergency_contact_name:
-        normalizeText(
-          form.emergency_contact_name,
-        )
-        ||
-        null,
+              primary:
+                item.primary,
 
-      emergency_relationship:
-        normalizeText(
-          form.emergency_relationship,
-        )
-        ||
-        null,
+            }),
+          ),
 
-      emergency_phone:
-        form.emergency_phone
-        ||
-        null,
+      emergency_contacts:
+        emergencyContacts.map(
+          (
+            item,
+          ) => ({
 
-      emergency_email:
-        normalizeText(
-          form.emergency_email,
-        )
-          .toLowerCase()
-        ||
-        null,
+            full_name:
+              normalizeText(
+                item.full_name,
+              ),
+
+            relationship:
+              item.relationship,
+
+            phone:
+              item.phone,
+
+            email:
+              normalizeText(
+                item.email
+                ??
+                "",
+              )
+                .toLowerCase()
+              ||
+              null,
+
+            primary:
+              item.primary,
+
+          }),
+        ),
+
     };
 
 
@@ -1266,6 +2098,7 @@ export function NuevoPacientePage() {
 
 
     try {
+
       const response =
         await createPatient(
           payload,
@@ -1279,25 +2112,33 @@ export function NuevoPacientePage() {
 
       window.setTimeout(
         () => {
+
           navigate(
             `/pacientes/${response.data.id_patient}`,
           );
+
         },
         500,
       );
+
     } catch (
       requestError
     ) {
+
       setError(
         extractErrorMessage(
           requestError,
         ),
       );
+
     } finally {
+
       setSaving(
         false,
       );
+
     }
+
   }
 
 
@@ -1310,10 +2151,6 @@ export function NuevoPacientePage() {
     <section
       className="new-patient-page"
     >
-
-      {/* ==================================================
-          HEADER
-          ================================================== */}
 
       <header
         className="new-patient-header"
@@ -1333,11 +2170,9 @@ export function NuevoPacientePage() {
                 )
             }
           >
-
             <ArrowLeft
               size={18}
             />
-
           </button>
 
 
@@ -1349,15 +2184,13 @@ export function NuevoPacientePage() {
               Gestión clínica
             </span>
 
-
             <h1>
               Registrar paciente
             </h1>
 
-
             <p>
               Registre la identificación, medios de contacto
-              y un familiar o responsable para emergencias.
+              y responsables para emergencias.
             </p>
 
           </div>
@@ -1368,19 +2201,13 @@ export function NuevoPacientePage() {
         <div
           className="new-patient-header__icon"
         >
-
           <UserPlus
             size={26}
           />
-
         </div>
 
       </header>
 
-
-      {/* ==================================================
-          MENSAJES
-          ================================================== */}
 
       {
         error
@@ -1389,7 +2216,6 @@ export function NuevoPacientePage() {
           <div
             className="new-patient-message new-patient-message--error"
           >
-
             <CircleAlert
               size={19}
             />
@@ -1397,7 +2223,6 @@ export function NuevoPacientePage() {
             <span>
               {error}
             </span>
-
           </div>
         )
       }
@@ -1410,7 +2235,6 @@ export function NuevoPacientePage() {
           <div
             className="new-patient-message new-patient-message--success"
           >
-
             <CheckCircle2
               size={19}
             />
@@ -1418,7 +2242,6 @@ export function NuevoPacientePage() {
             <span>
               {success}
             </span>
-
           </div>
         )
       }
@@ -1430,7 +2253,6 @@ export function NuevoPacientePage() {
               <div
                 className="new-patient-loading"
               >
-
                 <LoaderCircle
                   size={28}
                   className="new-patient-spin"
@@ -1439,10 +2261,10 @@ export function NuevoPacientePage() {
                 <span>
                   Cargando formulario...
                 </span>
-
               </div>
             )
           : (
+
               <form
                 className="new-patient-form"
                 onSubmit={
@@ -1450,9 +2272,9 @@ export function NuevoPacientePage() {
                 }
               >
 
-                {/* ==========================================
+                {/* ========================================
                     DATOS PERSONALES
-                    ========================================== */}
+                    ======================================== */}
 
                 <article
                   className="new-patient-card"
@@ -1461,19 +2283,13 @@ export function NuevoPacientePage() {
                   <div
                     className="new-patient-card__header"
                   >
+                    <h2>
+                      Datos personales
+                    </h2>
 
-                    <div>
-
-                      <h2>
-                        Datos personales
-                      </h2>
-
-                      <p>
-                        Información principal de identificación del paciente.
-                      </p>
-
-                    </div>
-
+                    <p>
+                      Información principal de identificación.
+                    </p>
                   </div>
 
 
@@ -1482,7 +2298,6 @@ export function NuevoPacientePage() {
                   >
 
                     <label>
-
                       <span>
                         Nombres *
                       </span>
@@ -1494,7 +2309,7 @@ export function NuevoPacientePage() {
                         }
                         onChange={
                           (
-                            event
+                            event,
                           ) =>
                             updateField(
                               "first_names",
@@ -1503,7 +2318,6 @@ export function NuevoPacientePage() {
                         }
                         maxLength={100}
                         placeholder="Ej. María Fernanda"
-                        autoComplete="off"
                         aria-invalid={
                           Boolean(
                             formErrors.first_names,
@@ -1518,18 +2332,14 @@ export function NuevoPacientePage() {
                           <small
                             className="new-patient-field-error"
                           >
-                            {
-                              formErrors.first_names
-                            }
+                            {formErrors.first_names}
                           </small>
                         )
                       }
-
                     </label>
 
 
                     <label>
-
                       <span>
                         Apellido paterno *
                       </span>
@@ -1541,7 +2351,7 @@ export function NuevoPacientePage() {
                         }
                         onChange={
                           (
-                            event
+                            event,
                           ) =>
                             updateField(
                               "paternal_surname",
@@ -1550,7 +2360,6 @@ export function NuevoPacientePage() {
                         }
                         maxLength={80}
                         placeholder="Ej. López"
-                        autoComplete="off"
                         aria-invalid={
                           Boolean(
                             formErrors.paternal_surname,
@@ -1565,18 +2374,14 @@ export function NuevoPacientePage() {
                           <small
                             className="new-patient-field-error"
                           >
-                            {
-                              formErrors.paternal_surname
-                            }
+                            {formErrors.paternal_surname}
                           </small>
                         )
                       }
-
                     </label>
 
 
                     <label>
-
                       <span>
                         Apellido materno
                       </span>
@@ -1588,7 +2393,7 @@ export function NuevoPacientePage() {
                         }
                         onChange={
                           (
-                            event
+                            event,
                           ) =>
                             updateField(
                               "maternal_surname",
@@ -1597,14 +2402,11 @@ export function NuevoPacientePage() {
                         }
                         maxLength={80}
                         placeholder="Ej. Flores"
-                        autoComplete="off"
                       />
-
                     </label>
 
 
                     <label>
-
                       <span>
                         Fecha de nacimiento *
                       </span>
@@ -1616,7 +2418,7 @@ export function NuevoPacientePage() {
                         }
                         onChange={
                           (
-                            event
+                            event,
                           ) =>
                             updateField(
                               "birth_date",
@@ -1637,18 +2439,14 @@ export function NuevoPacientePage() {
                           <small
                             className="new-patient-field-error"
                           >
-                            {
-                              formErrors.birth_date
-                            }
+                            {formErrors.birth_date}
                           </small>
                         )
                       }
-
                     </label>
 
 
                     <label>
-
                       <span>
                         Sexo *
                       </span>
@@ -1659,7 +2457,7 @@ export function NuevoPacientePage() {
                         }
                         onChange={
                           (
-                            event
+                            event,
                           ) =>
                             updateField(
                               "sex_id",
@@ -1667,7 +2465,6 @@ export function NuevoPacientePage() {
                             )
                         }
                       >
-
                         {
                           catalogs
                             ?.sexes
@@ -1676,7 +2473,6 @@ export function NuevoPacientePage() {
                                 item:
                                   CatalogItem,
                               ) => (
-
                                 <option
                                   key={
                                     item.id
@@ -1687,13 +2483,10 @@ export function NuevoPacientePage() {
                                 >
                                   {item.name}
                                 </option>
-
                               ),
                             )
                         }
-
                       </select>
-
                     </label>
 
                   </div>
@@ -1701,9 +2494,9 @@ export function NuevoPacientePage() {
                 </article>
 
 
-                {/* ==========================================
+                {/* ========================================
                     DOCUMENTO
-                    ========================================== */}
+                    ======================================== */}
 
                 <article
                   className="new-patient-card"
@@ -1712,19 +2505,13 @@ export function NuevoPacientePage() {
                   <div
                     className="new-patient-card__header"
                   >
+                    <h2>
+                      Documento de identidad
+                    </h2>
 
-                    <div>
-
-                      <h2>
-                        Documento de identidad
-                      </h2>
-
-                      <p>
-                        El sistema verifica automáticamente posibles registros duplicados.
-                      </p>
-
-                    </div>
-
+                    <p>
+                      Se verifican automáticamente posibles duplicados.
+                    </p>
                   </div>
 
 
@@ -1733,7 +2520,6 @@ export function NuevoPacientePage() {
                   >
 
                     <label>
-
                       <span>
                         Tipo *
                       </span>
@@ -1744,7 +2530,7 @@ export function NuevoPacientePage() {
                         }
                         onChange={
                           (
-                            event
+                            event,
                           ) =>
                             updateField(
                               "document_type_id",
@@ -1752,16 +2538,13 @@ export function NuevoPacientePage() {
                             )
                         }
                       >
-
                         {
                           catalogs
                             ?.document_types
                             .map(
                               (
-                                item:
-                                  CatalogItem,
+                                item,
                               ) => (
-
                                 <option
                                   key={
                                     item.id
@@ -1772,18 +2555,14 @@ export function NuevoPacientePage() {
                                 >
                                   {item.name}
                                 </option>
-
                               ),
                             )
                         }
-
                       </select>
-
                     </label>
 
 
                     <label>
-
                       <span>
                         Número *
                       </span>
@@ -1795,7 +2574,7 @@ export function NuevoPacientePage() {
                         }
                         onChange={
                           (
-                            event
+                            event,
                           ) =>
                             updateField(
                               "document_number",
@@ -1804,7 +2583,6 @@ export function NuevoPacientePage() {
                         }
                         maxLength={50}
                         placeholder="Número de documento"
-                        autoComplete="off"
                         aria-invalid={
                           Boolean(
                             formErrors.document_number,
@@ -1819,18 +2597,14 @@ export function NuevoPacientePage() {
                           <small
                             className="new-patient-field-error"
                           >
-                            {
-                              formErrors.document_number
-                            }
+                            {formErrors.document_number}
                           </small>
                         )
                       }
-
                     </label>
 
 
                     <label>
-
                       <span>
                         Complemento
                       </span>
@@ -1842,7 +2616,7 @@ export function NuevoPacientePage() {
                         }
                         onChange={
                           (
-                            event
+                            event,
                           ) =>
                             updateField(
                               "complement",
@@ -1851,14 +2625,11 @@ export function NuevoPacientePage() {
                         }
                         maxLength={20}
                         placeholder="Ej. 1A"
-                        autoComplete="off"
                       />
-
                     </label>
 
 
                     <label>
-
                       <span>
                         Expedido en *
                       </span>
@@ -1869,7 +2640,7 @@ export function NuevoPacientePage() {
                         }
                         onChange={
                           (
-                            event
+                            event,
                           ) =>
                             updateField(
                               "issued_in",
@@ -1877,13 +2648,11 @@ export function NuevoPacientePage() {
                             )
                         }
                       >
-
                         {
                           BOLIVIA_DEPARTMENTS.map(
                             (
-                              department
+                              department,
                             ) => (
-
                               <option
                                 key={
                                   department.code
@@ -1894,13 +2663,10 @@ export function NuevoPacientePage() {
                               >
                                 {department.name}
                               </option>
-
                             ),
                           )
                         }
-
                       </select>
-
                     </label>
 
                   </div>
@@ -1909,7 +2675,6 @@ export function NuevoPacientePage() {
                   <div
                     className="new-patient-auto-check"
                   >
-
                     {
                       checkingDuplicates
                         ? (
@@ -1918,10 +2683,7 @@ export function NuevoPacientePage() {
                                 size={17}
                                 className="new-patient-spin"
                               />
-
-                              <span>
-                                Verificando posibles duplicados...
-                              </span>
+                              Verificando posibles duplicados...
                             </>
                           )
                         : duplicateChecked
@@ -1932,10 +2694,7 @@ export function NuevoPacientePage() {
                                 <CheckCircle2
                                   size={17}
                                 />
-
-                                <span>
-                                  Sin coincidencias detectadas
-                                </span>
+                                Sin coincidencias detectadas
                               </>
                             )
                           : duplicateChecked
@@ -1946,10 +2705,7 @@ export function NuevoPacientePage() {
                                   <ShieldAlert
                                     size={17}
                                   />
-
-                                  <span>
-                                    Se encontraron posibles coincidencias
-                                  </span>
+                                  Se encontraron posibles coincidencias
                                 </>
                               )
                             : (
@@ -1957,14 +2713,10 @@ export function NuevoPacientePage() {
                                   <ShieldAlert
                                     size={17}
                                   />
-
-                                  <span>
-                                    La comprobación se realizará automáticamente.
-                                  </span>
+                                  La comprobación se realizará automáticamente.
                                 </>
                               )
                     }
-
                   </div>
 
 
@@ -1981,36 +2733,30 @@ export function NuevoPacientePage() {
                         <div
                           className="new-patient-duplicates__header"
                         >
-
                           <ShieldAlert
                             size={20}
                           />
 
                           <div>
-
                             <strong>
                               Posibles pacientes duplicados
                             </strong>
 
                             <span>
-                              Revise las coincidencias antes de crear un nuevo registro.
+                              Revise las coincidencias antes de continuar.
                             </span>
-
                           </div>
-
                         </div>
 
 
                         <div
                           className="new-patient-duplicates__list"
                         >
-
                           {
                             duplicates.map(
                               (
-                                patient
+                                patient,
                               ) => (
-
                                 <button
                                   key={
                                     patient.id_patient
@@ -2023,9 +2769,7 @@ export function NuevoPacientePage() {
                                       )
                                   }
                                 >
-
                                   <div>
-
                                     <strong>
                                       {patient.full_name}
                                     </strong>
@@ -2039,20 +2783,15 @@ export function NuevoPacientePage() {
                                         "Sin documento"
                                       }
                                     </span>
-
                                   </div>
-
 
                                   <span>
                                     Ver ficha
                                   </span>
-
                                 </button>
-
                               ),
                             )
                           }
-
                         </div>
 
                       </div>
@@ -2062,412 +2801,526 @@ export function NuevoPacientePage() {
                 </article>
 
 
-                {/* ==========================================
+                {/* ========================================
                     CONTACTOS DEL PACIENTE
-                    ========================================== */}
+                    ======================================== */}
 
                 <article
                   className="new-patient-card"
                 >
 
                   <div
-                    className="new-patient-card__header"
+                    className="new-patient-card__header new-patient-card__header--actions"
                   >
-
                     <div>
-
                       <h2>
-                        Contacto del paciente
+                        Contactos del paciente
                       </h2>
 
                       <p>
-                        Registre los medios disponibles. Todos son opcionales.
+                        Puede registrar varios celulares, teléfonos o correos.
                       </p>
-
                     </div>
 
+
+                    <button
+                      type="button"
+                      className="new-patient-add-button"
+                      onClick={
+                        addContact
+                      }
+                    >
+                      <Plus
+                        size={16}
+                      />
+
+                      Agregar contacto
+                    </button>
                   </div>
 
 
-                  <div
-                    className="new-patient-grid new-patient-grid--3"
-                  >
-
-                    <label>
-
-                      <span>
-                        Celular
-                      </span>
-
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={
-                          form.mobile_phone
-                        }
-                        onChange={
-                          (
-                            event
-                          ) =>
-                            updateField(
-                              "mobile_phone",
-                              event.target.value,
-                            )
-                        }
-                        maxLength={8}
-                        placeholder="Ej. 71234567"
-                        aria-invalid={
-                          Boolean(
-                            formErrors.mobile_phone,
-                          )
-                        }
-                      />
-
-                      {
-                        formErrors.mobile_phone
-                        &&
-                        (
-                          <small
-                            className="new-patient-field-error"
+                  {
+                    contacts.length === 0
+                      ? (
+                          <div
+                            className="new-patient-dynamic-empty"
+                          >
+                            No se registraron medios de contacto.
+                          </div>
+                        )
+                      : (
+                          <div
+                            className="new-patient-dynamic-list"
                           >
                             {
-                              formErrors.mobile_phone
+                              contacts.map(
+                                (
+                                  contact,
+                                  index,
+                                ) => {
+
+                                  const rowError =
+                                    getContactError(
+                                      contact,
+                                    );
+
+
+                                  const currentType =
+                                    catalogs
+                                      ?.contact_types
+                                      .find(
+                                        (
+                                          item,
+                                        ) =>
+                                          item.id ===
+                                          contact.contact_type_id,
+                                      );
+
+
+                                  return (
+                                    <div
+                                      className="new-patient-dynamic-row new-patient-dynamic-row--contact"
+                                      key={
+                                        index
+                                      }
+                                    >
+
+                                      <label>
+                                        <span>
+                                          Tipo
+                                        </span>
+
+                                        <select
+                                          value={
+                                            contact.contact_type_id
+                                          }
+                                          onChange={
+                                            (
+                                              event,
+                                            ) => {
+                                              updateContact(
+                                                index,
+                                                "contact_type_id",
+                                                Number(
+                                                  event.target.value,
+                                                ),
+                                              );
+
+                                              updateContact(
+                                                index,
+                                                "value",
+                                                "",
+                                              );
+                                            }
+                                          }
+                                        >
+                                          {
+                                            catalogs
+                                              ?.contact_types
+                                              .map(
+                                                (
+                                                  item,
+                                                ) => (
+                                                  <option
+                                                    key={
+                                                      item.id
+                                                    }
+                                                    value={
+                                                      item.id
+                                                    }
+                                                  >
+                                                    {item.name}
+                                                  </option>
+                                                ),
+                                              )
+                                          }
+                                        </select>
+                                      </label>
+
+
+                                      <label>
+                                        <span>
+                                          {
+                                            currentType?.code === "CORREO"
+                                              ? "Correo"
+                                              : "Número"
+                                          }
+                                        </span>
+
+                                        <input
+                                          type={
+                                            currentType?.code === "CORREO"
+                                              ? "email"
+                                              : "text"
+                                          }
+                                          inputMode={
+                                            currentType?.code === "CORREO"
+                                              ? undefined
+                                              : "numeric"
+                                          }
+                                          value={
+                                            contact.value
+                                          }
+                                          onChange={
+                                            (
+                                              event,
+                                            ) =>
+                                              updateContactValue(
+                                                index,
+                                                event.target.value,
+                                              )
+                                          }
+                                          placeholder={
+                                            currentType?.code === "CORREO"
+                                              ? "paciente@correo.com"
+                                              : currentType?.code === "TELEFONO"
+                                                ? "22123456"
+                                                : "71234567"
+                                          }
+                                          aria-invalid={
+                                            Boolean(
+                                              rowError,
+                                            )
+                                          }
+                                        />
+
+                                        {
+                                          rowError
+                                          &&
+                                          (
+                                            <small
+                                              className="new-patient-field-error"
+                                            >
+                                              {rowError}
+                                            </small>
+                                          )
+                                        }
+                                      </label>
+
+
+                                      <label
+                                        className="new-patient-primary-option"
+                                      >
+                                        <span>
+                                          Principal
+                                        </span>
+
+                                        <input
+                                          type="radio"
+                                          name="primary-contact"
+                                          checked={
+                                            contact.primary
+                                          }
+                                          onChange={
+                                            () =>
+                                              setPrimaryContact(
+                                                index,
+                                              )
+                                          }
+                                        />
+                                      </label>
+
+
+                                      <button
+                                        type="button"
+                                        className="new-patient-remove-button"
+                                        onClick={
+                                          () =>
+                                            removeContact(
+                                              index,
+                                            )
+                                        }
+                                        title="Eliminar contacto"
+                                      >
+                                        <Trash2
+                                          size={17}
+                                        />
+                                      </button>
+
+                                    </div>
+                                  );
+                                },
+                              )
                             }
-                          </small>
+                          </div>
                         )
-                      }
-
-                    </label>
-
-
-                    <label>
-
-                      <span>
-                        Teléfono fijo
-                      </span>
-
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={
-                          form.landline_phone
-                        }
-                        onChange={
-                          (
-                            event
-                          ) =>
-                            updateField(
-                              "landline_phone",
-                              event.target.value,
-                            )
-                        }
-                        maxLength={8}
-                        placeholder="Ej. 22123456"
-                        aria-invalid={
-                          Boolean(
-                            formErrors.landline_phone,
-                          )
-                        }
-                      />
-
-                      {
-                        formErrors.landline_phone
-                        &&
-                        (
-                          <small
-                            className="new-patient-field-error"
-                          >
-                            {
-                              formErrors.landline_phone
-                            }
-                          </small>
-                        )
-                      }
-
-                    </label>
-
-
-                    <label>
-
-                      <span>
-                        Correo
-                      </span>
-
-                      <input
-                        type="email"
-                        value={
-                          form.email
-                        }
-                        onChange={
-                          (
-                            event
-                          ) =>
-                            updateField(
-                              "email",
-                              event.target.value,
-                            )
-                        }
-                        maxLength={150}
-                        placeholder="paciente@correo.com"
-                        aria-invalid={
-                          Boolean(
-                            formErrors.email,
-                          )
-                        }
-                      />
-
-                      {
-                        formErrors.email
-                        &&
-                        (
-                          <small
-                            className="new-patient-field-error"
-                          >
-                            {
-                              formErrors.email
-                            }
-                          </small>
-                        )
-                      }
-
-                    </label>
-
-                  </div>
+                  }
 
                 </article>
 
 
-                {/* ==========================================
-                    CONTACTO DE EMERGENCIA
-                    ========================================== */}
+                {/* ========================================
+                    CONTACTOS DE EMERGENCIA
+                    ======================================== */}
 
                 <article
                   className="new-patient-card new-patient-card--emergency"
                 >
 
                   <div
-                    className="new-patient-card__header"
+                    className="new-patient-card__header new-patient-card__header--actions"
                   >
-
                     <div>
-
                       <h2>
-                        Contacto de emergencia
+                        Contactos de emergencia
                       </h2>
 
                       <p>
-                        Familiar, tutor o responsable que pueda ser contactado en caso necesario.
+                        Registre familiares, tutores o responsables.
                       </p>
-
                     </div>
 
+
+                    <button
+                      type="button"
+                      className="new-patient-add-button"
+                      onClick={
+                        addEmergencyContact
+                      }
+                    >
+                      <Plus
+                        size={16}
+                      />
+
+                      Agregar contacto de emergencia
+                    </button>
                   </div>
 
 
-                  <div
-                    className="new-patient-grid new-patient-grid--4"
-                  >
-
-                    <label>
-
-                      <span>
-                        Nombre completo
-                      </span>
-
-                      <input
-                        type="text"
-                        value={
-                          form.emergency_contact_name
-                        }
-                        onChange={
-                          (
-                            event
-                          ) =>
-                            updateField(
-                              "emergency_contact_name",
-                              event.target.value,
-                            )
-                        }
-                        maxLength={180}
-                        placeholder="Ej. María Quispe"
-                        aria-invalid={
-                          Boolean(
-                            formErrors.emergency_contact_name,
-                          )
-                        }
-                      />
-
-                      {
-                        formErrors.emergency_contact_name
-                        &&
-                        (
-                          <small
-                            className="new-patient-field-error"
+                  {
+                    emergencyContacts.length === 0
+                      ? (
+                          <div
+                            className="new-patient-dynamic-empty"
+                          >
+                            No se registraron contactos de emergencia.
+                          </div>
+                        )
+                      : (
+                          <div
+                            className="new-patient-dynamic-list"
                           >
                             {
-                              formErrors.emergency_contact_name
+                              emergencyContacts.map(
+                                (
+                                  contact,
+                                  index,
+                                ) => {
+
+                                  const rowError =
+                                    getEmergencyError(
+                                      contact,
+                                    );
+
+
+                                  return (
+                                    <div
+                                      className="new-patient-dynamic-row new-patient-dynamic-row--emergency"
+                                      key={
+                                        index
+                                      }
+                                    >
+
+                                      <label>
+                                        <span>
+                                          Nombre completo *
+                                        </span>
+
+                                        <input
+                                          type="text"
+                                          value={
+                                            contact.full_name
+                                          }
+                                          onChange={
+                                            (
+                                              event,
+                                            ) =>
+                                              updateEmergencyContact(
+                                                index,
+                                                "full_name",
+                                                event.target.value,
+                                              )
+                                          }
+                                          placeholder="Ej. María Quispe"
+                                        />
+                                      </label>
+
+
+                                      <label>
+                                        <span>
+                                          Parentesco *
+                                        </span>
+
+                                        <select
+                                          value={
+                                            contact.relationship
+                                          }
+                                          onChange={
+                                            (
+                                              event,
+                                            ) =>
+                                              updateEmergencyContact(
+                                                index,
+                                                "relationship",
+                                                event.target.value,
+                                              )
+                                          }
+                                        >
+                                          {
+                                            RELATIONSHIPS.map(
+                                              (
+                                                item,
+                                              ) => (
+                                                <option
+                                                  key={
+                                                    item.code
+                                                  }
+                                                  value={
+                                                    item.code
+                                                  }
+                                                >
+                                                  {item.name}
+                                                </option>
+                                              ),
+                                            )
+                                          }
+                                        </select>
+                                      </label>
+
+
+                                      <label>
+                                        <span>
+                                          Teléfono *
+                                        </span>
+
+                                        <input
+                                          type="text"
+                                          inputMode="numeric"
+                                          value={
+                                            contact.phone
+                                          }
+                                          onChange={
+                                            (
+                                              event,
+                                            ) =>
+                                              updateEmergencyContact(
+                                                index,
+                                                "phone",
+                                                onlyNumbers(
+                                                  event.target.value,
+                                                  8,
+                                                ),
+                                              )
+                                          }
+                                          maxLength={8}
+                                          placeholder="76543210"
+                                        />
+                                      </label>
+
+
+                                      <label>
+                                        <span>
+                                          Correo
+                                        </span>
+
+                                        <input
+                                          type="email"
+                                          value={
+                                            contact.email
+                                            ??
+                                            ""
+                                          }
+                                          onChange={
+                                            (
+                                              event,
+                                            ) =>
+                                              updateEmergencyContact(
+                                                index,
+                                                "email",
+                                                event.target.value
+                                                  .toLowerCase(),
+                                              )
+                                          }
+                                          placeholder="familiar@correo.com"
+                                        />
+
+                                        {
+                                          rowError
+                                          &&
+                                          (
+                                            <small
+                                              className="new-patient-field-error"
+                                            >
+                                              {rowError}
+                                            </small>
+                                          )
+                                        }
+                                      </label>
+
+
+                                      <label
+                                        className="new-patient-primary-option"
+                                      >
+                                        <span>
+                                          Principal
+                                        </span>
+
+                                        <input
+                                          type="radio"
+                                          name="primary-emergency"
+                                          checked={
+                                            contact.primary
+                                          }
+                                          onChange={
+                                            () =>
+                                              setPrimaryEmergencyContact(
+                                                index,
+                                              )
+                                          }
+                                        />
+                                      </label>
+
+
+                                      <button
+                                        type="button"
+                                        className="new-patient-remove-button"
+                                        onClick={
+                                          () =>
+                                            removeEmergencyContact(
+                                              index,
+                                            )
+                                        }
+                                        title="Eliminar contacto"
+                                      >
+                                        <Trash2
+                                          size={17}
+                                        />
+                                      </button>
+
+                                    </div>
+                                  );
+                                },
+                              )
                             }
-                          </small>
+                          </div>
                         )
-                      }
-
-                    </label>
-
-
-                    <label>
-
-                      <span>
-                        Parentesco
-                      </span>
-
-                      <input
-                        type="text"
-                        value={
-                          form.emergency_relationship
-                        }
-                        onChange={
-                          (
-                            event
-                          ) =>
-                            updateField(
-                              "emergency_relationship",
-                              event.target.value,
-                            )
-                        }
-                        maxLength={80}
-                        placeholder="Ej. Madre"
-                        aria-invalid={
-                          Boolean(
-                            formErrors.emergency_relationship,
-                          )
-                        }
-                      />
-
-                      {
-                        formErrors.emergency_relationship
-                        &&
-                        (
-                          <small
-                            className="new-patient-field-error"
-                          >
-                            {
-                              formErrors.emergency_relationship
-                            }
-                          </small>
-                        )
-                      }
-
-                    </label>
-
-
-                    <label>
-
-                      <span>
-                        Teléfono
-                      </span>
-
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={
-                          form.emergency_phone
-                        }
-                        onChange={
-                          (
-                            event
-                          ) =>
-                            updateField(
-                              "emergency_phone",
-                              event.target.value,
-                            )
-                        }
-                        maxLength={8}
-                        placeholder="Ej. 76543210"
-                        aria-invalid={
-                          Boolean(
-                            formErrors.emergency_phone,
-                          )
-                        }
-                      />
-
-                      {
-                        formErrors.emergency_phone
-                        &&
-                        (
-                          <small
-                            className="new-patient-field-error"
-                          >
-                            {
-                              formErrors.emergency_phone
-                            }
-                          </small>
-                        )
-                      }
-
-                    </label>
-
-
-                    <label>
-
-                      <span>
-                        Correo
-                      </span>
-
-                      <input
-                        type="email"
-                        value={
-                          form.emergency_email
-                        }
-                        onChange={
-                          (
-                            event
-                          ) =>
-                            updateField(
-                              "emergency_email",
-                              event.target.value,
-                            )
-                        }
-                        maxLength={150}
-                        placeholder="familiar@correo.com"
-                        aria-invalid={
-                          Boolean(
-                            formErrors.emergency_email,
-                          )
-                        }
-                      />
-
-                      {
-                        formErrors.emergency_email
-                        &&
-                        (
-                          <small
-                            className="new-patient-field-error"
-                          >
-                            {
-                              formErrors.emergency_email
-                            }
-                          </small>
-                        )
-                      }
-
-                    </label>
-
-                  </div>
+                  }
 
 
                   <div
                     className="new-patient-emergency-note"
                   >
-                    Si registra algún dato de emergencia,
-                    el nombre, parentesco y teléfono serán obligatorios.
+                    Si agrega un contacto de emergencia,
+                    nombre, parentesco y teléfono son obligatorios.
+                    Solo uno puede estar marcado como principal.
                   </div>
 
                 </article>
 
 
-                {/* ==========================================
-                    FOOTER
-                    ========================================== */}
+                {/* ========================================
+                    BOTONES
+                    ======================================== */}
 
                 <footer
                   className="new-patient-footer"
@@ -2486,13 +3339,11 @@ export function NuevoPacientePage() {
                         )
                     }
                   >
-
                     <X
                       size={17}
                     />
 
                     Cancelar
-
                   </button>
 
 
@@ -2511,7 +3362,6 @@ export function NuevoPacientePage() {
                       duplicates.length > 0
                     }
                   >
-
                     {
                       saving
                         ? (
@@ -2532,7 +3382,6 @@ export function NuevoPacientePage() {
                         ? "Guardando..."
                         : "Registrar paciente"
                     }
-
                   </button>
 
                 </footer>
@@ -2544,4 +3393,5 @@ export function NuevoPacientePage() {
     </section>
 
   );
+
 }

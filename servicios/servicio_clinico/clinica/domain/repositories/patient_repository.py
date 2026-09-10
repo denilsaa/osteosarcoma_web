@@ -1,19 +1,24 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import (
+    ABC,
+    abstractmethod,
+)
+
 from datetime import date
 from typing import Optional
 from uuid import UUID
 
-from ..entities.patient import Patient
+from ..entities.patient import (
+    Patient,
+)
 
 
-class PatientRepository(ABC):
+class PatientRepository(
+    ABC
+):
     """
     Puerto de persistencia del agregado Paciente.
-
-    Application depende de esta abstracción.
-    Infrastructure implementa el acceso real a PostgreSQL.
     """
 
     # ======================================================
@@ -33,26 +38,12 @@ class PatientRepository(ABC):
         document_number: str,
         complement: str | None,
         issued_in: str | None,
-
-        mobile_phone: str | None,
-        landline_phone: str | None,
-        email: str | None,
-
-        emergency_contact_name: str | None,
-        emergency_relationship: str | None,
-        emergency_phone: str | None,
-        emergency_email: str | None,
+        contacts: list[dict],
+        emergency_contacts: list[dict],
     ) -> Patient:
-        """
-        Registra:
-
-        - paciente;
-        - documento;
-        - contactos propios;
-        - contacto de emergencia.
-        """
 
         raise NotImplementedError
+
 
     # ======================================================
     # OBTENER
@@ -65,6 +56,7 @@ class PatientRepository(ABC):
     ) -> Optional[Patient]:
 
         raise NotImplementedError
+
 
     # ======================================================
     # LISTAR
@@ -80,9 +72,13 @@ class PatientRepository(ABC):
         document_type_code: str | None,
         page: int,
         page_size: int,
-    ) -> tuple[list[Patient], int]:
+    ) -> tuple[
+        list[Patient],
+        int,
+    ]:
 
         raise NotImplementedError
+
 
     # ======================================================
     # DOCUMENTO EXACTO
@@ -97,6 +93,7 @@ class PatientRepository(ABC):
     ) -> Optional[Patient]:
 
         raise NotImplementedError
+
 
     # ======================================================
     # POSIBLES DUPLICADOS
@@ -116,6 +113,7 @@ class PatientRepository(ABC):
     ) -> list[Patient]:
 
         raise NotImplementedError
+
 
     # ======================================================
     # ACTUALIZAR

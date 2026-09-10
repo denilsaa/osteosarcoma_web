@@ -12,6 +12,8 @@ from rest_framework.response import (
 
 
 from clinica.application.dto import (
+    CreateEmergencyContactDTO,
+    CreatePatientContactDTO,
     CreatePatientDTO,
     PatientFiltersDTO,
     PossibleDuplicateDTO,
@@ -261,119 +263,113 @@ def patient_create_view(
     # ======================================================
 
     dto = CreatePatientDTO(
-        # --------------------------------------------------
-        # DATOS PERSONALES
-        # --------------------------------------------------
-
-        first_names=(
+        first_names=
             data[
                 "first_names"
-            ]
-        ),
+            ],
 
-        paternal_surname=(
+        paternal_surname=
             data[
                 "paternal_surname"
-            ]
-        ),
+            ],
 
-        maternal_surname=(
+        maternal_surname=
             data.get(
                 "maternal_surname"
-            )
-        ),
+            ),
 
-        birth_date=(
+        birth_date=
             data[
                 "birth_date"
-            ]
-        ),
+            ],
 
-        sex_id=(
+        sex_id=
             data[
                 "sex_id"
-            ]
-        ),
+            ],
 
-        # --------------------------------------------------
-        # DOCUMENTO
-        # --------------------------------------------------
-
-        document_type_id=(
+        document_type_id=
             data[
                 "document_type_id"
-            ]
-        ),
+            ],
 
-        document_number=(
+        document_number=
             data[
                 "document_number"
-            ]
-        ),
+            ],
 
-        complement=(
+        complement=
             data.get(
                 "complement"
-            )
-        ),
+            ),
 
-        issued_in=(
+        issued_in=
             data.get(
                 "issued_in"
+            ),
+
+        contacts=[
+            CreatePatientContactDTO(
+                contact_type_id=
+                    item[
+                        "contact_type_id"
+                    ],
+
+                value=
+                    item[
+                        "value"
+                    ],
+
+                primary=
+                    item.get(
+                        "primary",
+                        False,
+                    ),
             )
-        ),
 
-        # --------------------------------------------------
-        # CONTACTOS DEL PACIENTE
-        # --------------------------------------------------
-
-        mobile_phone=(
-            data.get(
-                "mobile_phone"
+            for item
+            in data.get(
+                "contacts",
+                [],
             )
-        ),
+        ],
 
-        landline_phone=(
-            data.get(
-                "landline_phone"
+        emergency_contacts=[
+            CreateEmergencyContactDTO(
+                full_name=
+                    item[
+                        "full_name"
+                    ],
+
+                relationship=
+                    item[
+                        "relationship"
+                    ],
+
+                phone=
+                    item[
+                        "phone"
+                    ],
+
+                email=
+                    item.get(
+                        "email"
+                    ),
+
+                primary=
+                    item.get(
+                        "primary",
+                        False,
+                    ),
             )
-        ),
 
-        email=(
-            data.get(
-                "email"
+            for item
+            in data.get(
+                "emergency_contacts",
+                [],
             )
-        ),
-
-        # --------------------------------------------------
-        # CONTACTO DE EMERGENCIA
-        # --------------------------------------------------
-
-        emergency_contact_name=(
-            data.get(
-                "emergency_contact_name"
-            )
-        ),
-
-        emergency_relationship=(
-            data.get(
-                "emergency_relationship"
-            )
-        ),
-
-        emergency_phone=(
-            data.get(
-                "emergency_phone"
-            )
-        ),
-
-        emergency_email=(
-            data.get(
-                "emergency_email"
-            )
-        ),
+        ],
     )
-
     container = (
         get_container()
     )

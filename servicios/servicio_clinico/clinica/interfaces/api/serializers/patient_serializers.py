@@ -1,6 +1,8 @@
 import re
 
-from rest_framework import serializers
+from rest_framework import (
+    serializers,
+)
 
 
 # ==========================================================
@@ -21,12 +23,33 @@ EXPEDIDOS_BOLIVIA = {
 }
 
 
+PARENTESCOS = (
+    "MADRE",
+    "PADRE",
+    "HERMANO",
+    "HERMANA",
+    "HIJO",
+    "HIJA",
+    "ESPOSO",
+    "ESPOSA",
+    "TUTOR",
+    "TUTORA",
+    "ABUELO",
+    "ABUELA",
+    "TIO",
+    "TIA",
+    "PRIMO",
+    "PRIMA",
+    "OTRO",
+)
+
+
 PATRON_CELULAR = re.compile(
     r"^[67]\d{7}$"
 )
 
 
-PATRON_TELEFONO_FIJO = re.compile(
+PATRON_TELEFONO = re.compile(
     r"^\d{7,8}$"
 )
 
@@ -39,70 +62,194 @@ PATRON_TELEFONO_FIJO = re.compile(
 def normalizar_opcional(
     valor,
 ):
+
     if valor in (
         None,
         "",
     ):
+
         return None
+
 
     valor = str(
         valor
     ).strip()
 
-    if not valor:
-        return None
 
-    return valor
-
-
-def validar_celular(
-    valor,
-):
-    valor = normalizar_opcional(
+    return (
         valor
+        if valor
+        else None
     )
 
-    if valor is None:
-        return None
 
-    if not valor.isdigit():
-        raise serializers.ValidationError(
-            "El celular solo puede contener números."
-        )
-
-    if not PATRON_CELULAR.fullmatch(
-        valor
-    ):
-        raise serializers.ValidationError(
-            "El celular debe tener 8 dígitos y comenzar con 6 o 7."
-        )
-
-    return valor
+# ==========================================================
+# CONTACTO DEL PACIENTE
+# ==========================================================
 
 
-def validar_telefono_fijo(
-    valor,
+class PatientContactInputSerializer(
+    serializers.Serializer
 ):
-    valor = normalizar_opcional(
-        valor
+
+    contact_type_id = (
+        serializers.IntegerField(
+            min_value=1,
+        )
     )
 
-    if valor is None:
-        return None
 
-    if not valor.isdigit():
-        raise serializers.ValidationError(
-            "El teléfono fijo solo puede contener números."
+    value = (
+        serializers.CharField(
+            max_length=150,
         )
+    )
 
-    if not PATRON_TELEFONO_FIJO.fullmatch(
-        valor
+
+    primary = (
+        serializers.BooleanField(
+            required=False,
+            default=False,
+        )
+    )
+
+
+    def validate_value(
+        self,
+        value,
     ):
-        raise serializers.ValidationError(
-            "El teléfono fijo debe tener entre 7 y 8 dígitos."
+
+        value = (
+            value.strip()
         )
 
-    return valor
+
+        if not value:
+
+            raise serializers.ValidationError(
+                "Ingrese el valor del contacto."
+            )
+
+
+        return value
+
+
+# ==========================================================
+# CONTACTO DE EMERGENCIA
+# ==========================================================
+
+
+class EmergencyContactInputSerializer(
+    serializers.Serializer
+):
+
+    full_name = (
+        serializers.CharField(
+            max_length=180,
+        )
+    )
+
+
+    relationship = (
+        serializers.ChoiceField(
+            choices=[
+                (
+                    value,
+                    value,
+                )
+                for value
+                in PARENTESCOS
+            ],
+        )
+    )
+
+
+    phone = (
+        serializers.CharField(
+            max_length=8,
+        )
+    )
+
+
+    email = (
+        serializers.EmailField(
+            required=False,
+            allow_blank=True,
+            allow_null=True,
+            max_length=150,
+        )
+    )
+
+
+    primary = (
+        serializers.BooleanField(
+            required=False,
+            default=False,
+        )
+    )
+
+
+    def validate_full_name(
+        self,
+        value,
+    ):
+
+        value = (
+            value.strip()
+        )
+
+
+        if len(value) < 3:
+
+            raise serializers.ValidationError(
+                "Ingrese el nombre completo."
+            )
+
+
+        return value
+
+
+    def validate_phone(
+        self,
+        value,
+    ):
+
+        value = (
+            value.strip()
+        )
+
+
+        if not PATRON_CELULAR.fullmatch(
+            value
+        ):
+
+            raise serializers.ValidationError(
+                "El teléfono debe tener 8 dígitos "
+                "y comenzar con 6 o 7."
+            )
+
+
+        return value
+
+
+    def validate_email(
+        self,
+        value,
+    ):
+
+        value = (
+            normalizar_opcional(
+                value
+            )
+        )
+
+
+        if value is None:
+
+            return None
+
+
+        return value.lower()
 
 
 # ==========================================================
@@ -113,156 +260,176 @@ def validar_telefono_fijo(
 class CreatePatientRequestSerializer(
     serializers.Serializer
 ):
-    # ======================================================
-    # DATOS PERSONALES
-    # ======================================================
 
-    first_names = serializers.CharField(
-        max_length=100,
+    first_names = (
+        serializers.CharField(
+            max_length=100,
+        )
     )
 
-    paternal_surname = serializers.CharField(
-        max_length=80,
+
+    paternal_surname = (
+        serializers.CharField(
+            max_length=80,
+        )
     )
 
-    maternal_surname = serializers.CharField(
-        max_length=80,
-        required=False,
-        allow_blank=True,
-        allow_null=True,
+
+    maternal_surname = (
+        serializers.CharField(
+            max_length=80,
+            required=False,
+            allow_blank=True,
+            allow_null=True,
+        )
     )
 
-    birth_date = serializers.DateField()
 
-    sex_id = serializers.IntegerField(
-        min_value=1,
+    birth_date = (
+        serializers.DateField()
     )
 
-    # ======================================================
-    # DOCUMENTO
-    # ======================================================
 
-    document_type_id = serializers.IntegerField(
-        min_value=1,
+    sex_id = (
+        serializers.IntegerField(
+            min_value=1,
+        )
     )
 
-    document_number = serializers.CharField(
-        max_length=50,
+
+    document_type_id = (
+        serializers.IntegerField(
+            min_value=1,
+        )
     )
 
-    complement = serializers.CharField(
-        max_length=20,
-        required=False,
-        allow_blank=True,
-        allow_null=True,
+
+    document_number = (
+        serializers.CharField(
+            max_length=50,
+        )
     )
 
-    issued_in = serializers.ChoiceField(
-        choices=[
-            (
-                codigo,
-                nombre,
-            )
-            for codigo, nombre
-            in EXPEDIDOS_BOLIVIA.items()
-        ],
-        required=True,
+
+    complement = (
+        serializers.CharField(
+            max_length=20,
+            required=False,
+            allow_blank=True,
+            allow_null=True,
+        )
     )
 
-    # ======================================================
-    # CONTACTOS DEL PACIENTE
-    # ======================================================
 
-    mobile_phone = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        allow_null=True,
-        max_length=8,
+    issued_in = (
+        serializers.ChoiceField(
+            choices=[
+                (
+                    code,
+                    name,
+                )
+                for code, name
+                in EXPEDIDOS_BOLIVIA.items()
+            ],
+        )
     )
 
-    landline_phone = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        allow_null=True,
-        max_length=8,
+
+    contacts = (
+        PatientContactInputSerializer(
+            many=True,
+            required=False,
+            default=list,
+        )
     )
 
-    email = serializers.EmailField(
-        required=False,
-        allow_blank=True,
-        allow_null=True,
-        max_length=150,
+
+    emergency_contacts = (
+        EmergencyContactInputSerializer(
+            many=True,
+            required=False,
+            default=list,
+        )
     )
 
-    # ======================================================
-    # CONTACTO DE EMERGENCIA
-    # ======================================================
-
-    emergency_contact_name = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        allow_null=True,
-        max_length=180,
-    )
-
-    emergency_relationship = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        allow_null=True,
-        max_length=80,
-    )
-
-    emergency_phone = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        allow_null=True,
-        max_length=8,
-    )
-
-    emergency_email = serializers.EmailField(
-        required=False,
-        allow_blank=True,
-        allow_null=True,
-        max_length=150,
-    )
 
     # ======================================================
-    # VALIDACIONES DATOS PERSONALES
+    # NOMBRES
     # ======================================================
 
     def validate_first_names(
         self,
-        valor,
+        value,
     ):
-        valor = valor.strip()
 
-        if len(valor) < 2:
+        value = (
+            value.strip()
+        )
+
+
+        if len(value) < 2:
+
             raise serializers.ValidationError(
                 "Ingrese los nombres del paciente."
             )
 
-        return valor
+
+        return value
+
 
     def validate_paternal_surname(
         self,
-        valor,
+        value,
     ):
-        valor = valor.strip()
 
-        if len(valor) < 2:
+        value = (
+            value.strip()
+        )
+
+
+        if len(value) < 2:
+
             raise serializers.ValidationError(
-                "Ingrese el apellido paterno del paciente."
+                "Ingrese el apellido paterno."
             )
 
-        return valor
+
+        return value
+
 
     def validate_maternal_surname(
         self,
-        valor,
+        value,
     ):
-        return normalizar_opcional(
-            valor
+
+        return (
+            normalizar_opcional(
+                value
+            )
         )
+
+
+    # ======================================================
+    # SEXO
+    # ======================================================
+
+    def validate_sex_id(
+        self,
+        value,
+    ):
+
+        if value not in (
+            1,
+            2,
+        ):
+
+            raise serializers.ValidationError(
+                "Solo se permite Masculino o Femenino."
+            )
+
+
+        return value
+
 
     # ======================================================
     # DOCUMENTO
@@ -270,30 +437,43 @@ class CreatePatientRequestSerializer(
 
     def validate_document_number(
         self,
-        valor,
+        value,
     ):
-        valor = valor.strip()
 
-        if len(valor) < 4:
+        value = (
+            value.strip()
+        )
+
+
+        if len(value) < 4:
+
             raise serializers.ValidationError(
                 "El número de documento es demasiado corto."
             )
 
-        return valor
+
+        return value
+
 
     def validate_complement(
         self,
-        valor,
+        value,
     ):
-        valor = normalizar_opcional(
-            valor
+
+        value = (
+            normalizar_opcional(
+                value
+            )
         )
 
-        if valor is None:
+
+        if value is None:
+
             return None
 
+
         return (
-            valor
+            value
             .upper()
             .replace(
                 " ",
@@ -301,171 +481,81 @@ class CreatePatientRequestSerializer(
             )
         )
 
-    def validate_issued_in(
-        self,
-        valor,
-    ):
-        valor = valor.strip().upper()
 
-        if valor not in EXPEDIDOS_BOLIVIA:
+    # ======================================================
+    # CONTACTOS
+    # ======================================================
+
+    def validate_contacts(
+        self,
+        contacts,
+    ):
+
+        if len(contacts) > 10:
+
             raise serializers.ValidationError(
-                "El departamento de expedición no es válido."
+                "Puede registrar como máximo "
+                "10 medios de contacto."
             )
 
-        return valor
 
-    # ======================================================
-    # CONTACTOS PROPIOS
-    # ======================================================
-
-    def validate_mobile_phone(
-        self,
-        valor,
-    ):
-        return validar_celular(
-            valor
-        )
-
-    def validate_landline_phone(
-        self,
-        valor,
-    ):
-        return validar_telefono_fijo(
-            valor
-        )
-
-    def validate_email(
-        self,
-        valor,
-    ):
-        valor = normalizar_opcional(
-            valor
-        )
-
-        if valor is None:
-            return None
-
-        return valor.lower()
-
-    # ======================================================
-    # CONTACTO DE EMERGENCIA
-    # ======================================================
-
-    def validate_emergency_contact_name(
-        self,
-        valor,
-    ):
-        return normalizar_opcional(
-            valor
-        )
-
-    def validate_emergency_relationship(
-        self,
-        valor,
-    ):
-        return normalizar_opcional(
-            valor
-        )
-
-    def validate_emergency_phone(
-        self,
-        valor,
-    ):
-        return validar_celular(
-            valor
-        )
-
-    def validate_emergency_email(
-        self,
-        valor,
-    ):
-        valor = normalizar_opcional(
-            valor
-        )
-
-        if valor is None:
-            return None
-
-        return valor.lower()
-
-    # ======================================================
-    # VALIDACIÓN GENERAL
-    # ======================================================
-
-    def validate(
-        self,
-        attrs,
-    ):
-        emergency_fields = [
-            attrs.get(
-                "emergency_contact_name"
-            ),
-            attrs.get(
-                "emergency_relationship"
-            ),
-            attrs.get(
-                "emergency_phone"
-            ),
-            attrs.get(
-                "emergency_email"
-            ),
-        ]
-
-        tiene_datos_emergencia = any(
-            valor not in (
-                None,
-                "",
+        principals = sum(
+            1
+            for contact
+            in contacts
+            if contact.get(
+                "primary"
             )
-            for valor
-            in emergency_fields
         )
 
-        # --------------------------------------------------
-        # SI SE INICIA CONTACTO DE EMERGENCIA,
-        # EXIGIR LOS CAMPOS PRINCIPALES
-        # --------------------------------------------------
 
-        if tiene_datos_emergencia:
-            if not attrs.get(
-                "emergency_contact_name"
-            ):
-                raise serializers.ValidationError(
-                    {
-                        "emergency_contact_name":
-                            (
-                                "Ingrese el nombre del "
-                                "contacto de emergencia."
-                            )
-                    }
-                )
+        if principals > 1:
 
-            if not attrs.get(
-                "emergency_relationship"
-            ):
-                raise serializers.ValidationError(
-                    {
-                        "emergency_relationship":
-                            (
-                                "Ingrese el parentesco "
-                                "del contacto de emergencia."
-                            )
-                    }
-                )
+            raise serializers.ValidationError(
+                "Solo un medio de contacto "
+                "puede ser principal."
+            )
 
-            if not attrs.get(
-                "emergency_phone"
-            ):
-                raise serializers.ValidationError(
-                    {
-                        "emergency_phone":
-                            (
-                                "Ingrese el teléfono del "
-                                "contacto de emergencia."
-                            )
-                    }
-                )
 
-        return attrs
+        return contacts
+
+
+    # ======================================================
+    # EMERGENCIAS
+    # ======================================================
+
+    def validate_emergency_contacts(
+        self,
+        contacts,
+    ):
+
+        if len(contacts) > 10:
+
+            raise serializers.ValidationError(
+                "Puede registrar como máximo "
+                "10 contactos de emergencia."
+            )
+
+
+        principals = sum(
+            1
+            for contact
+            in contacts
+            if contact.get(
+                "primary"
+            )
+        )
+
+
+        if principals > 1:
+
+            raise serializers.ValidationError(
+                "Solo un contacto de emergencia "
+                "puede ser principal."
+            )
+
+
+        return contacts
 
 
 # ==========================================================
@@ -476,6 +566,7 @@ class CreatePatientRequestSerializer(
 class UpdatePatientRequestSerializer(
     serializers.Serializer
 ):
+
     first_names = serializers.CharField(
         max_length=100,
         required=False,
@@ -512,6 +603,24 @@ class UpdatePatientRequestSerializer(
     )
 
 
+    def validate_sex_id(
+        self,
+        value,
+    ):
+
+        if value not in (
+            1,
+            2,
+        ):
+
+            raise serializers.ValidationError(
+                "Solo se permite Masculino o Femenino."
+            )
+
+
+        return value
+
+
 # ==========================================================
 # LISTADO
 # ==========================================================
@@ -520,6 +629,7 @@ class UpdatePatientRequestSerializer(
 class PatientListQuerySerializer(
     serializers.Serializer
 ):
+
     search = serializers.CharField(
         required=False,
         allow_blank=True,
@@ -563,6 +673,7 @@ class PatientListQuerySerializer(
 class PossibleDuplicateQuerySerializer(
     serializers.Serializer
 ):
+
     document_type_id = serializers.IntegerField(
         required=False,
         allow_null=True,

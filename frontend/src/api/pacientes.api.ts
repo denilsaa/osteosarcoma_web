@@ -51,9 +51,11 @@ export type BoliviaDepartmentCode =
 
 
 export interface BoliviaDepartment {
-  code: BoliviaDepartmentCode;
+  code:
+    BoliviaDepartmentCode;
 
-  name: string;
+  name:
+    string;
 }
 
 
@@ -189,9 +191,11 @@ export interface PatientEmergencyContact {
 export interface PatientSex {
   id?: number;
 
-  code: string;
+  code:
+    string;
 
-  name: string;
+  name:
+    string;
 }
 
 
@@ -326,14 +330,44 @@ export interface PatientFilters {
 
 
 // ==========================================================
+// CONTACTOS DE REGISTRO
+// ==========================================================
+
+export interface CreatePatientContactRequest {
+  contact_type_id:
+    number;
+
+  value:
+    string;
+
+  primary:
+    boolean;
+}
+
+
+export interface CreateEmergencyContactRequest {
+  full_name:
+    string;
+
+  relationship:
+    string;
+
+  phone:
+    string;
+
+  email?:
+    string | null;
+
+  primary:
+    boolean;
+}
+
+
+// ==========================================================
 // REGISTRO
 // ==========================================================
 
 export interface CreatePatientRequest {
-  // -------------------------------------------------------
-  // DATOS PERSONALES
-  // -------------------------------------------------------
-
   first_names:
     string;
 
@@ -349,10 +383,6 @@ export interface CreatePatientRequest {
   sex_id:
     number;
 
-  // -------------------------------------------------------
-  // DOCUMENTO
-  // -------------------------------------------------------
-
   document_type_id:
     number;
 
@@ -365,34 +395,11 @@ export interface CreatePatientRequest {
   issued_in:
     BoliviaDepartmentCode;
 
-  // -------------------------------------------------------
-  // CONTACTOS DEL PACIENTE
-  // -------------------------------------------------------
+  contacts:
+    CreatePatientContactRequest[];
 
-  mobile_phone?:
-    string | null;
-
-  landline_phone?:
-    string | null;
-
-  email?:
-    string | null;
-
-  // -------------------------------------------------------
-  // CONTACTO DE EMERGENCIA
-  // -------------------------------------------------------
-
-  emergency_contact_name?:
-    string | null;
-
-  emergency_relationship?:
-    string | null;
-
-  emergency_phone?:
-    string | null;
-
-  emergency_email?:
-    string | null;
+  emergency_contacts:
+    CreateEmergencyContactRequest[];
 }
 
 
@@ -540,6 +547,7 @@ export async function listPatients(
 
     params.search =
       filters.search.trim();
+
   }
 
 
@@ -549,37 +557,41 @@ export async function listPatients(
 
     params.sex_code =
       filters.sex_code;
+
   }
 
 
   if (
     filters.active !==
-      undefined
+    undefined
   ) {
 
     params.active =
       filters.active;
+
   }
 
 
   if (
-    filters
-      .document_type_code
+    filters.document_type_code
   ) {
 
-    params
-      .document_type_code =
-        filters
-          .document_type_code;
+    params.document_type_code =
+      filters.document_type_code;
+
   }
 
 
   params.page =
-    filters.page ?? 1;
+    filters.page
+    ??
+    1;
 
 
   params.page_size =
-    filters.page_size ?? 10;
+    filters.page_size
+    ??
+    10;
 
 
   const response =
@@ -601,13 +613,15 @@ export async function listPatients(
 // ==========================================================
 
 export async function getPatient(
-  idPatient: string,
+  idPatient:
+    string,
 ): Promise<PatientDetail> {
 
   const response =
     await apiClinico
       .get<{
-        data: PatientDetail;
+        data:
+          PatientDetail;
       }>(
         `/pacientes/${idPatient}/`,
       );
@@ -643,7 +657,9 @@ export async function createPatient(
 // ==========================================================
 
 export async function updatePatient(
-  idPatient: string,
+  idPatient:
+    string,
+
   data:
     UpdatePatientRequest,
 ): Promise<UpdatePatientResponse> {
@@ -661,7 +677,7 @@ export async function updatePatient(
 
 
 // ==========================================================
-// BUSCAR POSIBLES DUPLICADOS
+// POSIBLES DUPLICADOS
 // ==========================================================
 
 export async function findPossibleDuplicates(
@@ -682,6 +698,7 @@ export async function findPossibleDuplicates(
 
     params.document_type_id =
       filters.document_type_id;
+
   }
 
 
@@ -692,6 +709,7 @@ export async function findPossibleDuplicates(
 
     params.document_number =
       filters.document_number.trim();
+
   }
 
 
@@ -702,6 +720,7 @@ export async function findPossibleDuplicates(
 
     params.first_names =
       filters.first_names.trim();
+
   }
 
 
@@ -712,6 +731,7 @@ export async function findPossibleDuplicates(
 
     params.paternal_surname =
       filters.paternal_surname.trim();
+
   }
 
 
@@ -722,6 +742,7 @@ export async function findPossibleDuplicates(
 
     params.maternal_surname =
       filters.maternal_surname.trim();
+
   }
 
 
@@ -731,6 +752,7 @@ export async function findPossibleDuplicates(
 
     params.birth_date =
       filters.birth_date;
+
   }
 
 

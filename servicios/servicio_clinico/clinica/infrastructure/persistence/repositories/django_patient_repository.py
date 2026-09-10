@@ -261,7 +261,6 @@ class DjangoPatientRepository(
                 clinical_cases_count
             ),
         )
-
     # ======================================================
     # CREAR
     # ======================================================
@@ -279,17 +278,206 @@ class DjangoPatientRepository(
         document_number: str,
         complement: str | None,
         issued_in: str | None,
-
-        mobile_phone: str | None,
-        landline_phone: str | None,
-        email: str | None,
-
-        emergency_contact_name: str | None,
-        emergency_relationship: str | None,
-        emergency_phone: str | None,
-        emergency_email: str | None,
+        contacts: list[dict],
+        emergency_contacts: list[dict],
     ) -> Patient:
 
+        # ==================================================
+        # CATÁLOGOS
+        # ==================================================
+
+        sex = (
+            Sexo.objects.get(
+                id_sexo=
+                    sex_id
+            )
+        )
+
+
+        document_type = (
+            TipoDocumento.objects.get(
+                id_tipo_documento=
+                    document_type_id
+            )
+        )
+
+
+        # ==================================================
+        # PACIENTE
+        # ==================================================
+
+        patient = (
+            Paciente.objects.create(
+                sexo=
+                    sex,
+
+                nombres=
+                    first_names,
+
+                apellido_paterno=
+                    paternal_surname,
+
+                apellido_materno=
+                    maternal_surname,
+
+                fecha_nacimiento=
+                    birth_date,
+
+                activo=
+                    True,
+            )
+        )
+
+
+        # ==================================================
+        # DOCUMENTO
+        # ==================================================
+
+        DocumentoPaciente.objects.create(
+            paciente=
+                patient,
+
+            tipo_documento=
+                document_type,
+
+            numero_documento=
+                document_number,
+
+            complemento=
+                complement,
+
+            expedido_en=
+                issued_in,
+        )
+
+
+        # ==================================================
+        # CONTACTOS DEL PACIENTE
+        # ==================================================
+
+        for contact in contacts:
+
+            contact_type = (
+                TipoContacto.objects.get(
+                    id_tipo_contacto=
+                        contact[
+                            "contact_type_id"
+                        ]
+                )
+            )
+
+
+            value = (
+                contact[
+                    "value"
+                ]
+                .strip()
+            )
+
+
+            # ----------------------------------------------
+            # NORMALIZAR CORREO
+            # ----------------------------------------------
+
+            if (
+                contact_type.codigo
+                ==
+                "CORREO"
+            ):
+
+                value = (
+                    value.lower()
+                )
+
+
+            ContactoPaciente.objects.create(
+                paciente=
+                    patient,
+
+                tipo_contacto=
+                    contact_type,
+
+                valor=
+                    value,
+
+                principal=
+                    bool(
+                        contact.get(
+                            "primary",
+                            False,
+                        )
+                    ),
+            )
+
+
+        # ==================================================
+        # CONTACTOS DE EMERGENCIA
+        # ==================================================
+
+        for emergency in (
+            emergency_contacts
+        ):
+
+            ContactoEmergenciaPaciente.objects.create(
+                paciente=
+                    patient,
+
+                nombre_completo=
+                    emergency[
+                        "full_name"
+                    ],
+
+                parentesco=
+                    emergency[
+                        "relationship"
+                    ],
+
+                telefono=
+                    emergency[
+                        "phone"
+                    ],
+
+                correo=
+                    emergency.get(
+                        "email"
+                    ),
+
+                principal=
+                    bool(
+                        emergency.get(
+                            "primary",
+                            False,
+                        )
+                    ),
+            )
+
+
+        # ==================================================
+        # RECARGAR AGREGADO
+        # ==================================================
+
+        stored_patient = (
+            self
+            ._base_queryset()
+            .annotate(
+                cantidad_casos=
+                    Count(
+                        "casos_clinicos",
+                        distinct=True,
+                    )
+            )
+            .get(
+                id_paciente=
+                    patient.id_paciente
+            )
+        )
+
+
+        return (
+            self._to_domain(
+                stored_patient
+            )
+        )
         # ==================================================
         # CATÁLOGOS
         # ==================================================

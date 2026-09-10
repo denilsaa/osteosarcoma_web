@@ -1,7 +1,39 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from typing import Optional
 from uuid import UUID
+
+
+# ==========================================================
+# CONTACTO DEL PACIENTE
+# ==========================================================
+
+
+@dataclass(frozen=True)
+class CreatePatientContactDTO:
+    contact_type_id: int
+
+    value: str
+
+    primary: bool = False
+
+
+# ==========================================================
+# CONTACTO DE EMERGENCIA
+# ==========================================================
+
+
+@dataclass(frozen=True)
+class CreateEmergencyContactDTO:
+    full_name: str
+
+    relationship: str
+
+    phone: str
+
+    email: Optional[str] = None
+
+    primary: bool = False
 
 
 # ==========================================================
@@ -29,27 +61,17 @@ class CreatePatientDTO:
 
     issued_in: Optional[str] = None
 
-    # ======================================================
-    # CONTACTOS DEL PACIENTE
-    # ======================================================
+    contacts: list[
+        CreatePatientContactDTO
+    ] = field(
+        default_factory=list
+    )
 
-    mobile_phone: Optional[str] = None
-
-    landline_phone: Optional[str] = None
-
-    email: Optional[str] = None
-
-    # ======================================================
-    # CONTACTO DE EMERGENCIA
-    # ======================================================
-
-    emergency_contact_name: Optional[str] = None
-
-    emergency_relationship: Optional[str] = None
-
-    emergency_phone: Optional[str] = None
-
-    emergency_email: Optional[str] = None
+    emergency_contacts: list[
+        CreateEmergencyContactDTO
+    ] = field(
+        default_factory=list
+    )
 
 
 # ==========================================================
