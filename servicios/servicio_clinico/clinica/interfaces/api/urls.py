@@ -3,6 +3,9 @@ from django.urls import (
 )
 
 from .views import (
+    clinical_case_catalogs_view,
+    clinical_case_detail_view,
+    clinical_case_list_view,
     patient_cases_view,
     patient_catalogs_view,
     patient_create_view,
@@ -62,13 +65,38 @@ urlpatterns = [
 
 
     # ======================================================
-    # CASOS CLÍNICOS DEL PACIENTE
+    # CASOS DEL PACIENTE
     # ======================================================
 
     path(
         "pacientes/<uuid:patient_id>/casos/",
         patient_cases_view,
         name="patient-cases",
+    ),
+
+
+    # ======================================================
+    # CASOS CLÍNICOS
+    # ======================================================
+
+    path(
+        "casos/catalogos/",
+        clinical_case_catalogs_view,
+        name="clinical-case-catalogs",
+    ),
+
+
+    path(
+        "casos/",
+        clinical_case_list_view,
+        name="clinical-case-list",
+    ),
+
+
+    path(
+        "casos/<uuid:case_id>/",
+        clinical_case_detail_view,
+        name="clinical-case-detail",
     ),
 
 ]

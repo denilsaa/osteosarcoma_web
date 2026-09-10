@@ -1,6 +1,5 @@
 import {
   Activity,
-  Bell,
   ChevronDown,
   ClipboardList,
   HeartPulse,
@@ -8,8 +7,6 @@ import {
   LayoutDashboard,
   LogOut,
   ScanLine,
-  Search,
-  Settings,
   ShieldCheck,
   Sparkles,
   Stethoscope,
@@ -36,7 +33,6 @@ import "./MainLayout.css";
 
 
 type MenuItem = {
-
   label: string;
 
   path: string;
@@ -45,72 +41,73 @@ type MenuItem = {
     size?: number;
     strokeWidth?: number;
   }>;
-
 };
 
 
-const mainMenu: MenuItem[] = [
+const mainMenu:
+  MenuItem[] = [
 
-  {
-    label: "Inicio",
-    path: "/dashboard",
-    icon: LayoutDashboard,
-  },
+    {
+      label: "Inicio",
+      path: "/dashboard",
+      icon: LayoutDashboard,
+    },
 
-  {
-    label: "Pacientes",
-    path: "/pacientes",
-    icon: UsersRound,
-  },
+    {
+      label: "Pacientes",
+      path: "/pacientes",
+      icon: UsersRound,
+    },
 
-  {
-    label: "Casos clínicos",
-    path: "/casos",
-    icon: ClipboardList,
-  },
+    {
+      label: "Casos clínicos",
+      path: "/casos",
+      icon: ClipboardList,
+    },
 
-  {
-    label: "Radiografías",
-    path: "/radiografias/subir",
-    icon: ScanLine,
-  },
+    {
+      label: "Radiografías",
+      path: "/radiografias/subir",
+      icon: ScanLine,
+    },
 
-  {
-    label: "Análisis IA",
-    path: "/analisis",
-    icon: Sparkles,
-  },
+    {
+      label: "Análisis IA",
+      path: "/analisis",
+      icon: Sparkles,
+    },
 
-];
+  ];
 
 
-const adminMenu: MenuItem[] = [
+const adminMenu:
+  MenuItem[] = [
 
-  {
-    label: "Oncólogos",
-    path: "/usuarios",
-    icon: UserRound,
-  },
+    {
+      label: "Oncólogos",
+      path: "/usuarios",
+      icon: UserRound,
+    },
 
-  {
-    label: "Recuperaciones",
-    path: "/recuperaciones",
-    icon: KeyRound,
-  },
+    {
+      label: "Recuperaciones",
+      path: "/recuperaciones",
+      icon: KeyRound,
+    },
 
-  {
-    label: "Permisos",
-    path: "/permisos",
-    icon: ShieldCheck,
-  },
+    {
+      label: "Permisos",
+      path: "/permisos",
+      icon: ShieldCheck,
+    },
 
-  {
-    label: "Auditoría",
-    path: "/auditoria",
-    icon: Activity,
-  },
+    {
+      label: "Auditoría",
+      path: "/auditoria",
+      icon: Activity,
+    },
 
-];
+  ];
 
 
 function getPageTitle(
@@ -162,7 +159,6 @@ function getPageTitle(
   }
 
 
-
   if (
     pathname.startsWith(
       "/auditoria",
@@ -209,17 +205,14 @@ function getPageTitle(
 
 
   return "Panel clínico";
+
 }
 
 
 function obtenerNombreVisible(
-
   nombres?: string,
-
   apellidoPaterno?: string | null,
-
   nombreUsuario?: string,
-
 ): string {
 
   const nombre =
@@ -231,7 +224,8 @@ function obtenerNombreVisible(
 
 
   if (
-    nombre &&
+    nombre
+    &&
     apellido
   ) {
 
@@ -255,6 +249,7 @@ function obtenerNombreVisible(
 
 
   return "Usuario";
+
 }
 
 
@@ -283,13 +278,9 @@ export function MainLayout() {
 
   const nombreUsuario =
     obtenerNombreVisible(
-
       usuario?.nombres,
-
       usuario?.apellido_paterno,
-
       usuario?.nombre_usuario,
-
     );
 
 
@@ -301,9 +292,7 @@ export function MainLayout() {
 
   const rolVisible =
     esJefeOncologia
-
       ? "Jefe de Oncología"
-
       : "Médico Oncólogo";
 
 
@@ -313,8 +302,12 @@ export function MainLayout() {
       .filter(Boolean)
       .slice(0, 2)
       .map(
-        (parte) =>
-          parte.charAt(0),
+        (
+          parte,
+        ) =>
+          parte.charAt(
+            0,
+          ),
       )
       .join("")
       .toUpperCase()
@@ -345,153 +338,75 @@ export function MainLayout() {
 
   return (
 
-    <div className="clinical-layout">
-
+    <div
+      className="clinical-layout"
+    >
 
       {/* ==================================================
           SIDEBAR
           ================================================== */}
 
-      <aside className="clinical-sidebar">
+      <aside
+        className="clinical-sidebar"
+      >
 
-
-        {/* ==================================================
-            LOGO
-            ================================================== */}
-
-        <div className="clinical-sidebar__header">
-
+        <div
+          className="clinical-sidebar__header"
+        >
 
           <img
-
             src="/branding/logo-san-juan.png"
-
             alt="Clínica San Juan de Dios"
-
             className="clinical-sidebar__logo"
-
           />
 
 
-          <div className="clinical-sidebar__system">
+          <div
+            className="clinical-sidebar__system"
+          >
 
-
-            <span className="clinical-sidebar__system-name">
-
+            <span
+              className="clinical-sidebar__system-name"
+            >
               OSTEOSARCOMA
-
             </span>
 
 
-            <span className="clinical-sidebar__system-description">
-
+            <span
+              className="clinical-sidebar__system-description"
+            >
               SAN JUAN DE DIOS
-
             </span>
-
 
           </div>
-
 
         </div>
 
 
-        <div className="clinical-sidebar__scroll">
+        <div
+          className="clinical-sidebar__scroll"
+        >
 
+          <div
+            className="clinical-sidebar__section"
+          >
 
-          {/* ==================================================
-              PRINCIPAL
-              ================================================== */}
-
-          <div className="clinical-sidebar__section">
-
-
-            <span className="clinical-sidebar__section-label">
-
+            <span
+              className="clinical-sidebar__section-label"
+            >
               Principal
-
             </span>
 
 
-            <nav className="clinical-sidebar__navigation">
+            <nav
+              className="clinical-sidebar__navigation"
+            >
 
-
-              {mainMenu.map(
-                (item) => {
-
-                  const Icon =
-                    item.icon;
-
-
-                  return (
-
-                    <NavLink
-
-                      key={item.path}
-
-                      to={item.path}
-
-                      className={({
-                        isActive,
-                      }) =>
-                        [
-                          "clinical-sidebar__link",
-
-                          isActive
-                            ? "clinical-sidebar__link--active"
-                            : "",
-                        ].join(" ")
-                      }
-
-                    >
-
-                      <Icon
-                        size={19}
-                        strokeWidth={1.9}
-                      />
-
-
-                      <span>
-                        {item.label}
-                      </span>
-
-
-                    </NavLink>
-
-                  );
-
-                },
-              )}
-
-
-            </nav>
-
-
-          </div>
-
-
-          {/* ==================================================
-              ADMINISTRACIÓN
-              SOLO JEFE DE ONCOLOGÍA
-              ================================================== */}
-
-          {esJefeOncologia && (
-
-            <div className="clinical-sidebar__section">
-
-
-              <span className="clinical-sidebar__section-label">
-
-                Administración
-
-              </span>
-
-
-              <nav className="clinical-sidebar__navigation">
-
-
-                {adminMenu.map(
-                  (item) => {
+              {
+                mainMenu.map(
+                  (
+                    item,
+                  ) => {
 
                     const Icon =
                       item.icon;
@@ -500,23 +415,26 @@ export function MainLayout() {
                     return (
 
                       <NavLink
-
-                        key={item.path}
-
-                        to={item.path}
-
-                        className={({
-                          isActive,
-                        }) =>
-                          [
-                            "clinical-sidebar__link",
-
-                            isActive
-                              ? "clinical-sidebar__link--active"
-                              : "",
-                          ].join(" ")
+                        key={
+                          item.path
                         }
+                        to={
+                          item.path
+                        }
+                        className={
+                          ({
+                            isActive,
+                          }) =>
+                            [
+                              "clinical-sidebar__link",
 
+                              isActive
+                                ? "clinical-sidebar__link--active"
+                                : "",
+                            ].join(
+                              " ",
+                            )
+                        }
                       >
 
                         <Icon
@@ -526,34 +444,114 @@ export function MainLayout() {
 
 
                         <span>
-                          {item.label}
+                          {
+                            item.label
+                          }
                         </span>
-
 
                       </NavLink>
 
                     );
 
                   },
-                )}
+                )
+              }
+
+            </nav>
+
+          </div>
 
 
-              </nav>
+          {
+            esJefeOncologia
+            &&
+            (
+
+              <div
+                className="clinical-sidebar__section"
+              >
+
+                <span
+                  className="clinical-sidebar__section-label"
+                >
+                  Administración
+                </span>
 
 
-            </div>
+                <nav
+                  className="clinical-sidebar__navigation"
+                >
 
-          )}
+                  {
+                    adminMenu.map(
+                      (
+                        item,
+                      ) => {
+
+                        const Icon =
+                          item.icon;
 
 
-          {/* ==================================================
-              ESTADO DEL SISTEMA
-              ================================================== */}
+                        return (
 
-          <div className="clinical-sidebar__status">
+                          <NavLink
+                            key={
+                              item.path
+                            }
+                            to={
+                              item.path
+                            }
+                            className={
+                              ({
+                                isActive,
+                              }) =>
+                                [
+                                  "clinical-sidebar__link",
+
+                                  isActive
+                                    ? "clinical-sidebar__link--active"
+                                    : "",
+                                ].join(
+                                  " ",
+                                )
+                            }
+                          >
+
+                            <Icon
+                              size={19}
+                              strokeWidth={1.9}
+                            />
 
 
-            <div className="clinical-sidebar__status-icon">
+                            <span>
+                              {
+                                item.label
+                              }
+                            </span>
+
+                          </NavLink>
+
+                        );
+
+                      },
+                    )
+                  }
+
+                </nav>
+
+              </div>
+
+            )
+          }
+
+
+          <div
+            className="clinical-sidebar__status"
+          >
+
+            <div
+              className="clinical-sidebar__status-icon"
+            >
 
               <HeartPulse
                 size={21}
@@ -568,6 +566,7 @@ export function MainLayout() {
                 Sistema operativo
               </strong>
 
+
               <span>
                 Servicios disponibles
               </span>
@@ -575,46 +574,40 @@ export function MainLayout() {
             </div>
 
 
-            <span className="clinical-sidebar__status-dot" />
-
+            <span
+              className="clinical-sidebar__status-dot"
+            />
 
           </div>
-
 
         </div>
 
 
-        {/* ==================================================
-            USUARIO
-            ================================================== */}
-
-        <div className="clinical-sidebar__footer">
-
+        <div
+          className="clinical-sidebar__footer"
+        >
 
           <button
-
             type="button"
-
             className="clinical-sidebar__profile"
-
-            onClick={() =>
-              navigate(
-                "/perfil",
-              )
+            onClick={
+              () =>
+                navigate(
+                  "/perfil",
+                )
             }
-
           >
 
-
-            <div className="clinical-sidebar__avatar">
-
+            <div
+              className="clinical-sidebar__avatar"
+            >
               {iniciales}
-
             </div>
 
 
-            <div className="clinical-sidebar__profile-text">
-
+            <div
+              className="clinical-sidebar__profile-text"
+            >
 
               <strong>
                 {nombreUsuario}
@@ -625,7 +618,6 @@ export function MainLayout() {
                 {rolVisible}
               </span>
 
-
             </div>
 
 
@@ -634,25 +626,22 @@ export function MainLayout() {
               size={17}
             />
 
-
           </button>
 
 
           <button
-
             type="button"
-
             className="clinical-sidebar__logout"
-
-            onClick={() =>
-              void cerrarSesion()
+            onClick={
+              () =>
+                void cerrarSesion()
             }
-
           >
 
             <LogOut
               size={18}
             />
+
 
             <span>
               Cerrar sesión
@@ -660,148 +649,90 @@ export function MainLayout() {
 
           </button>
 
-
         </div>
-
 
       </aside>
 
 
       {/* ==================================================
-          CONTENIDO
+          MAIN
           ================================================== */}
 
-      <div className="clinical-main">
-
+      <div
+        className="clinical-main"
+      >
 
         {/* ==================================================
-            TOPBAR
+            TOPBAR LIMPIO
             ================================================== */}
 
-        <header className="clinical-topbar">
+        <header
+          className="clinical-topbar"
+        >
+
+          <div
+            className="clinical-topbar__context"
+          >
+
+            <span>
+              Clínica San Juan de Dios
+            </span>
 
 
-          <div className="clinical-topbar__left">
-
-
-            <div className="clinical-topbar__context">
-
-
-              <span>
-                Clínica San Juan de Dios
-              </span>
-
-
-              <strong>
-                {pageTitle}
-              </strong>
-
-
-            </div>
-
+            <strong>
+              {pageTitle}
+            </strong>
 
           </div>
 
 
-          <div className="clinical-topbar__right">
+          <div
+            className="clinical-topbar__right"
+          >
 
+            <div
+              className="clinical-topbar__system-status"
+            >
 
-            <div className="clinical-topbar__search">
-
-              <Search
-                size={18}
+              <span
+                className="clinical-topbar__system-dot"
               />
 
-              <input
 
-                type="search"
+              <div>
 
-                placeholder="Buscar paciente o caso..."
+                <span>
+                  Sistema
+                </span>
 
-              />
+                <strong>
+                  Operativo
+                </strong>
 
-              <span>
-                ⌘ K
-              </span>
+              </div>
 
             </div>
 
 
-            <button
-
-              type="button"
-
-              className="clinical-topbar__icon-button"
-
-              aria-label="Actividad"
-
-            >
-
-              <Activity
-                size={19}
-              />
-
-            </button>
+            <div
+              className="clinical-topbar__divider"
+            />
 
 
             <button
-
               type="button"
-
-              className="
-                clinical-topbar__icon-button
-                clinical-topbar__notification
-              "
-
-              aria-label="Notificaciones"
-
-            >
-
-              <Bell
-                size={19}
-              />
-
-              <span />
-
-            </button>
-
-
-            <button
-
-              type="button"
-
-              className="clinical-topbar__icon-button"
-
-              aria-label="Configuración"
-
-            >
-
-              <Settings
-                size={19}
-              />
-
-            </button>
-
-
-            <div className="clinical-topbar__divider" />
-
-
-            <button
-
-              type="button"
-
               className="clinical-topbar__doctor"
-
-              onClick={() =>
-                navigate(
-                  "/perfil",
-                )
+              onClick={
+                () =>
+                  navigate(
+                    "/perfil",
+                  )
               }
-
             >
 
-
-              <div className="clinical-topbar__doctor-icon">
+              <div
+                className="clinical-topbar__doctor-icon"
+              >
 
                 <Stethoscope
                   size={17}
@@ -816,35 +747,29 @@ export function MainLayout() {
                   {nombreUsuario}
                 </strong>
 
+
                 <span>
                   {rolVisible}
                 </span>
 
               </div>
 
-
             </button>
 
-
           </div>
-
 
         </header>
 
 
-        {/* ==================================================
-            PÁGINA ACTUAL
-            ================================================== */}
-
-        <main className="clinical-content">
+        <main
+          className="clinical-content"
+        >
 
           <Outlet />
 
         </main>
 
-
       </div>
-
 
     </div>
 

@@ -3,9 +3,16 @@ from .audit_dto import (
     AuditChangeDTO,
     AuditEventDTO,
 )
+
 from .change_dto import (
     FieldChangeDTO,
 )
+
+from .clinical_case_dto import (
+    ClinicalCaseFiltersDTO,
+    CreateClinicalCaseDTO,
+)
+
 from .patient_dto import (
     CreatePatientDTO,
     PatientFiltersDTO,
@@ -23,4 +30,6 @@ __all__ = [
     "PatientFiltersDTO",
     "PossibleDuplicateDTO",
     "FieldChangeDTO",
+    "CreateClinicalCaseDTO",
+    "ClinicalCaseFiltersDTO",
 ]

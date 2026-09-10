@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from clinica.domain.entities import (
     ClinicalCase,
 )
@@ -5,10 +7,13 @@ from clinica.domain.entities import (
 
 class ClinicalCasePresenter:
 
+    # ======================================================
+    # DETALLE
+    # ======================================================
+
     @staticmethod
     def detail(
-        case:
-            ClinicalCase,
+        case: ClinicalCase,
     ) -> dict:
 
         return {
@@ -22,6 +27,9 @@ class ClinicalCasePresenter:
                 str(
                     case.patient_id
                 ),
+
+            "patient_name":
+                case.patient_name,
 
             "code":
                 case.code,
@@ -92,28 +100,63 @@ class ClinicalCasePresenter:
         }
 
 
+    # ======================================================
+    # LISTADO POR PACIENTE
+    # ======================================================
+
     @classmethod
     def list(
         cls,
-        cases:
-            list[
-                ClinicalCase
-            ],
+        cases: list[ClinicalCase],
     ) -> dict:
 
         return {
 
             "data": [
+
                 cls.detail(
                     case
                 )
+
                 for case
                 in cases
+
             ],
 
             "total":
                 len(
                     cases
                 ),
+
+        }
+
+
+    # ======================================================
+    # LISTADO GENERAL PAGINADO
+    # ======================================================
+
+    @classmethod
+    def paginated(
+        cls,
+        *,
+        cases: list[ClinicalCase],
+        pagination: dict,
+    ) -> dict:
+
+        return {
+
+            "data": [
+
+                cls.detail(
+                    case
+                )
+
+                for case
+                in cases
+
+            ],
+
+            "pagination":
+                pagination,
 
         }

@@ -4,8 +4,10 @@ import {
   ArrowRight,
   Ban,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Clock3,
   Database,
   Eye,
@@ -61,9 +63,13 @@ const POR_PAGINA = 10;
 
 type FiltrosPantalla = {
   servicio: string;
+
   modulo: string;
+
   accion: string;
+
   resultado: string;
+
   entidad: string;
 };
 
@@ -72,10 +78,15 @@ const FILTROS_INICIALES:
   FiltrosPantalla = {
 
     servicio: "",
+
     modulo: "",
+
     accion: "",
+
     resultado: "",
+
     entidad: "",
+
   };
 
 
@@ -88,7 +99,9 @@ function normalizarFecha(
 ): string {
 
   if (
-    valor.includes("T")
+    valor.includes(
+      "T",
+    )
   ) {
     return valor;
   }
@@ -98,6 +111,7 @@ function normalizarFecha(
     " ",
     "T",
   );
+
 }
 
 
@@ -105,10 +119,10 @@ function formatearFecha(
   valor?: string | null,
 ): string {
 
-  if (
-    !valor
-  ) {
+  if (!valor) {
+
     return "—";
+
   }
 
 
@@ -125,22 +139,23 @@ function formatearFecha(
       fecha.getTime(),
     )
   ) {
+
     return valor;
+
   }
 
 
   return new Intl.DateTimeFormat(
     "es-BO",
     {
-      dateStyle:
-        "medium",
+      dateStyle: "medium",
 
-      timeStyle:
-        "short",
+      timeStyle: "short",
     },
   ).format(
     fecha,
   );
+
 }
 
 
@@ -154,12 +169,13 @@ function nombreActor(
 
 
   if (
-    typeof nombre ===
-      "string" &&
+    typeof nombre === "string"
+    &&
     nombre.trim()
   ) {
 
     return nombre.trim();
+
   }
 
 
@@ -169,16 +185,19 @@ function nombreActor(
 
     return (
       "Usuario " +
-      evento.actor_usuario_uuid
+      evento
+        .actor_usuario_uuid
         .slice(
           0,
           8,
         )
     );
+
   }
 
 
   return "Sistema";
+
 }
 
 
@@ -192,12 +211,13 @@ function rolActor(
 
 
   if (
-    typeof rol ===
-      "string" &&
+    typeof rol === "string"
+    &&
     rol.trim()
   ) {
 
     return rol.trim();
+
   }
 
 
@@ -206,6 +226,7 @@ function rolActor(
       ? "Usuario autenticado"
       : "Proceso del sistema"
   );
+
 }
 
 
@@ -219,12 +240,13 @@ function descripcionEvento(
 
 
   if (
-    typeof descripcion ===
-      "string" &&
+    typeof descripcion === "string"
+    &&
     descripcion.trim()
   ) {
 
     return descripcion.trim();
+
   }
 
 
@@ -232,6 +254,7 @@ function descripcionEvento(
     `${evento.accion_nombre || evento.accion} ` +
     `en ${evento.modulo_nombre || evento.modulo}.`
   );
+
 }
 
 
@@ -245,16 +268,18 @@ function motivoEvento(
 
 
   if (
-    typeof motivo ===
-      "string" &&
+    typeof motivo === "string"
+    &&
     motivo.trim()
   ) {
 
     return motivo.trim();
+
   }
 
 
   return null;
+
 }
 
 
@@ -283,6 +308,7 @@ function nombreCampo(
       ) =>
         letra.toUpperCase(),
     );
+
 }
 
 
@@ -291,23 +317,28 @@ function valorVisible(
 ): string {
 
   if (
-    valor === null ||
-    valor === undefined ||
+    valor === null
+    ||
+    valor === undefined
+    ||
     valor === ""
   ) {
 
     return "—";
+
   }
 
 
   if (
-    typeof valor ===
-    "boolean"
+    typeof valor === "boolean"
   ) {
 
-    return valor
-      ? "Sí"
-      : "No";
+    return (
+      valor
+        ? "Sí"
+        : "No"
+    );
+
   }
 
 
@@ -318,7 +349,7 @@ function valorVisible(
   ) {
 
     return (
-      valor.length
+      valor.length > 0
         ? valor
             .map(
               (
@@ -328,15 +359,17 @@ function valorVisible(
                   item,
                 ),
             )
-            .join(", ")
+            .join(
+              ", ",
+            )
         : "Ninguno"
     );
+
   }
 
 
   if (
-    typeof valor ===
-    "object"
+    typeof valor === "object"
   ) {
 
     return JSON.stringify(
@@ -344,12 +377,14 @@ function valorVisible(
       null,
       2,
     );
+
   }
 
 
   return String(
     valor,
   );
+
 }
 
 
@@ -362,17 +397,35 @@ function claseResultado(
   ) {
 
     case "EXITOSO":
-      return "audit-result audit-result--success";
+
+      return (
+        "audit-result " +
+        "audit-result--success"
+      );
+
 
     case "DENEGADO":
-      return "audit-result audit-result--denied";
+
+      return (
+        "audit-result " +
+        "audit-result--denied"
+      );
+
 
     case "FALLIDO":
-      return "audit-result audit-result--failed";
+
+      return (
+        "audit-result " +
+        "audit-result--failed"
+      );
+
 
     default:
+
       return "audit-result";
+
   }
+
 }
 
 
@@ -381,9 +434,11 @@ function textoResultado(
 ): string {
 
   return (
-    evento.resultado_nombre ||
+    evento.resultado_nombre
+    ||
     evento.resultado
   );
+
 }
 
 
@@ -395,8 +450,7 @@ export function AuditoriaPage() {
 
   const {
     tieneRol,
-  } =
-    useAuth();
+  } = useAuth();
 
 
   const esJefe =
@@ -413,12 +467,17 @@ export function AuditoriaPage() {
     catalogos,
     setCatalogos,
   ] =
-    useState<CatalogosAuditoria>({
-      servicios: [],
-      modulos: [],
-      acciones: [],
-      resultados: [],
-    });
+    useState<CatalogosAuditoria>(
+      {
+        servicios: [],
+
+        modulos: [],
+
+        acciones: [],
+
+        resultados: [],
+      },
+    );
 
 
   // ========================================================
@@ -443,6 +502,15 @@ export function AuditoriaPage() {
     );
 
 
+  const [
+    filtrosVisibles,
+    setFiltrosVisibles,
+  ] =
+    useState(
+      false,
+    );
+
+
   // ========================================================
   // PAGINACIÓN
   // ========================================================
@@ -451,7 +519,9 @@ export function AuditoriaPage() {
     pagina,
     setPagina,
   ] =
-    useState(1);
+    useState(
+      1,
+    );
 
 
   // ========================================================
@@ -464,28 +534,36 @@ export function AuditoriaPage() {
   ] =
     useState<
       RespuestaPaginadaAuditoria | null
-    >(null);
+    >(
+      null,
+    );
 
 
   const [
     cargando,
     setCargando,
   ] =
-    useState(false);
+    useState(
+      false,
+    );
 
 
   const [
     error,
     setError,
   ] =
-    useState("");
+    useState(
+      "",
+    );
 
 
   const [
     recarga,
     setRecarga,
   ] =
-    useState(0);
+    useState(
+      0,
+    );
 
 
   // ========================================================
@@ -498,41 +576,49 @@ export function AuditoriaPage() {
   ] =
     useState<
       DetalleEventoAuditoria | null
-    >(null);
+    >(
+      null,
+    );
 
 
   const [
     detalleVisible,
     setDetalleVisible,
   ] =
-    useState(false);
+    useState(
+      false,
+    );
 
 
   const [
     cargandoDetalle,
     setCargandoDetalle,
   ] =
-    useState(false);
+    useState(
+      false,
+    );
 
 
   const [
     errorDetalle,
     setErrorDetalle,
   ] =
-    useState("");
+    useState(
+      "",
+    );
 
 
   // ========================================================
-  // CATÁLOGOS
+  // CARGAR CATÁLOGOS
   // ========================================================
 
   useEffect(
     () => {
 
-      if (
-        !esJefe
-      ) {
+      if (!esJefe) {
+
         return;
+
       }
 
 
@@ -540,39 +626,41 @@ export function AuditoriaPage() {
         new AbortController();
 
 
-      const cargar =
-        async () => {
+      async function cargar() {
 
-          try {
+        try {
 
-            const data =
-              await obtenerCatalogosAuditoria(
-                controller.signal,
-              );
-
-            setCatalogos(
-              data,
+          const data =
+            await obtenerCatalogosAuditoria(
+              controller.signal,
             );
 
-          } catch (
-            err
-          ) {
 
-            const mensaje =
-              mensajeErrorAuditoria(
-                err,
-              );
+          setCatalogos(
+            data,
+          );
 
-            if (
-              mensaje
-            ) {
+        } catch (
+          requestError
+        ) {
 
-              setError(
-                mensaje,
-              );
-            }
+          const mensaje =
+            mensajeErrorAuditoria(
+              requestError,
+            );
+
+
+          if (mensaje) {
+
+            setError(
+              mensaje,
+            );
+
           }
-        };
+
+        }
+
+      }
 
 
       void cargar();
@@ -589,16 +677,16 @@ export function AuditoriaPage() {
 
 
   // ========================================================
-  // EVENTOS
+  // CARGAR EVENTOS
   // ========================================================
 
   useEffect(
     () => {
 
-      if (
-        !esJefe
-      ) {
+      if (!esJefe) {
+
         return;
+
       }
 
 
@@ -606,93 +694,98 @@ export function AuditoriaPage() {
         new AbortController();
 
 
-      const cargar =
-        async () => {
+      async function cargar() {
 
-          try {
+        setCargando(
+          true,
+        );
 
-            setCargando(
-              true,
+
+        setError(
+          "",
+        );
+
+
+        try {
+
+          const filtros:
+            FiltrosAuditoria = {
+
+              page:
+                pagina,
+
+              per_page:
+                POR_PAGINA,
+
+              servicio:
+                filtrosAplicados
+                  .servicio,
+
+              modulo:
+                filtrosAplicados
+                  .modulo,
+
+              accion:
+                filtrosAplicados
+                  .accion,
+
+              resultado:
+                filtrosAplicados
+                  .resultado,
+
+              entidad:
+                filtrosAplicados
+                  .entidad,
+
+            };
+
+
+          const data =
+            await listarEventosAuditoria(
+              filtros,
+              controller.signal,
             );
 
-            setError("");
 
+          setRespuesta(
+            data,
+          );
 
-            const filtros:
-              FiltrosAuditoria = {
+        } catch (
+          requestError
+        ) {
 
-                page:
-                  pagina,
-
-                per_page:
-                  POR_PAGINA,
-
-                servicio:
-                  filtrosAplicados
-                    .servicio,
-
-                modulo:
-                  filtrosAplicados
-                    .modulo,
-
-                accion:
-                  filtrosAplicados
-                    .accion,
-
-                resultado:
-                  filtrosAplicados
-                    .resultado,
-
-                entidad:
-                  filtrosAplicados
-                    .entidad,
-              };
-
-
-            const data =
-              await listarEventosAuditoria(
-                filtros,
-                controller.signal,
-              );
-
-
-            setRespuesta(
-              data,
+          const mensaje =
+            mensajeErrorAuditoria(
+              requestError,
             );
 
-          } catch (
-            err
+
+          if (mensaje) {
+
+            setError(
+              mensaje,
+            );
+
+          }
+
+        } finally {
+
+          if (
+            !controller
+              .signal
+              .aborted
           ) {
 
-            const mensaje =
-              mensajeErrorAuditoria(
-                err,
-              );
+            setCargando(
+              false,
+            );
 
-
-            if (
-              mensaje
-            ) {
-
-              setError(
-                mensaje,
-              );
-            }
-
-          } finally {
-
-            if (
-              !controller
-                .signal
-                .aborted
-            ) {
-
-              setCargando(
-                false,
-              );
-            }
           }
-        };
+
+        }
+
+      }
 
 
       void cargar();
@@ -712,22 +805,23 @@ export function AuditoriaPage() {
 
 
   // ========================================================
-  // ESCAPE MODAL
+  // CERRAR MODAL CON ESC
   // ========================================================
 
   useEffect(
     () => {
 
-      if (
-        !detalleVisible
-      ) {
+      if (!detalleVisible) {
+
         return;
+
       }
 
 
-      const cerrarConEscape =
+      const cerrar =
         (
-          event: KeyboardEvent,
+          event:
+            KeyboardEvent,
         ) => {
 
           if (
@@ -738,20 +832,22 @@ export function AuditoriaPage() {
             setDetalleVisible(
               false,
             );
+
           }
+
         };
 
 
       window.addEventListener(
         "keydown",
-        cerrarConEscape,
+        cerrar,
       );
 
 
       return () =>
         window.removeEventListener(
           "keydown",
-          cerrarConEscape,
+          cerrar,
         );
 
     },
@@ -762,7 +858,7 @@ export function AuditoriaPage() {
 
 
   // ========================================================
-  // MÓDULOS SEGÚN SERVICIO
+  // MÓDULOS DISPONIBLES
   // ========================================================
 
   const modulosDisponibles =
@@ -774,38 +870,40 @@ export function AuditoriaPage() {
             .servicio
         ) {
 
-          return (
-            catalogos.modulos
-          );
+          return catalogos.modulos;
+
         }
 
 
         return (
-          catalogos.modulos
-          .filter(
-            (
-              modulo,
-            ) =>
-              modulo.servicio ===
-              filtrosFormulario
-                .servicio,
-          )
+          catalogos
+            .modulos
+            .filter(
+              (
+                modulo,
+              ) =>
+                modulo.servicio
+                ===
+                filtrosFormulario
+                  .servicio,
+            )
         );
+
       },
       [
         catalogos.modulos,
-        filtrosFormulario
-          .servicio,
+        filtrosFormulario.servicio,
       ],
     );
 
 
   // ========================================================
-  // EVENTOS ACTUALES
+  // EVENTOS DE PÁGINA
   // ========================================================
 
   const eventos =
-    respuesta?.data ||
+    respuesta?.data
+    ??
     [];
 
 
@@ -814,150 +912,189 @@ export function AuditoriaPage() {
       (
         evento,
       ) =>
-        evento.resultado ===
+        evento.resultado
+        ===
         "EXITOSO",
     ).length;
 
 
-  const denegadosPagina =
+  const problemasPagina =
     eventos.filter(
       (
         evento,
       ) =>
-        evento.resultado ===
-        "DENEGADO",
+        (
+          evento.resultado
+          ===
+          "DENEGADO"
+        )
+        ||
+        (
+          evento.resultado
+          ===
+          "FALLIDO"
+        ),
     ).length;
 
 
-  const conCambiosPagina =
+  const cambiosPagina =
     eventos.filter(
       (
         evento,
       ) =>
         evento
-          .cantidad_cambios >
+          .cantidad_cambios
+        >
         0,
     ).length;
 
 
   // ========================================================
-  // APLICAR FILTROS
+  // CANTIDAD FILTROS
   // ========================================================
 
-  const aplicarFiltros =
-    (
-      event:
-        FormEvent<HTMLFormElement>,
-    ) => {
-
-      event.preventDefault();
-
-
-      setPagina(
-        1,
-      );
+  const filtrosActivos =
+    Object.values(
+      filtrosAplicados,
+    ).filter(
+      (
+        value,
+      ) =>
+        value.trim() !== "",
+    ).length;
 
 
-      setFiltrosAplicados({
+  // ========================================================
+  // APLICAR
+  // ========================================================
+
+  function aplicarFiltros(
+    event:
+      FormEvent<HTMLFormElement>,
+  ) {
+
+    event.preventDefault();
+
+
+    setPagina(
+      1,
+    );
+
+
+    setFiltrosAplicados(
+      {
         ...filtrosFormulario,
 
         entidad:
           filtrosFormulario
             .entidad
             .trim(),
-      });
-    };
+      },
+    );
+
+  }
 
 
   // ========================================================
   // LIMPIAR
   // ========================================================
 
-  const limpiarFiltros =
-    () => {
+  function limpiarFiltros() {
 
-      setFiltrosFormulario(
-        FILTROS_INICIALES,
-      );
+    setFiltrosFormulario(
+      FILTROS_INICIALES,
+    );
 
-      setFiltrosAplicados(
-        FILTROS_INICIALES,
-      );
 
-      setPagina(
-        1,
-      );
-    };
+    setFiltrosAplicados(
+      FILTROS_INICIALES,
+    );
+
+
+    setPagina(
+      1,
+    );
+
+  }
 
 
   // ========================================================
-  // ABRIR DETALLE
+  // DETALLE
   // ========================================================
 
-  const abrirDetalle =
-    async (
-      idEvento: string,
-    ) => {
+  async function abrirDetalle(
+    idEvento:
+      string,
+  ) {
 
-      setDetalleVisible(
-        true,
-      );
+    setDetalleVisible(
+      true,
+    );
+
+
+    setDetalle(
+      null,
+    );
+
+
+    setErrorDetalle(
+      "",
+    );
+
+
+    setCargandoDetalle(
+      true,
+    );
+
+
+    try {
+
+      const data =
+        await obtenerEventoAuditoria(
+          idEvento,
+        );
+
 
       setDetalle(
-        null,
+        data,
       );
 
-      setErrorDetalle("");
+    } catch (
+      requestError
+    ) {
+
+      setErrorDetalle(
+        mensajeErrorAuditoria(
+          requestError,
+        ),
+      );
+
+    } finally {
 
       setCargandoDetalle(
-        true,
+        false,
       );
 
+    }
 
-      try {
-
-        const data =
-          await obtenerEventoAuditoria(
-            idEvento,
-          );
-
-
-        setDetalle(
-          data,
-        );
-
-      } catch (
-        err
-      ) {
-
-        setErrorDetalle(
-          mensajeErrorAuditoria(
-            err,
-          ),
-        );
-
-      } finally {
-
-        setCargandoDetalle(
-          false,
-        );
-      }
-    };
+  }
 
 
   // ========================================================
   // ACCESO
   // ========================================================
 
-  if (
-    !esJefe
-  ) {
+  if (!esJefe) {
 
     return (
 
-      <section className="audit-access-denied">
+      <section
+        className="audit-access-denied"
+      >
 
-        <div className="audit-access-denied__icon">
+        <div
+          className="audit-access-denied__icon"
+        >
 
           <ShieldX
             size={31}
@@ -965,18 +1102,21 @@ export function AuditoriaPage() {
 
         </div>
 
+
         <h1>
           Acceso restringido
         </h1>
 
+
         <p>
-          El historial de auditoría
-          está disponible únicamente
-          para Jefatura de Oncología.
+          El historial de auditoría está disponible
+          únicamente para Jefatura de Oncología.
         </p>
 
       </section>
+
     );
+
   }
 
 
@@ -986,19 +1126,23 @@ export function AuditoriaPage() {
 
   return (
 
-    <section className="audit-page">
-
+    <section
+      className="audit-page"
+    >
 
       {/* ==================================================
-          CABECERA
+          HEADER
           ================================================== */}
 
-      <header className="audit-page__heading">
-
+      <header
+        className="audit-page__heading"
+      >
 
         <div>
 
-          <div className="audit-page__eyebrow">
+          <div
+            className="audit-page__eyebrow"
+          >
 
             <ShieldCheck
               size={16}
@@ -1010,31 +1154,31 @@ export function AuditoriaPage() {
 
 
           <h1>
-            Historial de auditoría
+            Auditoría
           </h1>
 
 
           <p>
-            Consulte quién realizó
-            una acción, cuándo ocurrió,
-            qué información cambió y
-            si la operación fue exitosa,
-            fallida o denegada.
+            Revise las acciones más recientes del sistema
+            y consulte el detalle solo cuando sea necesario.
           </p>
 
         </div>
 
 
-        <div className="audit-page__readonly">
+        <div
+          className="audit-page__readonly"
+        >
 
           <LockKeyhole
             size={17}
           />
 
+
           <div>
 
             <strong>
-              Historial inmutable
+              Historial protegido
             </strong>
 
             <span>
@@ -1045,7 +1189,6 @@ export function AuditoriaPage() {
 
         </div>
 
-
       </header>
 
 
@@ -1053,12 +1196,15 @@ export function AuditoriaPage() {
           RESUMEN
           ================================================== */}
 
-      <div className="audit-summary">
-
+      <div
+        className="audit-summary"
+      >
 
         <article>
 
-          <div className="audit-summary__icon">
+          <div
+            className="audit-summary__icon"
+          >
 
             <Database
               size={20}
@@ -1066,19 +1212,24 @@ export function AuditoriaPage() {
 
           </div>
 
+
           <div>
 
             <span>
-              Eventos registrados
+              Eventos
             </span>
 
             <strong>
               {
-                respuesta
-                  ?.total ??
+                respuesta?.total
+                ??
                 0
               }
             </strong>
+
+            <small>
+              Total encontrado
+            </small>
 
           </div>
 
@@ -1087,7 +1238,9 @@ export function AuditoriaPage() {
 
         <article>
 
-          <div className="audit-summary__icon audit-summary__icon--success">
+          <div
+            className="audit-summary__icon audit-summary__icon--success"
+          >
 
             <CheckCircle2
               size={20}
@@ -1095,16 +1248,21 @@ export function AuditoriaPage() {
 
           </div>
 
+
           <div>
 
             <span>
-              Exitosos en página
+              Exitosos
             </span>
 
             <strong>
               {exitososPagina}
             </strong>
 
+            <small>
+              Página actual
+            </small>
+
           </div>
 
         </article>
@@ -1112,23 +1270,30 @@ export function AuditoriaPage() {
 
         <article>
 
-          <div className="audit-summary__icon audit-summary__icon--danger">
+          <div
+            className="audit-summary__icon audit-summary__icon--danger"
+          >
 
-            <Ban
+            <AlertCircle
               size={20}
             />
 
           </div>
 
+
           <div>
 
             <span>
-              Denegados en página
+              Alertas
             </span>
 
             <strong>
-              {denegadosPagina}
+              {problemasPagina}
             </strong>
+
+            <small>
+              Fallidos o denegados
+            </small>
 
           </div>
 
@@ -1137,13 +1302,16 @@ export function AuditoriaPage() {
 
         <article>
 
-          <div className="audit-summary__icon audit-summary__icon--changes">
+          <div
+            className="audit-summary__icon audit-summary__icon--changes"
+          >
 
             <FileClock
               size={20}
             />
 
           </div>
+
 
           <div>
 
@@ -1152,77 +1320,75 @@ export function AuditoriaPage() {
             </span>
 
             <strong>
-              {conCambiosPagina}
+              {cambiosPagina}
             </strong>
+
+            <small>
+              Página actual
+            </small>
 
           </div>
 
         </article>
 
-
       </div>
 
 
       {/* ==================================================
-          FILTROS
+          BARRA DE CONTROL
           ================================================== */}
 
-      <form
-
-        className="audit-filters"
-
-        onSubmit={
-          aplicarFiltros
-        }
-
+      <div
+        className="audit-controlbar"
       >
 
+        <div>
 
-        <div className="audit-filters__heading">
+          <div
+            className="audit-controlbar__icon"
+          >
 
-          <div>
-
-            <Filter
-              size={17}
+            <Clock3
+              size={18}
             />
-
-            <div>
-
-              <strong>
-                Filtros de consulta
-              </strong>
-
-              <span>
-                Combine criterios para localizar eventos.
-              </span>
-
-            </div>
 
           </div>
 
 
+          <div>
+
+            <strong>
+              Actividad reciente
+            </strong>
+
+            <span>
+              Los últimos eventos aparecen primero.
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <div
+          className="audit-controlbar__actions"
+        >
+
           <button
-
             type="button"
-
             className="audit-button audit-button--ghost"
-
             onClick={
-              () => {
-
+              () =>
                 setRecarga(
                   (
-                    valor,
+                    value,
                   ) =>
-                    valor + 1,
-                );
-              }
+                    value + 1,
+                )
             }
-
             disabled={
               cargando
             }
-
           >
 
             <RefreshCcw
@@ -1238,392 +1404,539 @@ export function AuditoriaPage() {
 
           </button>
 
-        </div>
-
-
-        <div className="audit-filters__grid">
-
-
-          {/* SERVICIO */}
-
-          <label>
-
-            <span>
-              Servicio
-            </span>
-
-            <select
-
-              value={
-                filtrosFormulario
-                  .servicio
-              }
-
-              onChange={
-                (
-                  event,
-                ) => {
-
-                  const servicio =
-                    event
-                      .target
-                      .value;
-
-
-                  setFiltrosFormulario(
-                    (
-                      actual,
-                    ) => ({
-                      ...actual,
-
-                      servicio,
-
-                      modulo: "",
-                    }),
-                  );
-                }
-              }
-
-            >
-
-              <option value="">
-                Todos
-              </option>
-
-              {
-                catalogos
-                  .servicios
-                  .map(
-                    (
-                      servicio,
-                    ) => (
-
-                      <option
-
-                        key={
-                          servicio.codigo
-                        }
-
-                        value={
-                          servicio.codigo
-                        }
-
-                      >
-                        {servicio.nombre}
-                      </option>
-                    ),
-                  )
-              }
-
-            </select>
-
-          </label>
-
-
-          {/* MÓDULO */}
-
-          <label>
-
-            <span>
-              Módulo
-            </span>
-
-            <select
-
-              value={
-                filtrosFormulario
-                  .modulo
-              }
-
-              onChange={
-                (
-                  event,
-                ) =>
-
-                  setFiltrosFormulario(
-                    (
-                      actual,
-                    ) => ({
-                      ...actual,
-
-                      modulo:
-                        event
-                          .target
-                          .value,
-                    }),
-                  )
-              }
-
-            >
-
-              <option value="">
-                Todos
-              </option>
-
-              {
-                modulosDisponibles
-                  .map(
-                    (
-                      modulo,
-                    ) => (
-
-                      <option
-
-                        key={
-                          `${modulo.servicio}-${modulo.codigo}`
-                        }
-
-                        value={
-                          modulo.codigo
-                        }
-
-                      >
-                        {modulo.nombre}
-                      </option>
-                    ),
-                  )
-              }
-
-            </select>
-
-          </label>
-
-
-          {/* ACCIÓN */}
-
-          <label>
-
-            <span>
-              Acción
-            </span>
-
-            <select
-
-              value={
-                filtrosFormulario
-                  .accion
-              }
-
-              onChange={
-                (
-                  event,
-                ) =>
-
-                  setFiltrosFormulario(
-                    (
-                      actual,
-                    ) => ({
-                      ...actual,
-
-                      accion:
-                        event
-                          .target
-                          .value,
-                    }),
-                  )
-              }
-
-            >
-
-              <option value="">
-                Todas
-              </option>
-
-              {
-                catalogos
-                  .acciones
-                  .map(
-                    (
-                      accion,
-                    ) => (
-
-                      <option
-
-                        key={
-                          accion.codigo
-                        }
-
-                        value={
-                          accion.codigo
-                        }
-
-                      >
-                        {accion.nombre}
-                      </option>
-                    ),
-                  )
-              }
-
-            </select>
-
-          </label>
-
-
-          {/* RESULTADO */}
-
-          <label>
-
-            <span>
-              Resultado
-            </span>
-
-            <select
-
-              value={
-                filtrosFormulario
-                  .resultado
-              }
-
-              onChange={
-                (
-                  event,
-                ) =>
-
-                  setFiltrosFormulario(
-                    (
-                      actual,
-                    ) => ({
-                      ...actual,
-
-                      resultado:
-                        event
-                          .target
-                          .value,
-                    }),
-                  )
-              }
-
-            >
-
-              <option value="">
-                Todos
-              </option>
-
-              {
-                catalogos
-                  .resultados
-                  .map(
-                    (
-                      resultado,
-                    ) => (
-
-                      <option
-
-                        key={
-                          resultado.codigo
-                        }
-
-                        value={
-                          resultado.codigo
-                        }
-
-                      >
-                        {resultado.nombre}
-                      </option>
-                    ),
-                  )
-              }
-
-            </select>
-
-          </label>
-
-
-          {/* ENTIDAD */}
-
-          <label className="audit-filters__entity">
-
-            <span>
-              Entidad o identificador
-            </span>
-
-            <div className="audit-filters__search">
-
-              <Search
-                size={16}
-              />
-
-              <input
-
-                type="search"
-
-                value={
-                  filtrosFormulario
-                    .entidad
-                }
-
-                onChange={
-                  (
-                    event,
-                  ) =>
-
-                    setFiltrosFormulario(
-                      (
-                        actual,
-                      ) => ({
-                        ...actual,
-
-                        entidad:
-                          event
-                            .target
-                            .value,
-                      }),
-                    )
-                }
-
-                placeholder="UUID, usuario, paciente, sesión..."
-
-              />
-
-            </div>
-
-          </label>
-
-
-        </div>
-
-
-        <div className="audit-filters__actions">
 
           <button
-
             type="button"
-
-            className="audit-button audit-button--secondary"
-
+            className={
+              filtrosActivos > 0
+                ? "audit-filter-toggle audit-filter-toggle--active"
+                : "audit-filter-toggle"
+            }
             onClick={
-              limpiarFiltros
+              () =>
+                setFiltrosVisibles(
+                  (
+                    value,
+                  ) =>
+                    !value,
+                )
             }
-
-          >
-            Limpiar
-          </button>
-
-
-          <button
-
-            type="submit"
-
-            className="audit-button audit-button--primary"
-
-            disabled={
-              cargando
-            }
-
           >
 
             <Filter
               size={16}
             />
 
-            Aplicar filtros
+
+            Filtros
+
+
+            {
+              filtrosActivos > 0
+              &&
+              (
+
+                <span
+                  className="audit-filter-toggle__count"
+                >
+                  {filtrosActivos}
+                </span>
+
+              )
+            }
+
+
+            {
+              filtrosVisibles
+                ? (
+                    <ChevronUp
+                      size={15}
+                    />
+                  )
+                : (
+                    <ChevronDown
+                      size={15}
+                    />
+                  )
+            }
 
           </button>
 
         </div>
 
+      </div>
 
-      </form>
+
+      {/* ==================================================
+          FILTROS AVANZADOS
+          ================================================== */}
+
+      {
+        filtrosVisibles
+        &&
+        (
+
+          <form
+            className="audit-filters"
+            onSubmit={
+              aplicarFiltros
+            }
+          >
+
+            <div
+              className="audit-filters__heading"
+            >
+
+              <div>
+
+                <Filter
+                  size={17}
+                />
+
+
+                <div>
+
+                  <strong>
+                    Filtros avanzados
+                  </strong>
+
+                  <span>
+                    Combine criterios únicamente cuando necesite
+                    localizar un evento específico.
+                  </span>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <div
+              className="audit-filters__grid"
+            >
+
+              <label>
+
+                <span>
+                  Servicio
+                </span>
+
+
+                <select
+                  value={
+                    filtrosFormulario.servicio
+                  }
+                  onChange={
+                    (
+                      event,
+                    ) => {
+
+                      const servicio =
+                        event
+                          .target
+                          .value;
+
+
+                      setFiltrosFormulario(
+                        (
+                          current,
+                        ) => ({
+                          ...current,
+
+                          servicio,
+
+                          modulo: "",
+                        }),
+                      );
+
+                    }
+                  }
+                >
+
+                  <option
+                    value=""
+                  >
+                    Todos los servicios
+                  </option>
+
+
+                  {
+                    catalogos
+                      .servicios
+                      .map(
+                        (
+                          servicio,
+                        ) => (
+
+                          <option
+                            key={
+                              servicio.codigo
+                            }
+                            value={
+                              servicio.codigo
+                            }
+                          >
+
+                            {
+                              servicio.nombre
+                            }
+
+                          </option>
+
+                        ),
+                      )
+                  }
+
+                </select>
+
+              </label>
+
+
+              <label>
+
+                <span>
+                  Módulo
+                </span>
+
+
+                <select
+                  value={
+                    filtrosFormulario.modulo
+                  }
+                  onChange={
+                    (
+                      event,
+                    ) =>
+                      setFiltrosFormulario(
+                        (
+                          current,
+                        ) => ({
+                          ...current,
+
+                          modulo:
+                            event
+                              .target
+                              .value,
+                        }),
+                      )
+                  }
+                >
+
+                  <option
+                    value=""
+                  >
+                    Todos los módulos
+                  </option>
+
+
+                  {
+                    modulosDisponibles.map(
+                      (
+                        modulo,
+                      ) => (
+
+                        <option
+                          key={
+                            `${modulo.servicio}-${modulo.codigo}`
+                          }
+                          value={
+                            modulo.codigo
+                          }
+                        >
+
+                          {
+                            modulo.nombre
+                          }
+
+                        </option>
+
+                      ),
+                    )
+                  }
+
+                </select>
+
+              </label>
+
+
+              <label>
+
+                <span>
+                  Acción
+                </span>
+
+
+                <select
+                  value={
+                    filtrosFormulario.accion
+                  }
+                  onChange={
+                    (
+                      event,
+                    ) =>
+                      setFiltrosFormulario(
+                        (
+                          current,
+                        ) => ({
+                          ...current,
+
+                          accion:
+                            event
+                              .target
+                              .value,
+                        }),
+                      )
+                  }
+                >
+
+                  <option
+                    value=""
+                  >
+                    Todas las acciones
+                  </option>
+
+
+                  {
+                    catalogos
+                      .acciones
+                      .map(
+                        (
+                          accion,
+                        ) => (
+
+                          <option
+                            key={
+                              accion.codigo
+                            }
+                            value={
+                              accion.codigo
+                            }
+                          >
+
+                            {
+                              accion.nombre
+                            }
+
+                          </option>
+
+                        ),
+                      )
+                  }
+
+                </select>
+
+              </label>
+
+
+              <label>
+
+                <span>
+                  Resultado
+                </span>
+
+
+                <select
+                  value={
+                    filtrosFormulario.resultado
+                  }
+                  onChange={
+                    (
+                      event,
+                    ) =>
+                      setFiltrosFormulario(
+                        (
+                          current,
+                        ) => ({
+                          ...current,
+
+                          resultado:
+                            event
+                              .target
+                              .value,
+                        }),
+                      )
+                  }
+                >
+
+                  <option
+                    value=""
+                  >
+                    Todos los resultados
+                  </option>
+
+
+                  {
+                    catalogos
+                      .resultados
+                      .map(
+                        (
+                          resultado,
+                        ) => (
+
+                          <option
+                            key={
+                              resultado.codigo
+                            }
+                            value={
+                              resultado.codigo
+                            }
+                          >
+
+                            {
+                              resultado.nombre
+                            }
+
+                          </option>
+
+                        ),
+                      )
+                  }
+
+                </select>
+
+              </label>
+
+
+              <label
+                className="audit-filters__entity"
+              >
+
+                <span>
+                  Entidad o identificador
+                </span>
+
+
+                <div
+                  className="audit-filters__search"
+                >
+
+                  <Search
+                    size={16}
+                  />
+
+
+                  <input
+                    type="search"
+                    value={
+                      filtrosFormulario.entidad
+                    }
+                    onChange={
+                      (
+                        event,
+                      ) =>
+                        setFiltrosFormulario(
+                          (
+                            current,
+                          ) => ({
+                            ...current,
+
+                            entidad:
+                              event
+                                .target
+                                .value,
+                          }),
+                        )
+                    }
+                    placeholder="UUID, paciente, sesión, entidad..."
+                  />
+
+                </div>
+
+              </label>
+
+            </div>
+
+
+            <div
+              className="audit-filters__actions"
+            >
+
+              <button
+                type="button"
+                className="audit-button audit-button--secondary"
+                onClick={
+                  limpiarFiltros
+                }
+              >
+
+                Limpiar
+
+              </button>
+
+
+              <button
+                type="submit"
+                className="audit-button audit-button--primary"
+              >
+
+                <Search
+                  size={16}
+                />
+
+                Aplicar filtros
+
+              </button>
+
+            </div>
+
+          </form>
+
+        )
+      }
+
+
+      {/* ==================================================
+          FILTROS ACTIVOS
+          ================================================== */}
+
+      {
+        filtrosActivos > 0
+        &&
+        (
+
+          <div
+            className="audit-active-filters"
+          >
+
+            <div>
+
+              <Filter
+                size={15}
+              />
+
+              <strong>
+                {
+                  filtrosActivos
+                }
+              </strong>
+
+              <span>
+                filtros aplicados
+              </span>
+
+            </div>
+
+
+            <button
+              type="button"
+              onClick={
+                limpiarFiltros
+              }
+            >
+
+              Limpiar filtros
+
+              <X
+                size={14}
+              />
+
+            </button>
+
+          </div>
+
+        )
+      }
 
 
       {/* ==================================================
@@ -1631,55 +1944,55 @@ export function AuditoriaPage() {
           ================================================== */}
 
       {
-        error && (
+        error
+        &&
+        (
 
-          <div className="audit-alert">
+          <div
+            className="audit-error"
+          >
 
             <AlertCircle
-              size={18}
+              size={19}
             />
 
-            <div>
-
-              <strong>
-                No se pudo cargar Auditoría
-              </strong>
-
-              <span>
-                {error}
-              </span>
-
-            </div>
+            <span>
+              {error}
+            </span>
 
           </div>
+
         )
       }
 
 
       {/* ==================================================
-          TABLA
+          LISTADO
           ================================================== */}
 
-      <section className="audit-table-card">
+      <article
+        className="audit-events-card"
+      >
 
-
-        <div className="audit-table-card__header">
+        <header
+          className="audit-events-card__header"
+        >
 
           <div>
 
             <Activity
-              size={18}
+              size={19}
             />
+
 
             <div>
 
               <h2>
-                Eventos registrados
+                Últimos eventos
               </h2>
 
               <p>
-                Historial ordenado desde
-                la acción más reciente.
+                Seleccione un registro para consultar todos sus detalles.
               </p>
 
             </div>
@@ -1687,61 +2000,76 @@ export function AuditoriaPage() {
           </div>
 
 
-          <span>
+          {
+            respuesta
+            &&
+            (
 
-            {
-              respuesta
-                ? (
-                    `${respuesta.from ?? 0}–${respuesta.to ?? 0} de ${respuesta.total}`
-                  )
-                : (
-                    "0 eventos"
-                  )
-            }
+              <span
+                className="audit-events-card__range"
+              >
+                {
+                  respuesta.from
+                  ??
+                  0
+                }
+                {" - "}
+                {
+                  respuesta.to
+                  ??
+                  0
+                }
+                {" de "}
+                {
+                  respuesta.total
+                }
+              </span>
 
-          </span>
+            )
+          }
 
-        </div>
+        </header>
 
 
         {
           cargando
             ? (
 
-                <div className="audit-loading">
+                <div
+                  className="audit-loading"
+                >
 
                   <LoaderCircle
                     size={27}
                     className="audit-spin"
                   />
 
-                  <strong>
-                    Consultando historial...
-                  </strong>
-
                   <span>
-                    Espere un momento.
+                    Cargando eventos...
                   </span>
 
                 </div>
 
               )
-            : eventos.length ===
-                0
+            : eventos.length === 0
               ? (
 
-                  <div className="audit-empty">
+                  <div
+                    className="audit-empty"
+                  >
 
-                    <Search
-                      size={29}
+                    <FileClock
+                      size={30}
                     />
+
 
                     <strong>
                       No se encontraron eventos
                     </strong>
 
+
                     <span>
-                      Cambie los filtros e intente nuevamente.
+                      Modifique los filtros o actualice el historial.
                     </span>
 
                   </div>
@@ -1749,370 +2077,260 @@ export function AuditoriaPage() {
                 )
               : (
 
-                  <div className="audit-table-wrap">
+                  <div
+                    className="audit-events"
+                  >
 
-                    <table className="audit-table">
+                    {
+                      eventos.map(
+                        (
+                          evento,
+                        ) => (
 
-                      <thead>
+                          <button
+                            key={
+                              evento.id_evento
+                            }
+                            type="button"
+                            className="audit-event"
+                            onClick={
+                              () =>
+                                void abrirDetalle(
+                                  evento.id_evento,
+                                )
+                            }
+                          >
 
-                        <tr>
+                            <div
+                              className="audit-event__actor"
+                            >
 
-                          <th>
-                            Fecha y hora
-                          </th>
+                              <div
+                                className="audit-event__avatar"
+                              >
 
-                          <th>
-                            Actor
-                          </th>
+                                <UserRound
+                                  size={17}
+                                />
 
-                          <th>
-                            Acción
-                          </th>
-
-                          <th>
-                            Módulo
-                          </th>
-
-                          <th>
-                            Entidad
-                          </th>
-
-                          <th>
-                            Resultado
-                          </th>
-
-                          <th>
-                            Cambios
-                          </th>
-
-                          <th aria-label="Detalle" />
-
-                        </tr>
-
-                      </thead>
+                              </div>
 
 
-                      <tbody>
+                              <div>
 
-                        {
-                          eventos.map(
-                            (
-                              evento,
-                            ) => (
+                                <strong>
+                                  {
+                                    nombreActor(
+                                      evento,
+                                    )
+                                  }
+                                </strong>
 
-                              <tr
-                                key={
-                                  evento.id_evento
+
+                                <span>
+                                  {
+                                    rolActor(
+                                      evento,
+                                    )
+                                  }
+                                </span>
+
+                              </div>
+
+                            </div>
+
+
+                            <div
+                              className="audit-event__action"
+                            >
+
+                              <strong>
+                                {
+                                  evento.accion_nombre
+                                  ||
+                                  evento.accion
+                                }
+                              </strong>
+
+
+                              <span>
+                                {
+                                  descripcionEvento(
+                                    evento,
+                                  )
+                                }
+                              </span>
+
+                            </div>
+
+
+                            <div
+                              className="audit-event__module"
+                            >
+
+                              <span>
+                                {
+                                  evento.modulo_nombre
+                                  ||
+                                  evento.modulo
+                                }
+                              </span>
+
+
+                              <small>
+                                {
+                                  evento.servicio_nombre
+                                  ||
+                                  evento.servicio
+                                }
+                              </small>
+
+                            </div>
+
+
+                            <div
+                              className="audit-event__result"
+                            >
+
+                              <span
+                                className={
+                                  claseResultado(
+                                    evento.resultado,
+                                  )
                                 }
                               >
 
+                                {
+                                  textoResultado(
+                                    evento,
+                                  )
+                                }
 
-                                <td>
-
-                                  <div className="audit-date">
-
-                                    <Clock3
-                                      size={15}
-                                    />
-
-                                    <span>
-                                      {
-                                        formatearFecha(
-                                          evento.fecha_evento,
-                                        )
-                                      }
-                                    </span>
-
-                                  </div>
-
-                                </td>
+                              </span>
 
 
-                                <td>
+                              {
+                                evento.cantidad_cambios > 0
+                                &&
+                                (
 
-                                  <div className="audit-actor">
-
-                                    <div className="audit-actor__icon">
-
-                                      <UserRound
-                                        size={15}
-                                      />
-
-                                    </div>
-
-                                    <div>
-
-                                      <strong>
-                                        {
-                                          nombreActor(
-                                            evento,
-                                          )
-                                        }
-                                      </strong>
-
-                                      <span>
-                                        {
-                                          rolActor(
-                                            evento,
-                                          )
-                                        }
-                                      </span>
-
-                                    </div>
-
-                                  </div>
-
-                                </td>
-
-
-                                <td>
-
-                                  <div className="audit-action">
-
-                                    <strong>
-                                      {
-                                        evento
-                                          .accion_nombre ||
-                                        evento.accion
-                                      }
-                                    </strong>
-
-                                    <span>
-                                      {evento.accion}
-                                    </span>
-
-                                  </div>
-
-                                </td>
-
-
-                                <td>
-
-                                  <div className="audit-module">
-
-                                    <Layers3
-                                      size={15}
-                                    />
-
-                                    <div>
-
-                                      <strong>
-                                        {
-                                          evento
-                                            .modulo_nombre ||
-                                          evento.modulo
-                                        }
-                                      </strong>
-
-                                      <span>
-                                        {
-                                          evento
-                                            .servicio_nombre ||
-                                          evento.servicio
-                                        }
-                                      </span>
-
-                                    </div>
-
-                                  </div>
-
-                                </td>
-
-
-                                <td>
-
-                                  <div className="audit-entity">
-
-                                    <strong>
-                                      {
-                                        evento.entidad_tipo ||
-                                        "—"
-                                      }
-                                    </strong>
-
-                                    <span
-                                      title={
-                                        evento.entidad_id ||
-                                        ""
-                                      }
-                                    >
-                                      {
-                                        evento.entidad_id ||
-                                        "Sin identificador"
-                                      }
-                                    </span>
-
-                                  </div>
-
-                                </td>
-
-
-                                <td>
-
-                                  <span
-                                    className={
-                                      claseResultado(
-                                        evento.resultado,
-                                      )
-                                    }
-                                  >
-
+                                  <small>
                                     {
-                                      evento.resultado ===
-                                        "EXITOSO"
-                                        ? (
-                                            <CheckCircle2
-                                              size={14}
-                                            />
-                                          )
-                                        : evento.resultado ===
-                                            "DENEGADO"
-                                          ? (
-                                              <Ban
-                                                size={14}
-                                              />
-                                            )
-                                          : (
-                                              <AlertCircle
-                                                size={14}
-                                              />
-                                            )
+                                      evento.cantidad_cambios
                                     }
-
+                                    {" "}
+                                    cambio
                                     {
-                                      textoResultado(
-                                        evento,
-                                      )
+                                      evento.cantidad_cambios === 1
+                                        ? ""
+                                        : "s"
                                     }
+                                  </small>
 
-                                  </span>
+                                )
+                              }
 
-                                </td>
-
-
-                                <td>
-
-                                  <span
-                                    className={
-                                      evento
-                                        .cantidad_cambios >
-                                      0
-                                        ? "audit-changes audit-changes--active"
-                                        : "audit-changes"
-                                    }
-                                  >
-
-                                    {
-                                      evento
-                                        .cantidad_cambios
-                                    }
-
-                                  </span>
-
-                                </td>
+                            </div>
 
 
-                                <td>
+                            <div
+                              className="audit-event__date"
+                            >
 
-                                  <button
+                              <Clock3
+                                size={14}
+                              />
 
-                                    type="button"
+                              <span>
+                                {
+                                  formatearFecha(
+                                    evento.fecha_evento,
+                                  )
+                                }
+                              </span>
 
-                                    className="audit-detail-button"
-
-                                    onClick={
-                                      () =>
-                                        void abrirDetalle(
-                                          evento.id_evento,
-                                        )
-                                    }
-
-                                    title="Ver detalle"
-
-                                  >
-
-                                    <Eye
-                                      size={17}
-                                    />
-
-                                  </button>
-
-                                </td>
+                            </div>
 
 
-                              </tr>
-                            ),
-                          )
-                        }
+                            <div
+                              className="audit-event__open"
+                            >
 
-                      </tbody>
+                              <Eye
+                                size={17}
+                              />
 
-                    </table>
+                              <ArrowRight
+                                size={15}
+                              />
+
+                            </div>
+
+                          </button>
+
+                        ),
+                      )
+                    }
 
                   </div>
+
                 )
         }
 
 
-        {/* ================================================
+        {/* ==================================================
             PAGINACIÓN
-            ================================================ */}
+            ================================================== */}
 
         {
-          respuesta &&
-          respuesta.total >
-            0 && (
+          respuesta
+          &&
+          respuesta.last_page > 1
+          &&
+          (
 
-            <footer className="audit-pagination">
+            <footer
+              className="audit-pagination"
+            >
 
-
-              <div>
-
-                Página{" "}
-
+              <span>
+                Página
+                {" "}
                 <strong>
                   {
                     respuesta.current_page
                   }
                 </strong>
-
-                {" "}de{" "}
-
+                {" de "}
                 <strong>
                   {
                     respuesta.last_page
                   }
                 </strong>
+              </span>
 
-              </div>
 
-
-              <div className="audit-pagination__buttons">
-
+              <div>
 
                 <button
-
                   type="button"
-
+                  disabled={
+                    pagina <= 1
+                    ||
+                    cargando
+                  }
                   onClick={
                     () =>
                       setPagina(
                         (
-                          actual,
+                          current,
                         ) =>
                           Math.max(
                             1,
-                            actual - 1,
+                            current - 1,
                           ),
                       )
                   }
-
-                  disabled={
-                    cargando ||
-                    respuesta.current_page <=
-                      1
-                  }
-
                 >
 
                   <ChevronLeft
@@ -2125,28 +2343,26 @@ export function AuditoriaPage() {
 
 
                 <button
-
                   type="button"
-
+                  disabled={
+                    pagina
+                    >=
+                    respuesta.last_page
+                    ||
+                    cargando
+                  }
                   onClick={
                     () =>
                       setPagina(
                         (
-                          actual,
+                          current,
                         ) =>
                           Math.min(
                             respuesta.last_page,
-                            actual + 1,
+                            current + 1,
                           ),
                       )
                   }
-
-                  disabled={
-                    cargando ||
-                    respuesta.current_page >=
-                      respuesta.last_page
-                  }
-
                 >
 
                   Siguiente
@@ -2157,16 +2373,14 @@ export function AuditoriaPage() {
 
                 </button>
 
-
               </div>
 
-
             </footer>
+
           )
         }
 
-
-      </section>
+      </article>
 
 
       {/* ==================================================
@@ -2174,68 +2388,66 @@ export function AuditoriaPage() {
           ================================================== */}
 
       {
-        detalleVisible && (
+        detalleVisible
+        &&
+        (
 
           <div
-
-            className="audit-modal__overlay"
-
+            className="audit-modal"
             role="presentation"
-
             onMouseDown={
               (
                 event,
               ) => {
 
                 if (
-                  event.target ===
+                  event.target
+                  ===
                   event.currentTarget
                 ) {
 
                   setDetalleVisible(
                     false,
                   );
+
                 }
+
               }
             }
-
           >
 
-            <section
-
-              className="audit-modal"
-
+            <article
+              className="audit-modal__panel"
               role="dialog"
-
               aria-modal="true"
-
-              aria-labelledby="audit-detail-title"
-
+              aria-label="Detalle del evento de auditoría"
             >
 
-
-              <header className="audit-modal__header">
+              <header
+                className="audit-modal__header"
+              >
 
                 <div>
 
-                  <div className="audit-modal__icon">
+                  <div
+                    className="audit-modal__icon"
+                  >
 
                     <FileClock
-                      size={21}
+                      size={20}
                     />
 
                   </div>
 
+
                   <div>
 
                     <span>
-                      EVENTO DE AUDITORÍA
+                      Evento de auditoría
                     </span>
 
-                    <h2
-                      id="audit-detail-title"
-                    >
-                      Detalle del evento
+                    <h2>
+                      Detalle de la acción
                     </h2>
 
                   </div>
@@ -2244,22 +2456,18 @@ export function AuditoriaPage() {
 
 
                 <button
-
                   type="button"
-
+                  aria-label="Cerrar"
                   onClick={
                     () =>
                       setDetalleVisible(
                         false,
                       )
                   }
-
-                  aria-label="Cerrar"
-
                 >
 
                   <X
-                    size={19}
+                    size={20}
                   />
 
                 </button>
@@ -2271,14 +2479,16 @@ export function AuditoriaPage() {
                 cargandoDetalle
                   ? (
 
-                      <div className="audit-modal__loading">
+                      <div
+                        className="audit-modal__loading"
+                      >
 
                         <LoaderCircle
                           size={27}
                           className="audit-spin"
                         />
 
-                        Consultando evento...
+                        Cargando detalle...
 
                       </div>
 
@@ -2286,7 +2496,9 @@ export function AuditoriaPage() {
                   : errorDetalle
                     ? (
 
-                        <div className="audit-modal__error">
+                        <div
+                          className="audit-error"
+                        >
 
                           <AlertCircle
                             size={19}
@@ -2300,76 +2512,68 @@ export function AuditoriaPage() {
                     : detalle
                       ? (
 
-                          <>
+                          <div
+                            className="audit-modal__content"
+                          >
 
+                            {/* ==============================
+                                RESUMEN
+                                ============================== */}
 
-                            {/* ACTOR */}
-
-                            <div className="audit-modal__actor">
-
-                              <div className="audit-modal__actor-icon">
-
-                                <UserRound
-                                  size={21}
-                                />
-
-                              </div>
+                            <div
+                              className="audit-detail-summary"
+                            >
 
                               <div>
 
                                 <span>
-                                  Acción realizada por
+                                  Acción
                                 </span>
 
                                 <strong>
                                   {
-                                    nombreActor(
+                                    detalle
+                                      .evento
+                                      .accion_nombre
+                                    ||
+                                    detalle
+                                      .evento
+                                      .accion
+                                  }
+                                </strong>
+
+                              </div>
+
+
+                              <div>
+
+                                <span>
+                                  Resultado
+                                </span>
+
+                                <strong
+                                  className={
+                                    claseResultado(
+                                      detalle
+                                        .evento
+                                        .resultado,
+                                    )
+                                  }
+                                >
+                                  {
+                                    textoResultado(
                                       detalle.evento,
                                     )
                                   }
                                 </strong>
 
-                                <small>
-                                  {
-                                    rolActor(
-                                      detalle.evento,
-                                    )
-                                  }
-                                </small>
-
                               </div>
-
-
-                              <span
-                                className={
-                                  claseResultado(
-                                    detalle
-                                      .evento
-                                      .resultado,
-                                  )
-                                }
-                              >
-
-                                {
-                                  textoResultado(
-                                    detalle.evento,
-                                  )
-                                }
-
-                              </span>
-
-                            </div>
-
-
-                            {/* INFORMACIÓN GENERAL */}
-
-                            <div className="audit-modal__grid">
 
 
                               <div>
 
                                 <span>
-                                  Fecha y hora
+                                  Fecha
                                 </span>
 
                                 <strong>
@@ -2384,238 +2588,302 @@ export function AuditoriaPage() {
 
                               </div>
 
-
-                              <div>
-
-                                <span>
-                                  Acción
-                                </span>
-
-                                <strong>
-                                  {
-                                    detalle
-                                      .evento
-                                      .accion_nombre ||
-                                    detalle
-                                      .evento
-                                      .accion
-                                  }
-                                </strong>
-
-                              </div>
-
-
-                              <div>
-
-                                <span>
-                                  Servicio
-                                </span>
-
-                                <strong>
-                                  {
-                                    detalle
-                                      .evento
-                                      .servicio_nombre ||
-                                    detalle
-                                      .evento
-                                      .servicio
-                                  }
-                                </strong>
-
-                              </div>
-
-
-                              <div>
-
-                                <span>
-                                  Módulo
-                                </span>
-
-                                <strong>
-                                  {
-                                    detalle
-                                      .evento
-                                      .modulo_nombre ||
-                                    detalle
-                                      .evento
-                                      .modulo
-                                  }
-                                </strong>
-
-                              </div>
-
-
-                              <div>
-
-                                <span>
-                                  Entidad
-                                </span>
-
-                                <strong>
-                                  {
-                                    detalle
-                                      .evento
-                                      .entidad_tipo ||
-                                    "—"
-                                  }
-                                </strong>
-
-                              </div>
-
-
-                              <div>
-
-                                <span>
-                                  Dirección IP
-                                </span>
-
-                                <strong>
-                                  {
-                                    detalle
-                                      .evento
-                                      .direccion_ip ||
-                                    "—"
-                                  }
-                                </strong>
-
-                              </div>
-
-
                             </div>
 
 
-                            {/* ID */}
+                            {/* ==============================
+                                INFORMACIÓN
+                                ============================== */}
 
-                            <div className="audit-modal__identifier">
+                            <section
+                              className="audit-detail-section"
+                            >
 
-                              <span>
-                                Identificador del evento
-                              </span>
+                              <header>
 
-                              <code>
-                                {
-                                  detalle
-                                    .evento
-                                    .id_evento
-                                }
-                              </code>
+                                <Activity
+                                  size={17}
+                                />
 
-                            </div>
+                                <h3>
+                                  Información del evento
+                                </h3>
+
+                              </header>
 
 
-                            {
-                              detalle
-                                .evento
-                                .entidad_id && (
+                              <div
+                                className="audit-detail-grid"
+                              >
 
-                                <div className="audit-modal__identifier">
+                                <div>
 
                                   <span>
-                                    Identificador de entidad
+                                    Usuario
                                   </span>
 
-                                  <code>
+                                  <strong>
+                                    {
+                                      nombreActor(
+                                        detalle.evento,
+                                      )
+                                    }
+                                  </strong>
+
+                                </div>
+
+
+                                <div>
+
+                                  <span>
+                                    Rol
+                                  </span>
+
+                                  <strong>
+                                    {
+                                      rolActor(
+                                        detalle.evento,
+                                      )
+                                    }
+                                  </strong>
+
+                                </div>
+
+
+                                <div>
+
+                                  <span>
+                                    Servicio
+                                  </span>
+
+                                  <strong>
+                                    {
+                                      detalle
+                                        .evento
+                                        .servicio_nombre
+                                      ||
+                                      detalle
+                                        .evento
+                                        .servicio
+                                    }
+                                  </strong>
+
+                                </div>
+
+
+                                <div>
+
+                                  <span>
+                                    Módulo
+                                  </span>
+
+                                  <strong>
+                                    {
+                                      detalle
+                                        .evento
+                                        .modulo_nombre
+                                      ||
+                                      detalle
+                                        .evento
+                                        .modulo
+                                    }
+                                  </strong>
+
+                                </div>
+
+
+                                <div>
+
+                                  <span>
+                                    Entidad
+                                  </span>
+
+                                  <strong>
+                                    {
+                                      detalle
+                                        .evento
+                                        .entidad_tipo
+                                      ||
+                                      "—"
+                                    }
+                                  </strong>
+
+                                </div>
+
+
+                                <div>
+
+                                  <span>
+                                    Identificador
+                                  </span>
+
+                                  <strong
+                                    className="audit-code"
+                                  >
                                     {
                                       detalle
                                         .evento
                                         .entidad_id
+                                      ||
+                                      "—"
                                     }
-                                  </code>
+                                  </strong>
 
                                 </div>
-                              )
-                            }
 
-
-                            {/* DESCRIPCIÓN */}
-
-                            <div className="audit-modal__description">
-
-                              <span>
-                                Descripción
-                              </span>
-
-                              <p>
-                                {
-                                  descripcionEvento(
-                                    detalle.evento,
-                                  )
-                                }
-                              </p>
-
-                            </div>
-
-
-                            {
-                              motivoEvento(
-                                detalle.evento,
-                              ) && (
-
-                                <div className="audit-modal__reason">
-
-                                  <AlertCircle
-                                    size={17}
-                                  />
-
-                                  <div>
-
-                                    <span>
-                                      Motivo
-                                    </span>
-
-                                    <strong>
-                                      {
-                                        motivoEvento(
-                                          detalle.evento,
-                                        )
-                                      }
-                                    </strong>
-
-                                  </div>
-
-                                </div>
-                              )
-                            }
-
-
-                            {/* CAMBIOS */}
-
-                            <section className="audit-modal__changes">
-
-
-                              <div className="audit-modal__section-heading">
 
                                 <div>
 
-                                  <ArrowRight
-                                    size={17}
-                                  />
+                                  <span>
+                                    Dirección IP
+                                  </span>
 
-                                  <h3>
-                                    Cambios registrados
-                                  </h3>
+                                  <strong>
+                                    {
+                                      detalle
+                                        .evento
+                                        .direccion_ip
+                                      ||
+                                      "—"
+                                    }
+                                  </strong>
 
                                 </div>
 
-                                <span>
-                                  {
-                                    detalle
-                                      .cambios
-                                      .length
-                                  }
-                                </span>
+
+                                <div>
+
+                                  <span>
+                                    Correlation ID
+                                  </span>
+
+                                  <strong
+                                    className="audit-code"
+                                  >
+                                    {
+                                      detalle
+                                        .evento
+                                        .correlation_id
+                                      ||
+                                      "—"
+                                    }
+                                  </strong>
+
+                                </div>
 
                               </div>
 
+                            </section>
+
+
+                            {/* ==============================
+                                DESCRIPCIÓN
+                                ============================== */}
+
+                            <section
+                              className="audit-detail-section"
+                            >
+
+                              <header>
+
+                                <Layers3
+                                  size={17}
+                                />
+
+                                <h3>
+                                  Acción realizada
+                                </h3>
+
+                              </header>
+
+
+                              <div
+                                className="audit-description"
+                              >
+
+                                <p>
+                                  {
+                                    descripcionEvento(
+                                      detalle.evento,
+                                    )
+                                  }
+                                </p>
+
+
+                                {
+                                  motivoEvento(
+                                    detalle.evento,
+                                  )
+                                  &&
+                                  (
+
+                                    <div
+                                      className="audit-description__reason"
+                                    >
+
+                                      <span>
+                                        Motivo
+                                      </span>
+
+                                      <strong>
+                                        {
+                                          motivoEvento(
+                                            detalle.evento,
+                                          )
+                                        }
+                                      </strong>
+
+                                    </div>
+
+                                  )
+                                }
+
+                              </div>
+
+                            </section>
+
+
+                            {/* ==============================
+                                CAMBIOS
+                                ============================== */}
+
+                            <section
+                              className="audit-detail-section"
+                            >
+
+                              <header>
+
+                                <FileClock
+                                  size={17}
+                                />
+
+                                <h3>
+                                  Cambios registrados
+                                </h3>
+
+
+                                <span
+                                  className="audit-detail-section__count"
+                                >
+                                  {
+                                    detalle.cambios.length
+                                  }
+                                </span>
+
+                              </header>
+
 
                               {
-                                detalle
-                                  .cambios
-                                  .length ===
-                                0
+                                detalle.cambios.length === 0
                                   ? (
 
-                                      <div className="audit-modal__no-changes">
+                                      <div
+                                        className="audit-no-changes"
+                                      >
+
+                                        <CheckCircle2
+                                          size={19}
+                                        />
 
                                         Este evento no modificó información.
 
@@ -2624,7 +2892,9 @@ export function AuditoriaPage() {
                                     )
                                   : (
 
-                                      <div className="audit-change-list">
+                                      <div
+                                        className="audit-changes"
+                                      >
 
                                         {
                                           detalle
@@ -2634,18 +2904,16 @@ export function AuditoriaPage() {
                                                 cambio,
                                               ) => (
 
-                                                <article
-
+                                                <div
                                                   key={
                                                     cambio.id_cambio
                                                   }
-
                                                   className="audit-change"
-
                                                 >
 
-
-                                                  <strong className="audit-change__field">
+                                                  <div
+                                                    className="audit-change__field"
+                                                  >
 
                                                     {
                                                       nombreCampo(
@@ -2653,173 +2921,75 @@ export function AuditoriaPage() {
                                                       )
                                                     }
 
-                                                  </strong>
+                                                  </div>
 
 
-                                                  <div className="audit-change__values">
+                                                  <div>
 
+                                                    <span>
+                                                      Anterior
+                                                    </span>
 
-                                                    <div>
-
-                                                      <span>
-                                                        Valor anterior
-                                                      </span>
-
-                                                      <strong>
-                                                        {
-                                                          cambio
-                                                            .valor_anterior ??
-                                                          "—"
-                                                        }
-                                                      </strong>
-
-                                                    </div>
-
-
-                                                    <ArrowRight
-                                                      size={18}
-                                                    />
-
-
-                                                    <div>
-
-                                                      <span>
-                                                        Valor nuevo
-                                                      </span>
-
-                                                      <strong>
-                                                        {
-                                                          cambio
-                                                            .valor_nuevo ??
-                                                          "—"
-                                                        }
-                                                      </strong>
-
-                                                    </div>
-
+                                                    <pre>
+                                                      {
+                                                        valorVisible(
+                                                          cambio.valor_anterior,
+                                                        )
+                                                      }
+                                                    </pre>
 
                                                   </div>
 
-                                                </article>
+
+                                                  <ArrowRight
+                                                    size={17}
+                                                  />
+
+
+                                                  <div>
+
+                                                    <span>
+                                                      Nuevo
+                                                    </span>
+
+                                                    <pre>
+                                                      {
+                                                        valorVisible(
+                                                          cambio.valor_nuevo,
+                                                        )
+                                                      }
+                                                    </pre>
+
+                                                  </div>
+
+                                                </div>
+
                                               ),
                                             )
                                         }
 
                                       </div>
+
                                     )
                               }
 
-
                             </section>
 
-
-                            {/* INFORMACIÓN ADICIONAL */}
-
-                            {
-                              detalle
-                                .evento
-                                .detalle_json && (
-
-                                <section className="audit-modal__metadata">
-
-
-                                  <div className="audit-modal__section-heading">
-
-                                    <div>
-
-                                      <Layers3
-                                        size={17}
-                                      />
-
-                                      <h3>
-                                        Información adicional
-                                      </h3>
-
-                                    </div>
-
-                                  </div>
-
-
-                                  <div className="audit-metadata-list">
-
-                                    {
-                                      Object
-                                        .entries(
-                                          detalle
-                                            .evento
-                                            .detalle_json,
-                                        )
-                                        .filter(
-                                          (
-                                            [
-                                              clave,
-                                            ],
-                                          ) =>
-                                            ![
-                                              "actor_nombre",
-                                              "actor_rol",
-                                              "descripcion",
-                                            ].includes(
-                                              clave,
-                                            ),
-                                        )
-                                        .map(
-                                          (
-                                            [
-                                              clave,
-                                              valor,
-                                            ],
-                                          ) => (
-
-                                            <div
-                                              key={
-                                                clave
-                                              }
-                                            >
-
-                                              <span>
-                                                {
-                                                  nombreCampo(
-                                                    clave,
-                                                  )
-                                                }
-                                              </span>
-
-                                              <strong>
-                                                {
-                                                  valorVisible(
-                                                    valor,
-                                                  )
-                                                }
-                                              </strong>
-
-                                            </div>
-                                          ),
-                                        )
-                                    }
-
-                                  </div>
-
-
-                                </section>
-                              )
-                            }
-
-
-                          </>
+                          </div>
 
                         )
                       : null
               }
 
-
-            </section>
+            </article>
 
           </div>
+
         )
       }
 
-
     </section>
+
   );
+
 }
