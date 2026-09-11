@@ -288,3 +288,34 @@
     align-items: flex-start;
   }
 }
+.patient-cases-create {
+  display: inline-flex;
+  min-height: 37px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid #0e7490;
+  border-radius: 10px;
+  background: #0e7490;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.patient-cases-create:hover {
+  background: #0c667d;
+}
+
+@media (max-width: 760px) {
+  .patient-cases-header__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .patient-cases-create {
+    width: 100%;
+  }
+}

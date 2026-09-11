@@ -27,6 +27,10 @@ from clinica.bootstrap.container import (
     get_container,
 )
 
+from clinica.infrastructure.security import (
+    RequestActorExtractor,
+)
+
 from clinica.interfaces.api.error_handler import (
     domain_error_response,
 )
@@ -38,134 +42,6 @@ from clinica.interfaces.api.presenters.clinical_case_presenter import (
 from clinica.interfaces.api.serializers.clinical_case_serializers import (
     CreateClinicalCaseSerializer,
 )
-
-
-# ==========================================================
-# OBTENER UUID DEL ACTOR
-# ==========================================================
-
-def _actor_uuid(
-    request:
-        Request,
-) -> UUID:
-
-    # ------------------------------------------------------
-    # 1. JWT / request.auth
-    # ------------------------------------------------------
-
-    auth = (
-        request.auth
-    )
-
-
-    if auth:
-
-        if isinstance(
-            auth,
-            dict,
-        ):
-
-            for key in (
-                "id_usuario",
-                "user_id",
-                "sub",
-            ):
-
-                value = (
-                    auth.get(
-                        key,
-                    )
-                )
-
-
-                if value:
-
-                    return UUID(
-                        str(
-                            value,
-                        )
-                    )
-
-
-        try:
-
-            payload = (
-                auth.payload
-            )
-
-
-            for key in (
-                "id_usuario",
-                "user_id",
-                "sub",
-            ):
-
-                value = (
-                    payload.get(
-                        key,
-                    )
-                )
-
-
-                if value:
-
-                    return UUID(
-                        str(
-                            value,
-                        )
-                    )
-
-        except (
-            AttributeError,
-            TypeError,
-            ValueError,
-        ):
-
-            pass
-
-
-    # ------------------------------------------------------
-    # 2. request.user
-    # ------------------------------------------------------
-
-    user = (
-        request.user
-    )
-
-
-    for attribute in (
-        "id_usuario",
-        "id",
-        "pk",
-    ):
-
-        value = (
-            getattr(
-                user,
-                attribute,
-                None,
-            )
-        )
-
-
-        if value:
-
-            try:
-
-                return UUID(
-                    str(
-                        value,
-                    )
-                )
-
-            except ValueError:
-
-                pass
-
-
-    raise ValueError(
-        "No fue posible identificar al usuario autenticado."
-    )
 
 
 # ==========================================================
@@ -245,12 +121,38 @@ def patient_cases_view(
         )
 
 
-        actor_uuid = (
-            _actor_uuid(
-                request,
+        # ==================================================
+        # ACTOR AUTENTICADO
+        # ==================================================
+
+        actor = (
+            RequestActorExtractor
+            .extract(
+                request
             )
         )
 
+
+        actor_uuid = (
+            actor
+            .usuario_uuid
+        )
+
+
+        if (
+            actor_uuid
+            is None
+        ):
+
+            raise ValueError(
+                "No fue posible identificar "
+                "al usuario autenticado."
+            )
+
+
+        # ==================================================
+        # RESPONSABLE DEL CASO
+        # ==================================================
 
         responsible_uuid = (
             data.get(
@@ -260,6 +162,10 @@ def patient_cases_view(
             actor_uuid
         )
 
+
+        # ==================================================
+        # DTO
+        # ==================================================
 
         dto = (
             CreateClinicalCaseDTO(
@@ -289,11 +195,16 @@ def patient_cases_view(
         )
 
 
+        # ==================================================
+        # CREAR CASO
+        # ==================================================
+
         case = (
             container
             .create_clinical_case
             .execute(
                 dto,
+
                 actor_uuid=
                     actor_uuid,
             )
@@ -303,7 +214,10 @@ def patient_cases_view(
         return Response(
             {
                 "message":
-                    "Caso clínico registrado correctamente.",
+                    (
+                        "Caso clínico registrado "
+                        "correctamente."
+                    ),
 
                 "data":
                     ClinicalCasePresenter
@@ -564,6 +478,9 @@ def clinical_case_detail_view(
         UUID,
 ):
 
+    del request
+
+
     container = (
         get_container()
     )
@@ -618,6 +535,9 @@ def clinical_case_catalogs_view(
     request:
         Request,
 ):
+
+    del request
+
 
     container = (
         get_container()

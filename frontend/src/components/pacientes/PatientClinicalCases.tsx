@@ -5,6 +5,7 @@ import {
   CircleAlert,
   ClipboardList,
   LoaderCircle,
+  Plus,
   RefreshCw,
   Stethoscope,
 } from "lucide-react";
@@ -50,7 +51,9 @@ function formatDateTime(
 
 
   const date =
-    new Date(value);
+    new Date(
+      value,
+    );
 
 
   if (
@@ -97,7 +100,9 @@ function getPriorityClass(
     ||
     code.includes("URGENTE")
   ) {
-    return "patient-case-priority patient-case-priority--high";
+    return (
+      "patient-case-priority patient-case-priority--high"
+    );
   }
 
 
@@ -106,11 +111,15 @@ function getPriorityClass(
     ||
     code.includes("MODERADA")
   ) {
-    return "patient-case-priority patient-case-priority--medium";
+    return (
+      "patient-case-priority patient-case-priority--medium"
+    );
   }
 
 
-  return "patient-case-priority patient-case-priority--low";
+  return (
+    "patient-case-priority patient-case-priority--low"
+  );
 }
 
 
@@ -133,7 +142,9 @@ export function PatientClinicalCases(
     setCases,
   ] = useState<
     ClinicalCase[]
-  >([]);
+  >(
+    [],
+  );
 
 
   const [
@@ -157,7 +168,9 @@ export function PatientClinicalCases(
     setError,
   ] = useState<
     string | null
-  >(null);
+  >(
+    null,
+  );
 
 
   // ========================================================
@@ -252,10 +265,6 @@ export function PatientClinicalCases(
       className="patient-cases-card"
     >
 
-      {/* ==================================================
-          HEADER
-          ================================================== */}
-
       <header
         className="patient-cases-header"
       >
@@ -267,25 +276,20 @@ export function PatientClinicalCases(
           <div
             className="patient-cases-header__icon"
           >
-
             <Stethoscope
               size={21}
             />
-
           </div>
 
 
           <div>
-
             <h2>
               Casos clínicos
             </h2>
 
-
             <p>
               Casos clínicos relacionados con este paciente.
             </p>
-
           </div>
 
         </div>
@@ -308,6 +312,24 @@ export function PatientClinicalCases(
 
           <button
             type="button"
+            className="patient-cases-create"
+            onClick={
+              () =>
+                navigate(
+                  `/casos/nuevo?paciente=${patientId}`,
+                )
+            }
+          >
+            <Plus
+              size={16}
+            />
+
+            Nuevo caso
+          </button>
+
+
+          <button
+            type="button"
             className="patient-cases-refresh"
             onClick={
               () =>
@@ -316,21 +338,15 @@ export function PatientClinicalCases(
             title="Actualizar casos"
             aria-label="Actualizar casos"
           >
-
             <RefreshCw
               size={17}
             />
-
           </button>
 
         </div>
 
       </header>
 
-
-      {/* ==================================================
-          LOADING
-          ================================================== */}
 
       {loading ? (
 
@@ -343,7 +359,6 @@ export function PatientClinicalCases(
             className="patient-cases-spin"
           />
 
-
           <span>
             Cargando casos clínicos...
           </span>
@@ -351,10 +366,6 @@ export function PatientClinicalCases(
         </div>
 
       ) : error ? (
-
-        /* =================================================
-           ERROR
-           ================================================= */
 
         <div
           className="patient-cases-error"
@@ -364,7 +375,6 @@ export function PatientClinicalCases(
             size={19}
           />
 
-
           <span>
             {error}
           </span>
@@ -372,10 +382,6 @@ export function PatientClinicalCases(
         </div>
 
       ) : cases.length === 0 ? (
-
-        /* =================================================
-           VACÍO
-           ================================================= */
 
         <div
           className="patient-cases-empty"
@@ -385,11 +391,9 @@ export function PatientClinicalCases(
             size={31}
           />
 
-
           <strong>
             Sin casos clínicos
           </strong>
-
 
           <span>
             Este paciente todavía no tiene casos clínicos registrados.
@@ -398,10 +402,6 @@ export function PatientClinicalCases(
         </div>
 
       ) : (
-
-        /* =================================================
-           CASOS
-           ================================================= */
 
         <div
           className="patient-cases-list"
@@ -434,7 +434,6 @@ export function PatientClinicalCases(
                       <ClipboardList
                         size={17}
                       />
-
 
                       <strong>
                         {
@@ -533,7 +532,6 @@ export function PatientClinicalCases(
                       Motivo de consulta
                     </span>
 
-
                     <p>
                       {
                         clinicalCase
@@ -554,7 +552,6 @@ export function PatientClinicalCases(
                       <span>
                         Observación
                       </span>
-
 
                       <p>
                         {
