@@ -101,19 +101,6 @@ final class RadiographicStudyPresenter
                     'original_name' =>
                         $file->originalName,
 
-                    'stored_name' =>
-                        $file->storedName,
-
-                    /*
-                     * Se mantiene como metadato interno.
-                     * Más adelante quitaremos este dato
-                     * de la respuesta pública/privada
-                     * cuando creemos el endpoint seguro
-                     * de visualización.
-                     */
-                    'storage_path' =>
-                        $file->storagePath,
-
                     'size_bytes' =>
                         $file->sizeBytes,
 
@@ -142,6 +129,16 @@ final class RadiographicStudyPresenter
 
                     'uploaded_at' =>
                         $file->uploadedAt,
+
+                    'view_url' =>
+                        '/api/radiografias/archivos/'
+                        .$file->id
+                        .'/ver',
+
+                    'download_url' =>
+                        '/api/radiografias/archivos/'
+                        .$file->id
+                        .'/descargar',
                 ],
 
                 $study->files

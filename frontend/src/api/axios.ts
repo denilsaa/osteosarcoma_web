@@ -25,15 +25,18 @@ const API_CLINICO_URL =
     .VITE_API_CLINICO_URL ??
   "http://localhost:8001";
 
+
 const API_RADIOGRAFIAS_URL =
   import.meta.env
     .VITE_API_RADIOGRAFIAS_URL ??
   "/radiografias-api";
 
+
 const API_AUDITORIA_URL =
   import.meta.env
     .VITE_API_AUDITORIA_URL ??
   "/auditoria-api";
+
 
 // ==========================================================
 // BASE URLS
@@ -45,6 +48,7 @@ const USUARIOS_BASE_URL =
 
 const CLINICO_BASE_URL =
   `${API_CLINICO_URL}/api`;
+
 
 const RADIOGRAFIAS_BASE_URL =
   `${API_RADIOGRAFIAS_URL}/api`;
@@ -163,8 +167,10 @@ async function renovarAccessToken():
 
       .finally(
         () => {
+
           renovacionEnCurso =
             null;
+
         },
       );
 
@@ -184,13 +190,17 @@ type ConfigConReintento =
 
 
 function configurarClienteAutenticado(
-  cliente: AxiosInstance,
-  rutasPublicas: string[] = [],
+  cliente:
+    AxiosInstance,
+
+  rutasPublicas:
+    string[] = [],
 ): AxiosInstance {
 
   const esRutaPublica =
     (
-      url?: string,
+      url?:
+        string,
     ): boolean => {
 
       if (!url) {
@@ -199,8 +209,12 @@ function configurarClienteAutenticado(
 
 
       return rutasPublicas.some(
-        (ruta) =>
-          url.includes(ruta),
+        (
+          ruta,
+        ) =>
+          url.includes(
+            ruta,
+          ),
       );
     };
 
@@ -233,10 +247,12 @@ function configurarClienteAutenticado(
 
 
         if (token) {
+
           config
             .headers
             .Authorization =
               `Bearer ${token}`;
+
         }
 
 
@@ -244,7 +260,9 @@ function configurarClienteAutenticado(
       },
 
 
-      (error) =>
+      (
+        error,
+      ) =>
         Promise.reject(
           error,
         ),
@@ -259,12 +277,15 @@ function configurarClienteAutenticado(
     .response
     .use(
 
-      (response) =>
+      (
+        response,
+      ) =>
         response,
 
 
       async (
-        error: AxiosError,
+        error:
+          AxiosError,
       ) => {
 
         const originalRequest =
@@ -285,9 +306,11 @@ function configurarClienteAutenticado(
             originalRequest.url,
           )
         ) {
+
           return Promise.reject(
             error,
           );
+
         }
 
 
@@ -318,6 +341,7 @@ function configurarClienteAutenticado(
           return Promise.reject(
             refreshError,
           );
+
         }
       },
     );
@@ -374,6 +398,13 @@ export const apiClinico =
 
 // ==========================================================
 // RADIOGRAFÍAS
+//
+// IMPORTANTE:
+// NO forzamos Content-Type.
+// Axios lo determinará automáticamente:
+//
+// JSON       -> application/json
+// FormData   -> multipart/form-data + boundary
 // ==========================================================
 
 export const apiRadiografias =
@@ -382,11 +413,6 @@ export const apiRadiografias =
     axios.create({
       baseURL:
         RADIOGRAFIAS_BASE_URL,
-
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
     }),
   );
 

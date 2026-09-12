@@ -66,6 +66,10 @@ import {
   type PatientDetail,
 } from "../../api/pacientes.api";
 
+import {
+  CaseRadiographiesSection,
+} from "../../components/casos/CaseRadiographiesSection";
+
 import "./CasoDetallePage.css";
 
 
@@ -3798,70 +3802,14 @@ export function CasoDetallePage() {
         &&
         (
 
-          <article
-            className="case-detail-section case-detail-full-section"
-          >
-
-            <header
-              className="case-detail-section-header-actions"
-            >
-
-              <div
-                className="case-detail-section-header-title"
-              >
-
-                <div>
-                  <Image
-                    size={20}
-                  />
-                </div>
-
-
-                <div>
-                  <h2>
-                    Radiografías del caso
-                  </h2>
-
-                  <p>
-                    Estudios radiográficos asociados al caso.
-                  </p>
-                </div>
-
-              </div>
-
-
-              <button
-                type="button"
-                className="case-detail-primary-button"
-                disabled
-              >
-                Registrar radiografía
-              </button>
-
-            </header>
-
-
-            <div
-              className="case-detail-coming case-detail-coming--large"
-            >
-
-              <Image
-                size={38}
-              />
-
-              <div>
-                <strong>
-                  Integración de radiografías pendiente
-                </strong>
-
-                <span>
-                  Esta será la siguiente fase.
-                </span>
-              </div>
-
-            </div>
-
-          </article>
+          <CaseRadiographiesSection
+            caseId={
+              clinicalCase.id_case
+            }
+            resolveAuthorName={
+              getAuthorName
+            }
+          />
 
         )
       }

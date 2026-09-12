@@ -11,13 +11,19 @@ use Illuminate\Support\Facades\DB;
 
 final class EloquentRadiographicStudyRepository implements RadiographicStudyRepository
 {
+    // ==========================================================
+    // LISTAR POR CASO
+    // ==========================================================
+
     public function findByCaseUuid(
         string $caseUuid
     ): array {
         $models = RadiographicStudyModel::query()
             ->with([
                 'studyType',
+
                 'anatomicalRegion',
+
                 'laterality',
 
                 'files' => function ($query) {
@@ -56,6 +62,10 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
     }
 
 
+    // ==========================================================
+    // CREAR ESTUDIO + ARCHIVO
+    // ==========================================================
+
     public function create(
         string $studyUuid,
         string $caseUuid,
@@ -79,7 +89,12 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                 $observation,
                 $fileData,
             ): RadiographicStudy {
-                $study = RadiographicStudyModel::query()
+
+                // ==================================================
+                // CREAR ESTUDIO
+                // ==================================================
+
+                RadiographicStudyModel::query()
                     ->create([
                         'id_estudio' =>
                             $studyUuid,
@@ -107,65 +122,106 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                     ]);
 
 
+                // ==================================================
+                // CREAR ARCHIVO
+                // ==================================================
+
                 RadiographicFileModel::query()
                     ->create([
                         'id_archivo' =>
-                            $fileData['id_archivo'],
+                            $fileData[
+                                'id_archivo'
+                            ],
 
                         'id_estudio' =>
                             $studyUuid,
 
                         'id_tipo_mime' =>
-                            $fileData['id_tipo_mime'],
+                            $fileData[
+                                'id_tipo_mime'
+                            ],
 
                         'version' =>
                             1,
 
                         'nombre_original' =>
-                            $fileData['nombre_original'],
+                            $fileData[
+                                'nombre_original'
+                            ],
 
                         'nombre_almacenado' =>
-                            $fileData['nombre_almacenado'],
+                            $fileData[
+                                'nombre_almacenado'
+                            ],
 
                         'ruta_almacenamiento' =>
-                            $fileData['ruta_almacenamiento'],
+                            $fileData[
+                                'ruta_almacenamiento'
+                            ],
 
                         'tamano_bytes' =>
-                            $fileData['tamano_bytes'],
+                            $fileData[
+                                'tamano_bytes'
+                            ],
 
                         'ancho_px' =>
-                            $fileData['ancho_px'],
+                            $fileData[
+                                'ancho_px'
+                            ],
 
                         'alto_px' =>
-                            $fileData['alto_px'],
+                            $fileData[
+                                'alto_px'
+                            ],
 
                         'hash_sha256' =>
-                            $fileData['hash_sha256'],
+                            $fileData[
+                                'hash_sha256'
+                            ],
 
                         'activo' =>
                             true,
                     ]);
 
 
-                $study->load([
-                    'studyType',
-                    'anatomicalRegion',
-                    'laterality',
+                // ==================================================
+                // RECARGAR DESDE POSTGRESQL
+                //
+                // IMPORTANTE:
+                // fecha_registro y fecha_carga utilizan
+                // DEFAULT CURRENT_TIMESTAMP en PostgreSQL.
+                //
+                // Por eso volvemos a consultar el registro
+                // después de crearlo.
+                // ==================================================
 
-                    'files' => function ($query) {
-                        $query
-                            ->where(
-                                'activo',
-                                true
-                            )
-                            ->with(
-                                'mimeType'
-                            )
-                            ->orderByDesc(
-                                'version'
-                            );
-                    },
-                ]);
+                $study = RadiographicStudyModel::query()
+                    ->with([
+                        'studyType',
+
+                        'anatomicalRegion',
+
+                        'laterality',
+
+                        'files' => function ($query) {
+                            $query
+                                ->where(
+                                    'activo',
+                                    true
+                                )
+                                ->with(
+                                    'mimeType'
+                                )
+                                ->orderByDesc(
+                                    'version'
+                                );
+                        },
+                    ])
+                    ->where(
+                        'id_estudio',
+                        $studyUuid
+                    )
+                    ->firstOrFail();
 
 
                 return $this->toEntity(
@@ -176,6 +232,10 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
     }
 
 
+    // ==========================================================
+    // ORM -> ENTIDAD DE DOMINIO
+    // ==========================================================
+
     private function toEntity(
         RadiographicStudyModel $model
     ): RadiographicStudy {
@@ -185,6 +245,7 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                 function (
                     $file
                 ): RadiographicFile {
+
                     return new RadiographicFile(
                         id:
                             (string)
@@ -249,9 +310,11 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                                 ->extension,
 
                         uploadedAt:
-                            $file
-                                ->fecha_carga
-                                ->toIso8601String(),
+                            $file->fecha_carga !== null
+                                ? $file
+                                    ->fecha_carga
+                                    ->toIso8601String()
+                                : '',
                     );
                 }
             )
@@ -308,7 +371,7 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                     ->nombre,
 
             lateralityId:
-                $model->laterality
+                $model->laterality !== null
                     ? (int)
                         $model
                             ->laterality
@@ -316,7 +379,7 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                     : null,
 
             lateralityCode:
-                $model->laterality
+                $model->laterality !== null
                     ? (string)
                         $model
                             ->laterality
@@ -324,7 +387,7 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                     : null,
 
             lateralityName:
-                $model->laterality
+                $model->laterality !== null
                     ? (string)
                         $model
                             ->laterality
@@ -332,20 +395,23 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                     : null,
 
             studyDate:
-                $model
-                    ->fecha_estudio
-                    ?->format(
-                        'Y-m-d'
-                    ),
+                $model->fecha_estudio !== null
+                    ? $model
+                        ->fecha_estudio
+                        ->format(
+                            'Y-m-d'
+                        )
+                    : null,
 
             observation:
-                $model
-                    ->observacion,
+                $model->observacion,
 
             registeredAt:
-                $model
-                    ->fecha_registro
-                    ->toIso8601String(),
+                $model->fecha_registro !== null
+                    ? $model
+                        ->fecha_registro
+                        ->toIso8601String()
+                    : '',
 
             files:
                 $files,

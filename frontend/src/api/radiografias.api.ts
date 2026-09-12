@@ -4,7 +4,7 @@ import {
 
 
 // ==========================================================
-// TIPO DE ESTUDIO
+// CATÁLOGOS
 // ==========================================================
 
 export interface RadiographicStudyType {
@@ -14,14 +14,35 @@ export interface RadiographicStudyType {
 }
 
 
-// ==========================================================
-// REGIÓN ANATÓMICA
-// ==========================================================
-
 export interface AnatomicalRegion {
   id: number;
   code: string;
   name: string;
+}
+
+
+export interface RadiographicLaterality {
+  id: number;
+  code: string;
+  name: string;
+}
+
+
+export interface RadiographyCatalogs {
+  study_types:
+    RadiographicStudyType[];
+
+  anatomical_regions:
+    AnatomicalRegion[];
+
+  lateralities:
+    RadiographicLaterality[];
+}
+
+
+interface RadiographyCatalogsResponse {
+  data:
+    RadiographyCatalogs;
 }
 
 
@@ -30,9 +51,14 @@ export interface AnatomicalRegion {
 // ==========================================================
 
 export interface RadiographicMime {
-  code: string;
-  mime_type: string;
-  extension: string;
+  code:
+    string;
+
+  mime_type:
+    string;
+
+  extension:
+    string;
 }
 
 
@@ -41,79 +67,312 @@ export interface RadiographicMime {
 // ==========================================================
 
 export interface RadiographicFile {
-  id_file: string;
+  id_file:
+    string;
 
-  version: number;
+  version:
+    number;
 
-  original_name: string;
+  original_name:
+    string;
 
-  stored_name: string;
+  size_bytes:
+    number;
 
-  storage_path: string;
+  width_px:
+    number | null;
 
-  size_bytes: number;
+  height_px:
+    number | null;
 
-  width_px: number | null;
+  sha256:
+    string;
 
-  height_px: number | null;
+  active:
+    boolean;
 
-  sha256: string;
+  mime:
+    RadiographicMime;
 
-  active: boolean;
+  uploaded_at:
+    string;
 
-  mime: RadiographicMime;
+  view_url:
+    string;
 
-  uploaded_at: string;
+  download_url:
+    string;
 }
 
 
 // ==========================================================
-// ESTUDIO RADIOGRÁFICO
+// ESTUDIO
 // ==========================================================
 
 export interface RadiographicStudy {
-  id_study: string;
+  id_study:
+    string;
 
-  case_uuid: string;
+  case_uuid:
+    string;
 
-  registered_by_uuid: string;
+  registered_by_uuid:
+    string;
 
-  study_type: RadiographicStudyType;
+  study_type:
+    RadiographicStudyType;
 
-  anatomical_region: AnatomicalRegion;
+  anatomical_region:
+    AnatomicalRegion;
 
-  study_date: string | null;
+  laterality:
+    RadiographicLaterality | null;
 
-  observation: string | null;
+  study_date:
+    string | null;
 
-  registered_at: string;
+  observation:
+    string | null;
 
-  files: RadiographicFile[];
+  registered_at:
+    string;
+
+  files:
+    RadiographicFile[];
 }
 
 
 // ==========================================================
-// RESPUESTA
+// RESPUESTAS
 // ==========================================================
 
 export interface CaseRadiographiesResponse {
-  data: RadiographicStudy[];
-  total: number;
+  data:
+    RadiographicStudy[];
+
+  total:
+    number;
+}
+
+
+export interface CreateRadiographyResponse {
+  message:
+    string;
+
+  data:
+    RadiographicStudy;
 }
 
 
 // ==========================================================
-// CONSULTAR POR CASO
+// REQUEST CREACIÓN
+// ==========================================================
+
+export interface CreateRadiographyRequest {
+  study_type_id:
+    number;
+
+  anatomical_region_id:
+    number;
+
+  laterality_id:
+    number;
+
+  study_date:
+    string | null;
+
+  observation:
+    string | null;
+
+  file:
+    File;
+}
+
+
+// ==========================================================
+// CATÁLOGOS
+// ==========================================================
+
+export async function getRadiographyCatalogs():
+  Promise<RadiographyCatalogs> {
+
+  const response =
+    await apiRadiografias
+      .get<RadiographyCatalogsResponse>(
+        "/radiografias/catalogos",
+      );
+
+
+  return response
+    .data
+    .data;
+}
+
+
+// ==========================================================
+// LISTADO
 // ==========================================================
 
 export async function getCaseRadiographies(
-  caseId: string,
+  caseId:
+    string,
 ): Promise<CaseRadiographiesResponse> {
 
   const response =
     await apiRadiografias
       .get<CaseRadiographiesResponse>(
         `/casos/${caseId}/radiografias`,
+      );
+
+
+  return response.data;
+}
+
+
+// ==========================================================
+// REGISTRAR RADIOGRAFÍA
+// ==========================================================
+
+export async function createRadiography(
+  caseId:
+    string,
+
+  data:
+    CreateRadiographyRequest,
+): Promise<CreateRadiographyResponse> {
+
+  const formData =
+    new FormData();
+
+
+  formData.append(
+    "study_type_id",
+    String(
+      data.study_type_id,
+    ),
+  );
+
+
+  formData.append(
+    "anatomical_region_id",
+    String(
+      data.anatomical_region_id,
+    ),
+  );
+
+
+  formData.append(
+    "laterality_id",
+    String(
+      data.laterality_id,
+    ),
+  );
+
+
+  if (
+    data.study_date
+  ) {
+
+    formData.append(
+      "study_date",
+      data.study_date,
+    );
+
+  }
+
+
+  if (
+    data.observation
+    &&
+    data.observation.trim()
+  ) {
+
+    formData.append(
+      "observation",
+      data.observation.trim(),
+    );
+
+  }
+
+
+  formData.append(
+    "file",
+    data.file,
+    data.file.name,
+  );
+
+
+  /*
+   * IMPORTANTE:
+   *
+   * NO colocar:
+   *
+   * Content-Type: multipart/form-data
+   *
+   * ni application/json.
+   *
+   * El navegador genera automáticamente:
+   *
+   * multipart/form-data;
+   * boundary=--------------------xxxx
+   *
+   * Si nosotros forzamos el Content-Type,
+   * Laravel puede no recibir correctamente
+   * el archivo.
+   */
+  const response =
+    await apiRadiografias
+      .post<CreateRadiographyResponse>(
+        `/casos/${caseId}/radiografias`,
+        formData,
+      );
+
+
+  return response.data;
+}
+
+
+// ==========================================================
+// VISUALIZAR ARCHIVO
+// ==========================================================
+
+export async function getRadiographicFileBlob(
+  fileId:
+    string,
+): Promise<Blob> {
+
+  const response =
+    await apiRadiografias
+      .get<Blob>(
+        `/radiografias/archivos/${fileId}/ver`,
+        {
+          responseType:
+            "blob",
+        },
+      );
+
+
+  return response.data;
+}
+
+
+// ==========================================================
+// DESCARGAR ARCHIVO
+// ==========================================================
+
+export async function downloadRadiographicFileBlob(
+  fileId:
+    string,
+): Promise<Blob> {
+
+  const response =
+    await apiRadiografias
+      .get<Blob>(
+        `/radiografias/archivos/${fileId}/descargar`,
+        {
+          responseType:
+            "blob",
+        },
       );
 
 

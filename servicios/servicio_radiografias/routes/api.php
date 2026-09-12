@@ -95,3 +95,37 @@ Route::post(
     ->name(
         'radiographies.store'
     );
+
+
+// ==========================================================
+// ARCHIVOS RADIOGRÁFICOS PRIVADOS
+// ==========================================================
+
+Route::get(
+    '/radiografias/archivos/{fileUuid}/ver',
+    [
+        RadiographyController::class,
+        'viewFile',
+    ]
+)
+    ->whereUuid(
+        'fileUuid'
+    )
+    ->name(
+        'radiographies.files.view'
+    );
+
+
+Route::get(
+    '/radiografias/archivos/{fileUuid}/descargar',
+    [
+        RadiographyController::class,
+        'downloadFile',
+    ]
+)
+    ->whereUuid(
+        'fileUuid'
+    )
+    ->name(
+        'radiographies.files.download'
+    );
