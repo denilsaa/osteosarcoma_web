@@ -34,3 +34,41 @@ class ClinicalCaseFiltersDTO:
     page: int = 1
 
     page_size: int = 10
+
+
+@dataclass(frozen=True)
+class CreateClinicalAntecedentDTO:
+    case_id: UUID
+
+    antecedent_type_id: int
+
+    description: str
+
+
+@dataclass(frozen=True)
+class CreateClinicalSymptomDTO:
+    case_id: UUID
+
+    symptom_id: int
+
+    intensity_id: Optional[int] = None
+
+    start_date: Optional[date] = None
+
+    observation: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class CreateClinicalSignDTO:
+    case_id: UUID
+
+    sign_id: int
+
+    finding_description: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class CreateClinicalObservationDTO:
+    case_id: UUID
+
+    content: str

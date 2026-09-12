@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.utils import timezone
 
 from .catalog_models import (
     CatalogoSigno,
@@ -190,6 +191,11 @@ class AntecedenteClinico(models.Model):
 
     descripcion = models.TextField()
 
+    registrado_por_uuid = models.UUIDField(
+        null=True,
+        blank=True,
+    )
+
     fecha_registro = models.DateTimeField(
         auto_now_add=True
     )
@@ -258,6 +264,15 @@ class CasoSintoma(models.Model):
         blank=True,
     )
 
+    registrado_por_uuid = models.UUIDField(
+        null=True,
+        blank=True,
+    )
+
+    fecha_registro = models.DateTimeField(
+        default=timezone.now
+    )
+
     class Meta:
         db_table = "caso_sintoma"
         app_label = "clinica"
@@ -269,6 +284,16 @@ class CasoSintoma(models.Model):
                     "sintoma",
                 ],
                 name="uq_caso_sintoma",
+            ),
+        ]
+
+        indexes = [
+            models.Index(
+                fields=[
+                    "caso",
+                    "fecha_registro",
+                ],
+                name="idx_sintoma_caso_fecha",
             ),
         ]
 
@@ -331,10 +356,67 @@ class CasoSigno(models.Model):
             ),
         ]
 
+        indexes = [
+            models.Index(
+                fields=[
+                    "caso",
+                    "fecha_observacion",
+                ],
+                name="idx_signo_caso_fecha",
+            ),
+        ]
+
     def __str__(self):
         return (
             f"{self.caso.codigo_caso} - "
             f"{self.signo.nombre}"
+        )
+
+
+class CasoObservacion(models.Model):
+    id_observacion = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+
+    caso = models.ForeignKey(
+        CasoClinico,
+        on_delete=models.CASCADE,
+        related_name="observaciones_clinicas",
+        db_column="id_caso",
+    )
+
+    contenido = models.TextField()
+
+    registrado_por_uuid = models.UUIDField()
+
+    fecha_registro = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    activo = models.BooleanField(
+        default=True
+    )
+
+    class Meta:
+        db_table = "caso_observaciones"
+        app_label = "clinica"
+
+        indexes = [
+            models.Index(
+                fields=[
+                    "caso",
+                    "fecha_registro",
+                ],
+                name="idx_obs_caso_fecha",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.caso.codigo_caso} - "
+            f"{self.fecha_registro}"
         )
 
 

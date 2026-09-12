@@ -7,6 +7,7 @@ from clinica.application.services import (
 )
 
 from clinica.application.use_cases import (
+    ClinicalCaseInformationUseCase,
     CreateClinicalCaseUseCase,
     CreatePatientUseCase,
     DeletePatientPhotoUseCase,
@@ -47,11 +48,9 @@ class ApplicationContainer:
             DjangoPatientRepository()
         )
 
-
         self.catalog_repository = (
             DjangoCatalogRepository()
         )
-
 
         self.clinical_case_repository = (
             DjangoClinicalCaseRepository()
@@ -88,13 +87,11 @@ class ApplicationContainer:
             )
         )
 
-
         self.get_patient = (
             GetPatientUseCase(
                 self.patient_repository
             )
         )
-
 
         self.list_patients = (
             ListPatientsUseCase(
@@ -102,20 +99,17 @@ class ApplicationContainer:
             )
         )
 
-
         self.find_patient_duplicates = (
             FindPatientDuplicatesUseCase(
                 self.patient_repository
             )
         )
 
-
         self.update_patient = (
             UpdatePatientUseCase(
                 self.patient_repository
             )
         )
-
 
         self.get_patient_catalogs = (
             GetPatientCatalogsUseCase(
@@ -132,14 +126,13 @@ class ApplicationContainer:
             UpdatePatientPhotoUseCase()
         )
 
-
         self.delete_patient_photo = (
             DeletePatientPhotoUseCase()
         )
 
 
         # ==================================================
-        # CASOS CLÍNICOS
+        # CASOS CLINICOS
         # ==================================================
 
         self.list_patient_cases = (
@@ -152,7 +145,6 @@ class ApplicationContainer:
             )
         )
 
-
         self.create_clinical_case = (
             CreateClinicalCaseUseCase(
                 patient_repository=
@@ -163,13 +155,11 @@ class ApplicationContainer:
             )
         )
 
-
         self.list_clinical_cases = (
             ListClinicalCasesUseCase(
                 self.clinical_case_repository
             )
         )
-
 
         self.get_clinical_case = (
             GetClinicalCaseUseCase(
@@ -177,9 +167,14 @@ class ApplicationContainer:
             )
         )
 
-
         self.get_clinical_case_catalogs = (
             GetClinicalCaseCatalogsUseCase(
+                self.clinical_case_repository
+            )
+        )
+
+        self.clinical_case_information = (
+            ClinicalCaseInformationUseCase(
                 self.clinical_case_repository
             )
         )

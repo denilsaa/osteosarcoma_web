@@ -3,9 +3,13 @@ from django.urls import (
 )
 
 from .views import (
+    clinical_case_antecedents_view,
     clinical_case_catalogs_view,
     clinical_case_detail_view,
     clinical_case_list_view,
+    clinical_case_observations_view,
+    clinical_case_signs_view,
+    clinical_case_symptoms_view,
     patient_cases_view,
     patient_catalogs_view,
     patient_create_view,
@@ -29,13 +33,11 @@ urlpatterns = [
         name="patient-catalogs",
     ),
 
-
     path(
         "pacientes/posibles-duplicados/",
         patient_duplicates_view,
         name="patient-duplicates",
     ),
-
 
     path(
         "pacientes/",
@@ -43,20 +45,17 @@ urlpatterns = [
         name="patient-list",
     ),
 
-
     path(
         "pacientes/registrar/",
         patient_create_view,
         name="patient-create",
     ),
 
-
     path(
         "pacientes/<uuid:patient_id>/",
         patient_detail_view,
         name="patient-detail",
     ),
-
 
     path(
         "pacientes/<uuid:patient_id>/editar/",
@@ -88,7 +87,7 @@ urlpatterns = [
 
 
     # ======================================================
-    # CASOS CLÍNICOS
+    # CASOS CLINICOS
     # ======================================================
 
     path(
@@ -97,13 +96,11 @@ urlpatterns = [
         name="clinical-case-catalogs",
     ),
 
-
     path(
         "casos/",
         clinical_case_list_view,
         name="clinical-case-list",
     ),
-
 
     path(
         "casos/<uuid:case_id>/",
@@ -111,4 +108,32 @@ urlpatterns = [
         name="clinical-case-detail",
     ),
 
+
+    # ======================================================
+    # INFORMACION CLINICA DEL CASO
+    # ======================================================
+
+    path(
+        "casos/<uuid:case_id>/antecedentes/",
+        clinical_case_antecedents_view,
+        name="clinical-case-antecedents",
+    ),
+
+    path(
+        "casos/<uuid:case_id>/sintomas/",
+        clinical_case_symptoms_view,
+        name="clinical-case-symptoms",
+    ),
+
+    path(
+        "casos/<uuid:case_id>/signos/",
+        clinical_case_signs_view,
+        name="clinical-case-signs",
+    ),
+
+    path(
+        "casos/<uuid:case_id>/observaciones/",
+        clinical_case_observations_view,
+        name="clinical-case-observations",
+    ),
 ]

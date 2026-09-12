@@ -13,9 +13,13 @@ from .patient_views import (
 )
 
 from .clinical_case_views import (
+    clinical_case_antecedents_view,
     clinical_case_catalogs_view,
     clinical_case_detail_view,
     clinical_case_list_view,
+    clinical_case_observations_view,
+    clinical_case_signs_view,
+    clinical_case_symptoms_view,
     patient_cases_view,
 )
 
@@ -55,4 +59,11 @@ __all__ = [
 
     "clinical_case_catalogs_view",
 
+    "clinical_case_antecedents_view",
+
+    "clinical_case_symptoms_view",
+
+    "clinical_case_signs_view",
+
+    "clinical_case_observations_view",
 ]

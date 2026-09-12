@@ -3,9 +3,13 @@ from abc import (
     abstractmethod,
 )
 
-from datetime import date
+from datetime import (
+    date,
+)
 
-from uuid import UUID
+from uuid import (
+    UUID,
+)
 
 from clinica.domain.entities import (
     ClinicalCase,
@@ -80,5 +84,102 @@ class ClinicalCaseRepository(
     @abstractmethod
     def list_catalogs(
         self,
+    ) -> dict:
+        raise NotImplementedError
+
+
+    # ======================================================
+    # ANTECEDENTES
+    # ======================================================
+
+    @abstractmethod
+    def list_antecedents(
+        self,
+        case_id: UUID,
+    ) -> list[dict]:
+        raise NotImplementedError
+
+
+    @abstractmethod
+    def create_antecedent(
+        self,
+        *,
+        case_id: UUID,
+        antecedent_type_id: int,
+        description: str,
+        author_uuid: UUID,
+    ) -> dict:
+        raise NotImplementedError
+
+
+    # ======================================================
+    # SINTOMAS
+    # ======================================================
+
+    @abstractmethod
+    def list_symptoms(
+        self,
+        case_id: UUID,
+    ) -> list[dict]:
+        raise NotImplementedError
+
+
+    @abstractmethod
+    def create_symptom(
+        self,
+        *,
+        case_id: UUID,
+        symptom_id: int,
+        intensity_id: int | None,
+        start_date: date | None,
+        observation: str | None,
+        author_uuid: UUID,
+    ) -> dict:
+        raise NotImplementedError
+
+
+    # ======================================================
+    # SIGNOS
+    # ======================================================
+
+    @abstractmethod
+    def list_signs(
+        self,
+        case_id: UUID,
+    ) -> list[dict]:
+        raise NotImplementedError
+
+
+    @abstractmethod
+    def create_sign(
+        self,
+        *,
+        case_id: UUID,
+        sign_id: int,
+        finding_description: str | None,
+        author_uuid: UUID,
+    ) -> dict:
+        raise NotImplementedError
+
+
+    # ======================================================
+    # OBSERVACIONES
+    # ======================================================
+
+    @abstractmethod
+    def list_observations(
+        self,
+        case_id: UUID,
+    ) -> list[dict]:
+        raise NotImplementedError
+
+
+    @abstractmethod
+    def create_observation(
+        self,
+        *,
+        case_id: UUID,
+        content: str,
+        author_uuid: UUID,
     ) -> dict:
         raise NotImplementedError

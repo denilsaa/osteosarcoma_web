@@ -110,8 +110,31 @@ export interface PatientClinicalCasesResponse {
 
 
 // ==========================================================
-// CATÁLOGOS
+// CATÁLOGOS CLÍNICOS
 // ==========================================================
+
+export interface ClinicalCatalogItem {
+  id: number;
+
+  code: string;
+
+  name: string;
+
+  description?:
+    string | null;
+}
+
+
+export interface ClinicalIntensityLevel {
+  id: number;
+
+  code: string;
+
+  name: string;
+
+  level: number;
+}
+
 
 export interface ClinicalCaseCatalogs {
   statuses:
@@ -119,12 +142,233 @@ export interface ClinicalCaseCatalogs {
 
   priorities:
     ClinicalCasePriority[];
+
+  antecedent_types:
+    ClinicalCatalogItem[];
+
+  symptoms:
+    ClinicalCatalogItem[];
+
+  intensity_levels:
+    ClinicalIntensityLevel[];
+
+  signs:
+    ClinicalCatalogItem[];
 }
 
 
 interface ClinicalCaseCatalogsResponse {
   data:
     ClinicalCaseCatalogs;
+}
+
+
+// ==========================================================
+// ANTECEDENTES
+// ==========================================================
+
+export interface ClinicalAntecedent {
+  id_antecedent:
+    string;
+
+  type: {
+    id:
+      number;
+
+    code:
+      string;
+
+    name:
+      string;
+  };
+
+  description:
+    string;
+
+  author_uuid:
+    string | null;
+
+  registered_at:
+    string;
+
+  active:
+    boolean;
+}
+
+
+export interface ClinicalAntecedentListResponse {
+  data:
+    ClinicalAntecedent[];
+
+  total:
+    number;
+}
+
+
+export interface CreateClinicalAntecedentRequest {
+  antecedent_type_id:
+    number;
+
+  description:
+    string;
+}
+
+
+// ==========================================================
+// SÍNTOMAS
+// ==========================================================
+
+export interface ClinicalSymptom {
+  id_case_symptom:
+    string;
+
+  symptom: {
+    id:
+      number;
+
+    code:
+      string;
+
+    name:
+      string;
+  };
+
+  intensity:
+    {
+      id:
+        number;
+
+      code:
+        string;
+
+      name:
+        string;
+
+      level:
+        number;
+    }
+    | null;
+
+  start_date:
+    string | null;
+
+  observation:
+    string | null;
+
+  author_uuid:
+    string | null;
+
+  registered_at:
+    string;
+}
+
+
+export interface ClinicalSymptomListResponse {
+  data:
+    ClinicalSymptom[];
+
+  total:
+    number;
+}
+
+
+export interface CreateClinicalSymptomRequest {
+  symptom_id:
+    number;
+
+  intensity_id?:
+    number | null;
+
+  start_date?:
+    string | null;
+
+  observation?:
+    string | null;
+}
+
+
+// ==========================================================
+// SIGNOS
+// ==========================================================
+
+export interface ClinicalSign {
+  id_case_sign:
+    string;
+
+  sign: {
+    id:
+      number;
+
+    code:
+      string;
+
+    name:
+      string;
+  };
+
+  finding_description:
+    string | null;
+
+  author_uuid:
+    string;
+
+  observed_at:
+    string;
+}
+
+
+export interface ClinicalSignListResponse {
+  data:
+    ClinicalSign[];
+
+  total:
+    number;
+}
+
+
+export interface CreateClinicalSignRequest {
+  sign_id:
+    number;
+
+  finding_description?:
+    string | null;
+}
+
+
+// ==========================================================
+// OBSERVACIONES
+// ==========================================================
+
+export interface ClinicalObservation {
+  id_observation:
+    string;
+
+  content:
+    string;
+
+  author_uuid:
+    string;
+
+  registered_at:
+    string;
+
+  active:
+    boolean;
+}
+
+
+export interface ClinicalObservationListResponse {
+  data:
+    ClinicalObservation[];
+
+  total:
+    number;
+}
+
+
+export interface CreateClinicalObservationRequest {
+  content:
+    string;
 }
 
 
@@ -160,7 +404,7 @@ export interface ClinicalCaseFilters {
 
 
 // ==========================================================
-// CREAR
+// CREAR CASO
 // ==========================================================
 
 export interface CreateClinicalCaseRequest {
@@ -372,4 +616,188 @@ export async function createClinicalCase(
 
 
   return response.data;
+}
+
+
+// ==========================================================
+// ANTECEDENTES
+// ==========================================================
+
+export async function getClinicalAntecedents(
+  caseId:
+    string,
+): Promise<ClinicalAntecedentListResponse> {
+
+  const response =
+    await apiClinico
+      .get<ClinicalAntecedentListResponse>(
+        `/casos/${caseId}/antecedentes/`,
+      );
+
+
+  return response.data;
+}
+
+
+export async function createClinicalAntecedent(
+  caseId:
+    string,
+
+  data:
+    CreateClinicalAntecedentRequest,
+): Promise<ClinicalAntecedent> {
+
+  const response =
+    await apiClinico
+      .post<{
+        message:
+          string;
+
+        data:
+          ClinicalAntecedent;
+      }>(
+        `/casos/${caseId}/antecedentes/`,
+        data,
+      );
+
+
+  return response.data.data;
+}
+
+
+// ==========================================================
+// SÍNTOMAS
+// ==========================================================
+
+export async function getClinicalSymptoms(
+  caseId:
+    string,
+): Promise<ClinicalSymptomListResponse> {
+
+  const response =
+    await apiClinico
+      .get<ClinicalSymptomListResponse>(
+        `/casos/${caseId}/sintomas/`,
+      );
+
+
+  return response.data;
+}
+
+
+export async function createClinicalSymptom(
+  caseId:
+    string,
+
+  data:
+    CreateClinicalSymptomRequest,
+): Promise<ClinicalSymptom> {
+
+  const response =
+    await apiClinico
+      .post<{
+        message:
+          string;
+
+        data:
+          ClinicalSymptom;
+      }>(
+        `/casos/${caseId}/sintomas/`,
+        data,
+      );
+
+
+  return response.data.data;
+}
+
+
+// ==========================================================
+// SIGNOS
+// ==========================================================
+
+export async function getClinicalSigns(
+  caseId:
+    string,
+): Promise<ClinicalSignListResponse> {
+
+  const response =
+    await apiClinico
+      .get<ClinicalSignListResponse>(
+        `/casos/${caseId}/signos/`,
+      );
+
+
+  return response.data;
+}
+
+
+export async function createClinicalSign(
+  caseId:
+    string,
+
+  data:
+    CreateClinicalSignRequest,
+): Promise<ClinicalSign> {
+
+  const response =
+    await apiClinico
+      .post<{
+        message:
+          string;
+
+        data:
+          ClinicalSign;
+      }>(
+        `/casos/${caseId}/signos/`,
+        data,
+      );
+
+
+  return response.data.data;
+}
+
+
+// ==========================================================
+// OBSERVACIONES
+// ==========================================================
+
+export async function getClinicalObservations(
+  caseId:
+    string,
+): Promise<ClinicalObservationListResponse> {
+
+  const response =
+    await apiClinico
+      .get<ClinicalObservationListResponse>(
+        `/casos/${caseId}/observaciones/`,
+      );
+
+
+  return response.data;
+}
+
+
+export async function createClinicalObservation(
+  caseId:
+    string,
+
+  data:
+    CreateClinicalObservationRequest,
+): Promise<ClinicalObservation> {
+
+  const response =
+    await apiClinico
+      .post<{
+        message:
+          string;
+
+        data:
+          ClinicalObservation;
+      }>(
+        `/casos/${caseId}/observaciones/`,
+        data,
+      );
+
+
+  return response.data.data;
 }

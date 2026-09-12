@@ -20,6 +20,7 @@ from .patient_models import (
 from .case_models import (
     AntecedenteClinico,
     CasoClinico,
+    CasoObservacion,
     CasoSigno,
     CasoSintoma,
     HistorialEstadoCaso,
@@ -46,5 +47,6 @@ __all__ = [
     "AntecedenteClinico",
     "CasoSintoma",
     "CasoSigno",
+    "CasoObservacion",
     "ValoracionEspecialista",
 ]

@@ -11,12 +11,16 @@ import {
   IdCard,
   Image,
   LoaderCircle,
+  Plus,
+  Save,
   ShieldCheck,
   Stethoscope,
   UserRound,
+  X,
 } from "lucide-react";
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -28,8 +32,22 @@ import {
 } from "react-router-dom";
 
 import {
+  createClinicalAntecedent,
+  createClinicalObservation,
+  createClinicalSign,
+  createClinicalSymptom,
+  getClinicalAntecedents,
   getClinicalCase,
+  getClinicalCaseCatalogs,
+  getClinicalObservations,
+  getClinicalSigns,
+  getClinicalSymptoms,
+  type ClinicalAntecedent,
   type ClinicalCase,
+  type ClinicalCaseCatalogs,
+  type ClinicalObservation,
+  type ClinicalSign,
+  type ClinicalSymptom,
 } from "../../api/casos.api";
 
 import {
@@ -54,6 +72,14 @@ type CaseTab =
   | "clinical"
   | "radiographies"
   | "followup";
+
+
+type ClinicalForm =
+  | "antecedent"
+  | "symptom"
+  | "sign"
+  | "observation"
+  | null;
 
 
 // ==========================================================
@@ -109,9 +135,7 @@ function formatDate(
 ): string {
 
   if (!value) {
-
     return "—";
-
   }
 
 
@@ -126,9 +150,7 @@ function formatDate(
       date.getTime(),
     )
   ) {
-
     return value;
-
   }
 
 
@@ -146,9 +168,9 @@ function formatDate(
           "numeric",
       },
     )
-    .format(
-      date,
-    )
+      .format(
+        date,
+      )
   );
 
 }
@@ -160,9 +182,7 @@ function formatDateTime(
 ): string {
 
   if (!value) {
-
     return "—";
-
   }
 
 
@@ -177,9 +197,7 @@ function formatDateTime(
       date.getTime(),
     )
   ) {
-
     return value;
-
   }
 
 
@@ -203,9 +221,9 @@ function formatDateTime(
           "2-digit",
       },
     )
-    .format(
-      date,
-    )
+      .format(
+        date,
+      )
   );
 
 }
@@ -249,9 +267,7 @@ function calculateAge(
       birth.getDate()
     )
   ) {
-
     age -= 1;
-
   }
 
 
@@ -277,7 +293,6 @@ function relationshipName(
       string,
       string
     > = {
-
       MADRE:
         "Madre",
 
@@ -322,7 +337,6 @@ function relationshipName(
 
       OTRO:
         "Otro",
-
     };
 
 
@@ -351,18 +365,15 @@ function priorityClass(
         "case-detail-priority case-detail-priority--urgent"
       );
 
-
     case "ALTA":
       return (
         "case-detail-priority case-detail-priority--high"
       );
 
-
     case "MEDIA":
       return (
         "case-detail-priority case-detail-priority--medium"
       );
-
 
     default:
       return (
@@ -388,30 +399,25 @@ function statusClass(
         "case-detail-status case-detail-status--registered"
       );
 
-
     case "PENDIENTE":
       return (
         "case-detail-status case-detail-status--pending"
       );
-
 
     case "EN_ANALISIS":
       return (
         "case-detail-status case-detail-status--analysis"
       );
 
-
     case "REVISADO":
       return (
         "case-detail-status case-detail-status--reviewed"
       );
 
-
     case "CERRADO":
       return (
         "case-detail-status case-detail-status--closed"
       );
-
 
     default:
       return (
@@ -458,13 +464,7 @@ function extractErrorMessage(
       ===
       "string"
     ) {
-
-      return (
-        response
-          .data
-          .error
-      );
-
+      return response.data.error;
     }
 
 
@@ -475,20 +475,14 @@ function extractErrorMessage(
       ===
       "string"
     ) {
-
-      return (
-        response
-          .data
-          .detail
-      );
-
+      return response.data.detail;
     }
 
   }
 
 
   return (
-    "No fue posible cargar el detalle del caso clínico."
+    "No fue posible completar la operación."
   );
 
 }
@@ -513,7 +507,7 @@ export function CasoDetallePage() {
 
 
   // ========================================================
-  // DATOS
+  // DATOS PRINCIPALES
   // ========================================================
 
   const [
@@ -549,6 +543,61 @@ export function CasoDetallePage() {
     );
 
 
+  const [
+    catalogs,
+    setCatalogs,
+  ] =
+    useState<
+      ClinicalCaseCatalogs | null
+    >(
+      null,
+    );
+
+
+  const [
+    antecedents,
+    setAntecedents,
+  ] =
+    useState<
+      ClinicalAntecedent[]
+    >(
+      [],
+    );
+
+
+  const [
+    symptoms,
+    setSymptoms,
+  ] =
+    useState<
+      ClinicalSymptom[]
+    >(
+      [],
+    );
+
+
+  const [
+    signs,
+    setSigns,
+  ] =
+    useState<
+      ClinicalSign[]
+    >(
+      [],
+    );
+
+
+  const [
+    observations,
+    setObservations,
+  ] =
+    useState<
+      ClinicalObservation[]
+    >(
+      [],
+    );
+
+
   // ========================================================
   // UI
   // ========================================================
@@ -563,11 +612,29 @@ export function CasoDetallePage() {
 
 
   const [
+    activeForm,
+    setActiveForm,
+  ] =
+    useState<ClinicalForm>(
+      null,
+    );
+
+
+  const [
     loading,
     setLoading,
   ] =
     useState(
       true,
+    );
+
+
+  const [
+    saving,
+    setSaving,
+  ] =
+    useState(
+      false,
     );
 
 
@@ -582,8 +649,166 @@ export function CasoDetallePage() {
     );
 
 
+  const [
+    success,
+    setSuccess,
+  ] =
+    useState<
+      string | null
+    >(
+      null,
+    );
+
+
   // ========================================================
-  // CARGAR
+  // FORMULARIOS
+  // ========================================================
+
+  const [
+    antecedentTypeId,
+    setAntecedentTypeId,
+  ] =
+    useState(
+      "",
+    );
+
+
+  const [
+    antecedentDescription,
+    setAntecedentDescription,
+  ] =
+    useState(
+      "",
+    );
+
+
+  const [
+    symptomId,
+    setSymptomId,
+  ] =
+    useState(
+      "",
+    );
+
+
+  const [
+    intensityId,
+    setIntensityId,
+  ] =
+    useState(
+      "",
+    );
+
+
+  const [
+    symptomStartDate,
+    setSymptomStartDate,
+  ] =
+    useState(
+      "",
+    );
+
+
+  const [
+    symptomObservation,
+    setSymptomObservation,
+  ] =
+    useState(
+      "",
+    );
+
+
+  const [
+    signId,
+    setSignId,
+  ] =
+    useState(
+      "",
+    );
+
+
+  const [
+    signDescription,
+    setSignDescription,
+  ] =
+    useState(
+      "",
+    );
+
+
+  const [
+    observationContent,
+    setObservationContent,
+  ] =
+    useState(
+      "",
+    );
+
+
+  // ========================================================
+  // CARGAR INFORMACIÓN CLÍNICA
+  // ========================================================
+
+  const loadClinicalInformation =
+    useCallback(
+      async (
+        caseId:
+          string,
+      ) => {
+
+        const [
+          antecedentResponse,
+          symptomResponse,
+          signResponse,
+          observationResponse,
+        ] =
+          await Promise.all(
+            [
+              getClinicalAntecedents(
+                caseId,
+              ),
+
+              getClinicalSymptoms(
+                caseId,
+              ),
+
+              getClinicalSigns(
+                caseId,
+              ),
+
+              getClinicalObservations(
+                caseId,
+              ),
+            ],
+          );
+
+
+        setAntecedents(
+          antecedentResponse.data,
+        );
+
+
+        setSymptoms(
+          symptomResponse.data,
+        );
+
+
+        setSigns(
+          signResponse.data,
+        );
+
+
+        setObservations(
+          observationResponse.data,
+        );
+
+      },
+      [],
+    );
+
+
+  // ========================================================
+  // CARGAR TODO
   // ========================================================
 
   useEffect(
@@ -633,6 +858,7 @@ export function CasoDetallePage() {
           const [
             patientData,
             oncologistData,
+            catalogData,
           ] =
             await Promise.all(
               [
@@ -645,14 +871,14 @@ export function CasoDetallePage() {
                   "ACTIVO",
                   "",
                 ),
+
+                getClinicalCaseCatalogs(),
               ],
             );
 
 
           if (!mounted) {
-
             return;
-
           }
 
 
@@ -669,6 +895,16 @@ export function CasoDetallePage() {
           setOncologists(
             oncologistData
               .resultados,
+          );
+
+
+          setCatalogs(
+            catalogData,
+          );
+
+
+          await loadClinicalInformation(
+            id!,
           );
 
         } catch (
@@ -717,12 +953,64 @@ export function CasoDetallePage() {
     },
     [
       id,
+      loadClinicalInformation,
     ],
   );
 
 
   // ========================================================
-  // MÉDICO RESPONSABLE
+  // AUTOR
+  // ========================================================
+
+  const getAuthorName =
+    useCallback(
+      (
+        authorUuid?:
+          string | null,
+      ): string => {
+
+        if (!authorUuid) {
+          return "Autor no identificado";
+        }
+
+
+        const found =
+          oncologists
+            .find(
+              (
+                oncologist,
+              ) =>
+                oncologist.id_usuario
+                ===
+                authorUuid,
+            );
+
+
+        if (
+          found
+            ?.nombre_completo
+        ) {
+
+          return (
+            found.nombre_completo
+          );
+
+        }
+
+
+        return (
+          `Usuario ${authorUuid.slice(0, 8)}`
+        );
+
+      },
+      [
+        oncologists,
+      ],
+    );
+
+
+  // ========================================================
+  // RESPONSABLE
   // ========================================================
 
   const responsibleName =
@@ -741,37 +1029,20 @@ export function CasoDetallePage() {
         }
 
 
-        const found =
-          oncologists
-            .find(
-              (
-                oncologist,
-              ) =>
-                oncologist.id_usuario
-                ===
-                clinicalCase
-                  .responsible_oncologist_uuid,
-            );
-
-
         return (
-          found
-            ?.nombre_completo
-          ??
-          "Profesional asignado"
+          getAuthorName(
+            clinicalCase
+              .responsible_oncologist_uuid,
+          )
         );
 
       },
       [
         clinicalCase,
-        oncologists,
+        getAuthorName,
       ],
     );
 
-
-  // ========================================================
-  // DOCUMENTO
-  // ========================================================
 
   const primaryDocument =
     useMemo(
@@ -786,10 +1057,6 @@ export function CasoDetallePage() {
       ],
     );
 
-
-  // ========================================================
-  // CONTACTO
-  // ========================================================
 
   const primaryContact =
     useMemo(
@@ -813,10 +1080,6 @@ export function CasoDetallePage() {
       ],
     );
 
-
-  // ========================================================
-  // EMERGENCIA
-  // ========================================================
 
   const emergencyContact =
     useMemo(
@@ -844,10 +1107,6 @@ export function CasoDetallePage() {
     );
 
 
-  // ========================================================
-  // FOTO
-  // ========================================================
-
   const patientPhoto =
     useMemo(
       () =>
@@ -861,10 +1120,6 @@ export function CasoDetallePage() {
     );
 
 
-  // ========================================================
-  // ESTADO ACTUAL
-  // ========================================================
-
   const currentStatusIndex =
     useMemo(
       () => {
@@ -872,9 +1127,7 @@ export function CasoDetallePage() {
         if (
           !clinicalCase
         ) {
-
           return 0;
-
         }
 
 
@@ -903,6 +1156,431 @@ export function CasoDetallePage() {
         clinicalCase,
       ],
     );
+
+
+  // ========================================================
+  // MENSAJES
+  // ========================================================
+
+  function showSuccess(
+    message:
+      string,
+  ) {
+
+    setSuccess(
+      message,
+    );
+
+
+    setError(
+      null,
+    );
+
+
+    window.setTimeout(
+      () => {
+
+        setSuccess(
+          null,
+        );
+
+      },
+      3200,
+    );
+
+  }
+
+
+  // ========================================================
+  // GUARDAR ANTECEDENTE
+  // ========================================================
+
+  async function handleSaveAntecedent() {
+
+    if (
+      !id
+      ||
+      !antecedentTypeId
+    ) {
+
+      setError(
+        "Seleccione el tipo de antecedente.",
+      );
+
+      return;
+
+    }
+
+
+    if (
+      antecedentDescription
+        .trim()
+        .length
+      <
+      3
+    ) {
+
+      setError(
+        "Ingrese una descripción válida.",
+      );
+
+      return;
+
+    }
+
+
+    setSaving(
+      true,
+    );
+
+
+    try {
+
+      await createClinicalAntecedent(
+        id,
+        {
+          antecedent_type_id:
+            Number(
+              antecedentTypeId,
+            ),
+
+          description:
+            antecedentDescription
+              .trim(),
+        },
+      );
+
+
+      setAntecedentTypeId(
+        "",
+      );
+
+
+      setAntecedentDescription(
+        "",
+      );
+
+
+      setActiveForm(
+        null,
+      );
+
+
+      await loadClinicalInformation(
+        id,
+      );
+
+
+      showSuccess(
+        "Antecedente registrado correctamente.",
+      );
+
+    } catch (
+      requestError
+    ) {
+
+      setError(
+        extractErrorMessage(
+          requestError,
+        ),
+      );
+
+    } finally {
+
+      setSaving(
+        false,
+      );
+
+    }
+
+  }
+
+
+  // ========================================================
+  // GUARDAR SÍNTOMA
+  // ========================================================
+
+  async function handleSaveSymptom() {
+
+    if (
+      !id
+      ||
+      !symptomId
+    ) {
+
+      setError(
+        "Seleccione un síntoma.",
+      );
+
+      return;
+
+    }
+
+
+    setSaving(
+      true,
+    );
+
+
+    try {
+
+      await createClinicalSymptom(
+        id,
+        {
+          symptom_id:
+            Number(
+              symptomId,
+            ),
+
+          intensity_id:
+            intensityId
+              ? Number(
+                  intensityId,
+                )
+              : null,
+
+          start_date:
+            symptomStartDate
+              ||
+              null,
+
+          observation:
+            symptomObservation
+              .trim()
+              ||
+              null,
+        },
+      );
+
+
+      setSymptomId(
+        "",
+      );
+
+
+      setIntensityId(
+        "",
+      );
+
+
+      setSymptomStartDate(
+        "",
+      );
+
+
+      setSymptomObservation(
+        "",
+      );
+
+
+      setActiveForm(
+        null,
+      );
+
+
+      await loadClinicalInformation(
+        id,
+      );
+
+
+      showSuccess(
+        "Síntoma registrado correctamente.",
+      );
+
+    } catch (
+      requestError
+    ) {
+
+      setError(
+        extractErrorMessage(
+          requestError,
+        ),
+      );
+
+    } finally {
+
+      setSaving(
+        false,
+      );
+
+    }
+
+  }
+
+
+  // ========================================================
+  // GUARDAR SIGNO
+  // ========================================================
+
+  async function handleSaveSign() {
+
+    if (
+      !id
+      ||
+      !signId
+    ) {
+
+      setError(
+        "Seleccione un signo clínico.",
+      );
+
+      return;
+
+    }
+
+
+    setSaving(
+      true,
+    );
+
+
+    try {
+
+      await createClinicalSign(
+        id,
+        {
+          sign_id:
+            Number(
+              signId,
+            ),
+
+          finding_description:
+            signDescription
+              .trim()
+              ||
+              null,
+        },
+      );
+
+
+      setSignId(
+        "",
+      );
+
+
+      setSignDescription(
+        "",
+      );
+
+
+      setActiveForm(
+        null,
+      );
+
+
+      await loadClinicalInformation(
+        id,
+      );
+
+
+      showSuccess(
+        "Signo registrado correctamente.",
+      );
+
+    } catch (
+      requestError
+    ) {
+
+      setError(
+        extractErrorMessage(
+          requestError,
+        ),
+      );
+
+    } finally {
+
+      setSaving(
+        false,
+      );
+
+    }
+
+  }
+
+
+  // ========================================================
+  // GUARDAR OBSERVACIÓN
+  // ========================================================
+
+  async function handleSaveObservation() {
+
+    if (!id) {
+      return;
+    }
+
+
+    if (
+      observationContent
+        .trim()
+        .length
+      <
+      3
+    ) {
+
+      setError(
+        "Ingrese una observación válida.",
+      );
+
+      return;
+
+    }
+
+
+    setSaving(
+      true,
+    );
+
+
+    try {
+
+      await createClinicalObservation(
+        id,
+        {
+          content:
+            observationContent
+              .trim(),
+        },
+      );
+
+
+      setObservationContent(
+        "",
+      );
+
+
+      setActiveForm(
+        null,
+      );
+
+
+      await loadClinicalInformation(
+        id,
+      );
+
+
+      showSuccess(
+        "Observación registrada correctamente.",
+      );
+
+    } catch (
+      requestError
+    ) {
+
+      setError(
+        extractErrorMessage(
+          requestError,
+        ),
+      );
+
+    } finally {
+
+      setSaving(
+        false,
+      );
+
+    }
+
+  }
 
 
   // ========================================================
@@ -937,7 +1615,7 @@ export function CasoDetallePage() {
 
 
   // ========================================================
-  // ERROR
+  // ERROR DE CARGA
   // ========================================================
 
   if (
@@ -959,7 +1637,6 @@ export function CasoDetallePage() {
           <CircleAlert
             size={20}
           />
-
 
           <span>
             {
@@ -1014,9 +1691,66 @@ export function CasoDetallePage() {
       className="case-detail-page"
     >
 
-      {/* ==================================================
-          BREADCRUMB
-          ================================================== */}
+      {
+        error
+        &&
+        (
+
+          <div
+            className="case-detail-error"
+          >
+
+            <CircleAlert
+              size={19}
+            />
+
+            <span>
+              {error}
+            </span>
+
+
+            <button
+              type="button"
+              onClick={
+                () =>
+                  setError(
+                    null,
+                  )
+              }
+            >
+              <X
+                size={17}
+              />
+            </button>
+
+          </div>
+
+        )
+      }
+
+
+      {
+        success
+        &&
+        (
+
+          <div
+            className="case-detail-success"
+          >
+
+            <CheckCircle2
+              size={19}
+            />
+
+            <span>
+              {success}
+            </span>
+
+          </div>
+
+        )
+      }
+
 
       <div
         className="case-detail-breadcrumb"
@@ -1046,10 +1780,6 @@ export function CasoDetallePage() {
 
       </div>
 
-
-      {/* ==================================================
-          PACIENTE
-          ================================================== */}
 
       <article
         className="case-detail-patient-card"
@@ -1141,21 +1871,6 @@ export function CasoDetallePage() {
                 }
               </strong>
 
-
-              {
-                primaryDocument
-                  ?.complement
-                &&
-                (
-                  <strong>
-                    {
-                      primaryDocument
-                        .complement
-                    }
-                  </strong>
-                )
-              }
-
             </div>
 
 
@@ -1196,7 +1911,6 @@ export function CasoDetallePage() {
         >
 
           <div>
-
             <span>
               Teléfono
             </span>
@@ -1209,18 +1923,15 @@ export function CasoDetallePage() {
                 "Sin registro"
               }
             </strong>
-
           </div>
 
 
           <div>
-
             <span>
               Contacto de emergencia
             </span>
 
             <strong>
-
               {
                 emergencyContact
                   ? (
@@ -1243,18 +1954,13 @@ export function CasoDetallePage() {
                         }
                       </>
                     )
-                  : (
-                      "Sin registro"
-                    )
+                  : "Sin registro"
               }
-
             </strong>
-
           </div>
 
 
           <div>
-
             <span>
               Médico responsable
             </span>
@@ -1262,7 +1968,6 @@ export function CasoDetallePage() {
             <strong>
               {responsibleName}
             </strong>
-
           </div>
 
         </div>
@@ -1279,13 +1984,11 @@ export function CasoDetallePage() {
                 : "case-detail-patient-inactive"
             }
           >
-
             {
               patient.active
                 ? "Paciente activo"
                 : "Paciente inactivo"
             }
-
           </span>
 
 
@@ -1311,10 +2014,6 @@ export function CasoDetallePage() {
 
       </article>
 
-
-      {/* ==================================================
-          TABS
-          ================================================== */}
 
       <nav
         className="case-detail-tabs"
@@ -1397,10 +2096,6 @@ export function CasoDetallePage() {
       </nav>
 
 
-      {/* ==================================================
-          INFORMACIÓN CLÍNICA
-          ================================================== */}
-
       {
         activeTab ===
         "clinical"
@@ -1415,25 +2110,20 @@ export function CasoDetallePage() {
               className="case-detail-clinical-column"
             >
 
-              {/* DATOS DEL CASO */}
-
               <article
                 className="case-detail-section"
               >
 
                 <header>
-
                   <div>
                     <ClipboardList
                       size={20}
                     />
                   </div>
 
-
                   <h2>
                     1. Datos del caso
                   </h2>
-
                 </header>
 
 
@@ -1442,7 +2132,6 @@ export function CasoDetallePage() {
                 >
 
                   <div>
-
                     <span>
                       Código del caso
                     </span>
@@ -1450,12 +2139,10 @@ export function CasoDetallePage() {
                     <strong>
                       {clinicalCase.code}
                     </strong>
-
                   </div>
 
 
                   <div>
-
                     <span>
                       Fecha de registro
                     </span>
@@ -1468,12 +2155,10 @@ export function CasoDetallePage() {
                         )
                       }
                     </strong>
-
                   </div>
 
 
                   <div>
-
                     <span>
                       Médico responsable
                     </span>
@@ -1481,70 +2166,56 @@ export function CasoDetallePage() {
                     <strong>
                       {responsibleName}
                     </strong>
-
                   </div>
 
 
                   <div>
-
                     <span>
                       Prioridad
                     </span>
 
-                    <strong>
-
-                      <span
-                        className={
-                          priorityClass(
-                            clinicalCase
-                              .priority
-                              .code,
-                          )
-                        }
-                      >
-                        {
+                    <span
+                      className={
+                        priorityClass(
                           clinicalCase
                             .priority
-                            .name
-                        }
-                      </span>
-
-                    </strong>
-
+                            .code,
+                        )
+                      }
+                    >
+                      {
+                        clinicalCase
+                          .priority
+                          .name
+                      }
+                    </span>
                   </div>
 
 
                   <div>
-
                     <span>
                       Estado
                     </span>
 
-                    <strong>
-
-                      <span
-                        className={
-                          statusClass(
-                            clinicalCase
-                              .status
-                              .code,
-                          )
-                        }
-                      >
-                        {
+                    <span
+                      className={
+                        statusClass(
                           clinicalCase
                             .status
-                            .name
-                        }
-                      </span>
-
-                    </strong>
-
+                            .code,
+                        )
+                      }
+                    >
+                      {
+                        clinicalCase
+                          .status
+                          .name
+                      }
+                    </span>
                   </div>
 
 
                   <div>
-
                     <span>
                       Servicio / Área
                     </span>
@@ -1552,7 +2223,6 @@ export function CasoDetallePage() {
                     <strong>
                       Oncología
                     </strong>
-
                   </div>
 
                 </div>
@@ -1560,25 +2230,20 @@ export function CasoDetallePage() {
               </article>
 
 
-              {/* MOTIVO */}
-
               <article
                 className="case-detail-section"
               >
 
                 <header>
-
                   <div>
                     <Stethoscope
                       size={20}
                     />
                   </div>
 
-
                   <h2>
                     2. Motivo de consulta
                   </h2>
-
                 </header>
 
 
@@ -1594,102 +2259,911 @@ export function CasoDetallePage() {
               </article>
 
 
-              {/* ANTECEDENTES */}
+              {/* ==================================================
+                  ANTECEDENTES
+                  ================================================== */}
 
               <article
                 className="case-detail-section"
               >
 
-                <header>
+                <header
+                  className="case-detail-section-header-actions"
+                >
 
-                  <div>
-                    <ShieldCheck
-                      size={20}
-                    />
+                  <div
+                    className="case-detail-section-header-title"
+                  >
+                    <div>
+                      <ShieldCheck
+                        size={20}
+                      />
+                    </div>
+
+                    <div>
+                      <h2>
+                        3. Antecedentes relevantes
+                      </h2>
+
+                      <p>
+                        {
+                          antecedents.length
+                        } registro(s)
+                      </p>
+                    </div>
                   </div>
 
 
-                  <h2>
-                    3. Antecedentes relevantes
-                  </h2>
+                  <button
+                    type="button"
+                    className="case-detail-add-button"
+                    onClick={
+                      () =>
+                        setActiveForm(
+                          activeForm ===
+                          "antecedent"
+                            ? null
+                            : "antecedent",
+                        )
+                    }
+                  >
+                    <Plus
+                      size={16}
+                    />
+
+                    Registrar
+                  </button>
 
                 </header>
 
 
+                {
+                  activeForm ===
+                  "antecedent"
+                  &&
+                  (
+
+                    <div
+                      className="case-detail-inline-form"
+                    >
+
+                      <label>
+                        Tipo de antecedente *
+
+                        <select
+                          value={
+                            antecedentTypeId
+                          }
+                          onChange={
+                            (
+                              event,
+                            ) =>
+                              setAntecedentTypeId(
+                                event.target.value,
+                              )
+                          }
+                        >
+                          <option
+                            value=""
+                          >
+                            Seleccione
+                          </option>
+
+                          {
+                            catalogs
+                              ?.antecedent_types
+                              .map(
+                                (
+                                  item,
+                                ) => (
+
+                                  <option
+                                    key={
+                                      item.id
+                                    }
+                                    value={
+                                      item.id
+                                    }
+                                  >
+                                    {item.name}
+                                  </option>
+
+                                ),
+                              )
+                          }
+                        </select>
+                      </label>
+
+
+                      <label
+                        className="case-detail-form-wide"
+                      >
+                        Descripción *
+
+                        <textarea
+                          rows={3}
+                          value={
+                            antecedentDescription
+                          }
+                          onChange={
+                            (
+                              event,
+                            ) =>
+                              setAntecedentDescription(
+                                event.target.value,
+                              )
+                          }
+                          placeholder="Detalle del antecedente clínico..."
+                        />
+                      </label>
+
+
+                      <div
+                        className="case-detail-form-actions"
+                      >
+                        <button
+                          type="button"
+                          className="case-detail-secondary-button"
+                          onClick={
+                            () =>
+                              setActiveForm(
+                                null,
+                              )
+                          }
+                        >
+                          Cancelar
+                        </button>
+
+                        <button
+                          type="button"
+                          className="case-detail-primary-button"
+                          disabled={
+                            saving
+                          }
+                          onClick={
+                            () =>
+                              void handleSaveAntecedent()
+                          }
+                        >
+                          {
+                            saving
+                              ? (
+                                  <LoaderCircle
+                                    size={16}
+                                    className="case-detail-spin"
+                                  />
+                                )
+                              : (
+                                  <Save
+                                    size={16}
+                                  />
+                                )
+                          }
+
+                          Guardar
+                        </button>
+                      </div>
+
+                    </div>
+
+                  )
+                }
+
+
                 <div
-                  className="case-detail-coming"
+                  className="case-detail-record-list"
                 >
 
-                  <ShieldCheck
-                    size={27}
-                  />
+                  {
+                    antecedents.length ===
+                    0
+                      ? (
+
+                          <div
+                            className="case-detail-empty"
+                          >
+                            <ShieldCheck
+                              size={27}
+                            />
+
+                            <strong>
+                              Sin antecedentes registrados
+                            </strong>
+
+                            <span>
+                              Registre antecedentes personales,
+                              familiares, quirúrgicos, alérgicos
+                              u oncológicos.
+                            </span>
+                          </div>
+
+                        )
+                      : antecedents.map(
+                          (
+                            item,
+                          ) => (
+
+                            <div
+                              key={
+                                item.id_antecedent
+                              }
+                              className="case-detail-record"
+                            >
+
+                              <div
+                                className="case-detail-record-top"
+                              >
+                                <strong>
+                                  {item.type.name}
+                                </strong>
+
+                                <span>
+                                  {
+                                    formatDateTime(
+                                      item.registered_at,
+                                    )
+                                  }
+                                </span>
+                              </div>
 
 
-                  <div>
-
-                    <strong>
-                      Sin antecedentes registrados
-                    </strong>
+                              <p>
+                                {item.description}
+                              </p>
 
 
-                    <span>
-                      Aquí se mostrarán antecedentes
-                      personales, familiares, quirúrgicos
-                      y otros registros clínicos con
-                      autor y fecha.
-                    </span>
+                              <div
+                                className="case-detail-record-author"
+                              >
+                                <Stethoscope
+                                  size={14}
+                                />
 
-                  </div>
+                                {
+                                  getAuthorName(
+                                    item.author_uuid,
+                                  )
+                                }
+                              </div>
+
+                            </div>
+
+                          ),
+                        )
+                  }
 
                 </div>
 
               </article>
 
 
-              {/* SIGNOS Y SÍNTOMAS */}
+              {/* ==================================================
+                  SÍNTOMAS
+                  ================================================== */}
 
               <article
                 className="case-detail-section"
               >
 
-                <header>
+                <header
+                  className="case-detail-section-header-actions"
+                >
 
-                  <div>
-                    <Activity
-                      size={20}
-                    />
+                  <div
+                    className="case-detail-section-header-title"
+                  >
+                    <div>
+                      <HeartPulse
+                        size={20}
+                      />
+                    </div>
+
+                    <div>
+                      <h2>
+                        4. Síntomas
+                      </h2>
+
+                      <p>
+                        {
+                          symptoms.length
+                        } registro(s)
+                      </p>
+                    </div>
                   </div>
 
 
-                  <h2>
-                    4. Signos y síntomas
-                  </h2>
+                  <button
+                    type="button"
+                    className="case-detail-add-button"
+                    onClick={
+                      () =>
+                        setActiveForm(
+                          activeForm ===
+                          "symptom"
+                            ? null
+                            : "symptom",
+                        )
+                    }
+                  >
+                    <Plus
+                      size={16}
+                    />
+
+                    Registrar
+                  </button>
 
                 </header>
 
 
+                {
+                  activeForm ===
+                  "symptom"
+                  &&
+                  (
+
+                    <div
+                      className="case-detail-inline-form"
+                    >
+
+                      <label>
+                        Síntoma *
+
+                        <select
+                          value={
+                            symptomId
+                          }
+                          onChange={
+                            (
+                              event,
+                            ) =>
+                              setSymptomId(
+                                event.target.value,
+                              )
+                          }
+                        >
+                          <option
+                            value=""
+                          >
+                            Seleccione
+                          </option>
+
+                          {
+                            catalogs
+                              ?.symptoms
+                              .map(
+                                (
+                                  item,
+                                ) => (
+
+                                  <option
+                                    key={
+                                      item.id
+                                    }
+                                    value={
+                                      item.id
+                                    }
+                                  >
+                                    {item.name}
+                                  </option>
+
+                                ),
+                              )
+                          }
+                        </select>
+                      </label>
+
+
+                      <label>
+                        Intensidad
+
+                        <select
+                          value={
+                            intensityId
+                          }
+                          onChange={
+                            (
+                              event,
+                            ) =>
+                              setIntensityId(
+                                event.target.value,
+                              )
+                          }
+                        >
+                          <option
+                            value=""
+                          >
+                            Sin especificar
+                          </option>
+
+                          {
+                            catalogs
+                              ?.intensity_levels
+                              .map(
+                                (
+                                  item,
+                                ) => (
+
+                                  <option
+                                    key={
+                                      item.id
+                                    }
+                                    value={
+                                      item.id
+                                    }
+                                  >
+                                    {item.name}
+                                  </option>
+
+                                ),
+                              )
+                          }
+                        </select>
+                      </label>
+
+
+                      <label>
+                        Fecha de inicio
+
+                        <input
+                          type="date"
+                          value={
+                            symptomStartDate
+                          }
+                          onChange={
+                            (
+                              event,
+                            ) =>
+                              setSymptomStartDate(
+                                event.target.value,
+                              )
+                          }
+                        />
+                      </label>
+
+
+                      <label
+                        className="case-detail-form-wide"
+                      >
+                        Observación
+
+                        <textarea
+                          rows={3}
+                          value={
+                            symptomObservation
+                          }
+                          onChange={
+                            (
+                              event,
+                            ) =>
+                              setSymptomObservation(
+                                event.target.value,
+                              )
+                          }
+                          placeholder="Descripción adicional del síntoma..."
+                        />
+                      </label>
+
+
+                      <div
+                        className="case-detail-form-actions"
+                      >
+                        <button
+                          type="button"
+                          className="case-detail-secondary-button"
+                          onClick={
+                            () =>
+                              setActiveForm(
+                                null,
+                              )
+                          }
+                        >
+                          Cancelar
+                        </button>
+
+                        <button
+                          type="button"
+                          className="case-detail-primary-button"
+                          disabled={
+                            saving
+                          }
+                          onClick={
+                            () =>
+                              void handleSaveSymptom()
+                          }
+                        >
+                          <Save
+                            size={16}
+                          />
+
+                          Guardar
+                        </button>
+                      </div>
+
+                    </div>
+
+                  )
+                }
+
+
                 <div
-                  className="case-detail-coming"
+                  className="case-detail-record-list"
                 >
 
-                  <Activity
-                    size={27}
-                  />
+                  {
+                    symptoms.length ===
+                    0
+                      ? (
+
+                          <div
+                            className="case-detail-empty"
+                          >
+                            <HeartPulse
+                              size={27}
+                            />
+
+                            <strong>
+                              Sin síntomas registrados
+                            </strong>
+                          </div>
+
+                        )
+                      : symptoms.map(
+                          (
+                            item,
+                          ) => (
+
+                            <div
+                              key={
+                                item.id_case_symptom
+                              }
+                              className="case-detail-record"
+                            >
+
+                              <div
+                                className="case-detail-record-top"
+                              >
+                                <strong>
+                                  {item.symptom.name}
+                                </strong>
+
+                                {
+                                  item.intensity
+                                  &&
+                                  (
+                                    <span
+                                      className="case-detail-intensity"
+                                    >
+                                      {
+                                        item.intensity.name
+                                      }
+                                    </span>
+                                  )
+                                }
+                              </div>
 
 
-                  <div>
+                              {
+                                item.observation
+                                &&
+                                (
+                                  <p>
+                                    {item.observation}
+                                  </p>
+                                )
+                              }
 
-                    <strong>
-                      Sin signos o síntomas registrados
-                    </strong>
+
+                              <div
+                                className="case-detail-record-details"
+                              >
+                                <span>
+                                  Inicio:{" "}
+                                  {
+                                    formatDate(
+                                      item.start_date,
+                                    )
+                                  }
+                                </span>
+
+                                <span>
+                                  Registro:{" "}
+                                  {
+                                    formatDateTime(
+                                      item.registered_at,
+                                    )
+                                  }
+                                </span>
+                              </div>
 
 
-                    <span>
-                      Este apartado será conectado con
-                      los registros clínicos del caso.
-                    </span>
+                              <div
+                                className="case-detail-record-author"
+                              >
+                                <Stethoscope
+                                  size={14}
+                                />
 
+                                {
+                                  getAuthorName(
+                                    item.author_uuid,
+                                  )
+                                }
+                              </div>
+
+                            </div>
+
+                          ),
+                        )
+                  }
+
+                </div>
+
+              </article>
+
+
+              {/* ==================================================
+                  SIGNOS
+                  ================================================== */}
+
+              <article
+                className="case-detail-section"
+              >
+
+                <header
+                  className="case-detail-section-header-actions"
+                >
+
+                  <div
+                    className="case-detail-section-header-title"
+                  >
+                    <div>
+                      <Activity
+                        size={20}
+                      />
+                    </div>
+
+                    <div>
+                      <h2>
+                        5. Signos clínicos
+                      </h2>
+
+                      <p>
+                        {
+                          signs.length
+                        } registro(s)
+                      </p>
+                    </div>
                   </div>
+
+
+                  <button
+                    type="button"
+                    className="case-detail-add-button"
+                    onClick={
+                      () =>
+                        setActiveForm(
+                          activeForm ===
+                          "sign"
+                            ? null
+                            : "sign",
+                        )
+                    }
+                  >
+                    <Plus
+                      size={16}
+                    />
+
+                    Registrar
+                  </button>
+
+                </header>
+
+
+                {
+                  activeForm ===
+                  "sign"
+                  &&
+                  (
+
+                    <div
+                      className="case-detail-inline-form"
+                    >
+
+                      <label>
+                        Signo *
+
+                        <select
+                          value={
+                            signId
+                          }
+                          onChange={
+                            (
+                              event,
+                            ) =>
+                              setSignId(
+                                event.target.value,
+                              )
+                          }
+                        >
+                          <option
+                            value=""
+                          >
+                            Seleccione
+                          </option>
+
+                          {
+                            catalogs
+                              ?.signs
+                              .map(
+                                (
+                                  item,
+                                ) => (
+
+                                  <option
+                                    key={
+                                      item.id
+                                    }
+                                    value={
+                                      item.id
+                                    }
+                                  >
+                                    {item.name}
+                                  </option>
+
+                                ),
+                              )
+                          }
+                        </select>
+                      </label>
+
+
+                      <label
+                        className="case-detail-form-wide"
+                      >
+                        Hallazgo / descripción
+
+                        <textarea
+                          rows={3}
+                          value={
+                            signDescription
+                          }
+                          onChange={
+                            (
+                              event,
+                            ) =>
+                              setSignDescription(
+                                event.target.value,
+                              )
+                          }
+                          placeholder="Detalle del hallazgo observado..."
+                        />
+                      </label>
+
+
+                      <div
+                        className="case-detail-form-actions"
+                      >
+                        <button
+                          type="button"
+                          className="case-detail-secondary-button"
+                          onClick={
+                            () =>
+                              setActiveForm(
+                                null,
+                              )
+                          }
+                        >
+                          Cancelar
+                        </button>
+
+                        <button
+                          type="button"
+                          className="case-detail-primary-button"
+                          disabled={
+                            saving
+                          }
+                          onClick={
+                            () =>
+                              void handleSaveSign()
+                          }
+                        >
+                          <Save
+                            size={16}
+                          />
+
+                          Guardar
+                        </button>
+                      </div>
+
+                    </div>
+
+                  )
+                }
+
+
+                <div
+                  className="case-detail-record-list"
+                >
+
+                  {
+                    signs.length ===
+                    0
+                      ? (
+
+                          <div
+                            className="case-detail-empty"
+                          >
+                            <Activity
+                              size={27}
+                            />
+
+                            <strong>
+                              Sin signos registrados
+                            </strong>
+                          </div>
+
+                        )
+                      : signs.map(
+                          (
+                            item,
+                          ) => (
+
+                            <div
+                              key={
+                                item.id_case_sign
+                              }
+                              className="case-detail-record"
+                            >
+
+                              <div
+                                className="case-detail-record-top"
+                              >
+                                <strong>
+                                  {item.sign.name}
+                                </strong>
+
+                                <span>
+                                  {
+                                    formatDateTime(
+                                      item.observed_at,
+                                    )
+                                  }
+                                </span>
+                              </div>
+
+
+                              {
+                                item.finding_description
+                                &&
+                                (
+                                  <p>
+                                    {
+                                      item.finding_description
+                                    }
+                                  </p>
+                                )
+                              }
+
+
+                              <div
+                                className="case-detail-record-author"
+                              >
+                                <Stethoscope
+                                  size={14}
+                                />
+
+                                {
+                                  getAuthorName(
+                                    item.author_uuid,
+                                  )
+                                }
+                              </div>
+
+                            </div>
+
+                          ),
+                        )
+                  }
 
                 </div>
 
@@ -1702,95 +3176,261 @@ export function CasoDetallePage() {
               className="case-detail-clinical-column"
             >
 
-              {/* OBSERVACIONES */}
+              {/* ==================================================
+                  OBSERVACIONES
+                  ================================================== */}
+
+              <article
+                className="case-detail-section"
+              >
+
+                <header
+                  className="case-detail-section-header-actions"
+                >
+
+                  <div
+                    className="case-detail-section-header-title"
+                  >
+                    <div>
+                      <FileImage
+                        size={20}
+                      />
+                    </div>
+
+                    <div>
+                      <h2>
+                        6. Observaciones clínicas
+                      </h2>
+
+                      <p>
+                        {
+                          observations.length
+                        } registro(s)
+                      </p>
+                    </div>
+                  </div>
+
+
+                  <button
+                    type="button"
+                    className="case-detail-add-button"
+                    onClick={
+                      () =>
+                        setActiveForm(
+                          activeForm ===
+                          "observation"
+                            ? null
+                            : "observation",
+                        )
+                    }
+                  >
+                    <Plus
+                      size={16}
+                    />
+
+                    Registrar
+                  </button>
+
+                </header>
+
+
+                {
+                  activeForm ===
+                  "observation"
+                  &&
+                  (
+
+                    <div
+                      className="case-detail-inline-form"
+                    >
+
+                      <label
+                        className="case-detail-form-wide"
+                      >
+                        Nueva observación *
+
+                        <textarea
+                          rows={4}
+                          value={
+                            observationContent
+                          }
+                          onChange={
+                            (
+                              event,
+                            ) =>
+                              setObservationContent(
+                                event.target.value,
+                              )
+                          }
+                          placeholder="Ingrese la evolución u observación clínica..."
+                        />
+                      </label>
+
+
+                      <div
+                        className="case-detail-form-actions"
+                      >
+                        <button
+                          type="button"
+                          className="case-detail-secondary-button"
+                          onClick={
+                            () =>
+                              setActiveForm(
+                                null,
+                              )
+                          }
+                        >
+                          Cancelar
+                        </button>
+
+                        <button
+                          type="button"
+                          className="case-detail-primary-button"
+                          disabled={
+                            saving
+                          }
+                          onClick={
+                            () =>
+                              void handleSaveObservation()
+                          }
+                        >
+                          <Save
+                            size={16}
+                          />
+
+                          Guardar
+                        </button>
+                      </div>
+
+                    </div>
+
+                  )
+                }
+
+
+                <div
+                  className="case-detail-record-list"
+                >
+
+                  {
+                    observations.length ===
+                    0
+                      ? (
+
+                          <div
+                            className="case-detail-empty"
+                          >
+                            <FileImage
+                              size={27}
+                            />
+
+                            <strong>
+                              Sin observaciones registradas
+                            </strong>
+                          </div>
+
+                        )
+                      : observations.map(
+                          (
+                            item,
+                          ) => (
+
+                            <div
+                              key={
+                                item.id_observation
+                              }
+                              className="case-detail-record"
+                            >
+
+                              <p>
+                                {item.content}
+                              </p>
+
+
+                              <div
+                                className="case-detail-record-author"
+                              >
+                                <Stethoscope
+                                  size={14}
+                                />
+
+                                {
+                                  getAuthorName(
+                                    item.author_uuid,
+                                  )
+                                }
+
+                                <span>
+                                  ·
+                                </span>
+
+                                <CalendarDays
+                                  size={14}
+                                />
+
+                                {
+                                  formatDateTime(
+                                    item.registered_at,
+                                  )
+                                }
+                              </div>
+
+                            </div>
+
+                          ),
+                        )
+                  }
+
+                </div>
+
+              </article>
+
 
               <article
                 className="case-detail-section"
               >
 
                 <header>
-
                   <div>
                     <FileImage
                       size={20}
                     />
                   </div>
 
-
                   <h2>
-                    5. Observaciones iniciales
+                    Observación inicial
                   </h2>
-
                 </header>
 
 
                 <div
                   className="case-detail-text-box case-detail-text-box--large"
                 >
-
                   {
                     clinicalCase
                       .general_observation
                     ??
                     "No se registraron observaciones generales en la apertura del caso."
                   }
-
                 </div>
-
-
-                <footer
-                  className="case-detail-record-meta"
-                >
-
-                  <Stethoscope
-                    size={15}
-                  />
-
-                  <span>
-                    Registrado por{" "}
-                    <strong>
-                      {responsibleName}
-                    </strong>
-                  </span>
-
-
-                  <CalendarDays
-                    size={15}
-                  />
-
-                  <span>
-                    {
-                      formatDateTime(
-                        clinicalCase
-                          .opening_date,
-                      )
-                    }
-                  </span>
-
-                </footer>
 
               </article>
 
-
-              {/* ESTADO */}
 
               <article
                 className="case-detail-section"
               >
 
                 <header>
-
                   <div>
                     <Activity
                       size={20}
                     />
                   </div>
 
-
                   <h2>
                     Estado actual
                   </h2>
-
                 </header>
 
 
@@ -1825,25 +3465,20 @@ export function CasoDetallePage() {
               </article>
 
 
-              {/* RESUMEN */}
-
               <article
                 className="case-detail-section"
               >
 
                 <header>
-
                   <div>
                     <ContactRound
                       size={20}
                     />
                   </div>
 
-
                   <h2>
                     Resumen de atención
                   </h2>
-
                 </header>
 
 
@@ -1852,7 +3487,6 @@ export function CasoDetallePage() {
                 >
 
                   <div>
-
                     <span>
                       Paciente
                     </span>
@@ -1860,12 +3494,10 @@ export function CasoDetallePage() {
                     <strong>
                       {patient.full_name}
                     </strong>
-
                   </div>
 
 
                   <div>
-
                     <span>
                       Médico
                     </span>
@@ -1873,12 +3505,10 @@ export function CasoDetallePage() {
                     <strong>
                       {responsibleName}
                     </strong>
-
                   </div>
 
 
                   <div>
-
                     <span>
                       Apertura
                     </span>
@@ -1891,12 +3521,10 @@ export function CasoDetallePage() {
                         )
                       }
                     </strong>
-
                   </div>
 
 
                   <div>
-
                     <span>
                       Cierre
                     </span>
@@ -1909,7 +3537,6 @@ export function CasoDetallePage() {
                         )
                       }
                     </strong>
-
                   </div>
 
                 </div>
@@ -1923,10 +3550,6 @@ export function CasoDetallePage() {
         )
       }
 
-
-      {/* ==================================================
-          RADIOGRAFÍAS
-          ================================================== */}
 
       {
         activeTab ===
@@ -1954,17 +3577,13 @@ export function CasoDetallePage() {
 
 
                 <div>
-
                   <h2>
                     Radiografías del caso
                   </h2>
 
-
                   <p>
-                    Estudios radiográficos asociados
-                    exclusivamente a este caso clínico.
+                    Estudios radiográficos asociados al caso.
                   </p>
-
                 </div>
 
               </div>
@@ -1975,9 +3594,7 @@ export function CasoDetallePage() {
                 className="case-detail-primary-button"
                 disabled
               >
-
                 Registrar radiografía
-
               </button>
 
             </header>
@@ -1991,21 +3608,14 @@ export function CasoDetallePage() {
                 size={38}
               />
 
-
               <div>
-
                 <strong>
                   Integración de radiografías pendiente
                 </strong>
 
-
                 <span>
-                  En el siguiente paso conectaremos el
-                  servicio de radiografías para mostrar
-                  fecha, zona anatómica, lateralidad,
-                  observaciones y archivo privado.
+                  Esta será la siguiente fase.
                 </span>
-
               </div>
 
             </div>
@@ -2015,10 +3625,6 @@ export function CasoDetallePage() {
         )
       }
 
-
-      {/* ==================================================
-          SEGUIMIENTO
-          ================================================== */}
 
       {
         activeTab ===
@@ -2035,18 +3641,15 @@ export function CasoDetallePage() {
             >
 
               <header>
-
                 <div>
                   <Activity
                     size={20}
                   />
                 </div>
 
-
                 <h2>
                   Línea de tiempo del caso
                 </h2>
-
               </header>
 
 
@@ -2092,7 +3695,6 @@ export function CasoDetallePage() {
                             <div
                               className="case-detail-timeline-marker"
                             >
-
                               {
                                 completed
                                   ? (
@@ -2104,7 +3706,6 @@ export function CasoDetallePage() {
                                       <span />
                                     )
                               }
-
                             </div>
 
 
@@ -2115,15 +3716,13 @@ export function CasoDetallePage() {
 
                             <span>
                               {
-                                item.code
-                                ===
+                                item.code ===
                                 "REGISTRADO"
                                   ? formatDate(
                                       clinicalCase
                                         .opening_date,
                                     )
-                                  : item.code
-                                    ===
+                                  : item.code ===
                                     "CERRADO"
                                     &&
                                     clinicalCase
@@ -2158,18 +3757,15 @@ export function CasoDetallePage() {
               >
 
                 <header>
-
                   <div>
                     <ClipboardList
                       size={20}
                     />
                   </div>
 
-
                   <h2>
                     Historial del caso
                   </h2>
-
                 </header>
 
 
@@ -2183,11 +3779,9 @@ export function CasoDetallePage() {
 
 
                   <div>
-
                     <strong>
                       Caso clínico registrado
                     </strong>
-
 
                     <span>
                       {
@@ -2198,11 +3792,9 @@ export function CasoDetallePage() {
                       }
                     </span>
 
-
                     <p>
                       Apertura del caso clínico.
                     </p>
-
                   </div>
 
                 </div>
@@ -2215,18 +3807,15 @@ export function CasoDetallePage() {
               >
 
                 <header>
-
                   <div>
                     <ShieldCheck
                       size={20}
                     />
                   </div>
 
-
                   <h2>
                     Estado actual
                   </h2>
-
                 </header>
 
 
@@ -2252,9 +3841,8 @@ export function CasoDetallePage() {
 
 
                   <p>
-                    Próximamente habilitaremos aquí
-                    el avance controlado al siguiente
-                    estado del flujo clínico.
+                    El cambio controlado de estado
+                    se implementará en la siguiente fase.
                   </p>
 
                 </div>

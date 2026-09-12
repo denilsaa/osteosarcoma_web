@@ -13,11 +13,12 @@ class CreateClinicalCaseSerializer(
         )
     )
 
-
     responsible_oncologist_uuid = (
-        serializers.UUIDField()
+        serializers.UUIDField(
+            required=False,
+            allow_null=True,
+        )
     )
-
 
     consultation_reason = (
         serializers.CharField(
@@ -27,12 +28,100 @@ class CreateClinicalCaseSerializer(
         )
     )
 
-
     general_observation = (
         serializers.CharField(
             required=False,
             allow_blank=True,
             allow_null=True,
+            max_length=4000,
+            trim_whitespace=True,
+        )
+    )
+
+
+class CreateClinicalAntecedentSerializer(
+    serializers.Serializer,
+):
+
+    antecedent_type_id = (
+        serializers.IntegerField(
+            min_value=1,
+        )
+    )
+
+    description = (
+        serializers.CharField(
+            min_length=3,
+            max_length=4000,
+            trim_whitespace=True,
+        )
+    )
+
+
+class CreateClinicalSymptomSerializer(
+    serializers.Serializer,
+):
+
+    symptom_id = (
+        serializers.IntegerField(
+            min_value=1,
+        )
+    )
+
+    intensity_id = (
+        serializers.IntegerField(
+            min_value=1,
+            required=False,
+            allow_null=True,
+        )
+    )
+
+    start_date = (
+        serializers.DateField(
+            required=False,
+            allow_null=True,
+        )
+    )
+
+    observation = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            allow_null=True,
+            max_length=4000,
+            trim_whitespace=True,
+        )
+    )
+
+
+class CreateClinicalSignSerializer(
+    serializers.Serializer,
+):
+
+    sign_id = (
+        serializers.IntegerField(
+            min_value=1,
+        )
+    )
+
+    finding_description = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            allow_null=True,
+            max_length=4000,
+            trim_whitespace=True,
+        )
+    )
+
+
+class CreateClinicalObservationSerializer(
+    serializers.Serializer,
+):
+
+    content = (
+        serializers.CharField(
+            min_length=3,
             max_length=4000,
             trim_whitespace=True,
         )
