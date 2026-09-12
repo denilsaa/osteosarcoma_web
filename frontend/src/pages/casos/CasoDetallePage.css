@@ -1189,3 +1189,126 @@
   }
 
 }
+
+/* =========================================================
+   FLUJO DE ESTADOS - ACCIONES
+   ========================================================= */
+
+.case-detail-status-action {
+  display: flex;
+  width: 100%;
+  max-width: 430px;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.case-detail-next-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 9px;
+  background: #f8fbff;
+  color: #475569;
+  font-size: 0.72rem;
+}
+
+.case-detail-next-status > span {
+  width: 100%;
+  color: #64748b;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.case-detail-next-status strong {
+  color: #16355c;
+  font-size: 0.74rem;
+}
+
+.case-detail-status-action label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.case-detail-status-action textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #d5dee8;
+  border-radius: 8px;
+  outline: 0;
+  background: #ffffff;
+  color: #334155;
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.case-detail-status-action textarea:focus {
+  border-color: #38bdf8;
+  box-shadow:
+    0 0 0 3px
+    rgba(56, 189, 248, 0.1);
+}
+
+.case-detail-advance-button {
+  width: 100%;
+  min-height: 40px;
+}
+
+
+/* =========================================================
+   HISTORIAL REAL DE ESTADOS
+   ========================================================= */
+
+.case-detail-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+}
+
+.case-detail-history-list
+.case-detail-history-row {
+  margin: 0;
+}
+
+.case-detail-history-row small {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 0.66rem;
+  font-weight: 600;
+}
+
+.case-detail-history-row:first-child
+.case-detail-history-dot {
+  background: #0ea5e9;
+  box-shadow:
+    0 0 0 4px
+    rgba(14, 165, 233, 0.12);
+}
+
+@media (max-width: 700px) {
+
+  .case-detail-status-action {
+    max-width: none;
+  }
+
+  .case-detail-next-status {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+}

@@ -39,6 +39,29 @@ class CreateClinicalCaseSerializer(
     )
 
 
+# ==========================================================
+# ESTADO DEL CASO
+# ==========================================================
+
+class AdvanceClinicalCaseStatusSerializer(
+    serializers.Serializer,
+):
+
+    observation = (
+        serializers.CharField(
+            required=False,
+            allow_blank=True,
+            allow_null=True,
+            max_length=2000,
+            trim_whitespace=True,
+        )
+    )
+
+
+# ==========================================================
+# ANTECEDENTES
+# ==========================================================
+
 class CreateClinicalAntecedentSerializer(
     serializers.Serializer,
 ):
@@ -57,6 +80,10 @@ class CreateClinicalAntecedentSerializer(
         )
     )
 
+
+# ==========================================================
+# SINTOMAS
+# ==========================================================
 
 class CreateClinicalSymptomSerializer(
     serializers.Serializer,
@@ -94,6 +121,10 @@ class CreateClinicalSymptomSerializer(
     )
 
 
+# ==========================================================
+# SIGNOS
+# ==========================================================
+
 class CreateClinicalSignSerializer(
     serializers.Serializer,
 ):
@@ -114,6 +145,10 @@ class CreateClinicalSignSerializer(
         )
     )
 
+
+# ==========================================================
+# OBSERVACIONES
+# ==========================================================
 
 class CreateClinicalObservationSerializer(
     serializers.Serializer,

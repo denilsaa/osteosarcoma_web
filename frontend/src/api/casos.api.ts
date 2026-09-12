@@ -373,6 +373,46 @@ export interface CreateClinicalObservationRequest {
 
 
 // ==========================================================
+// HISTORIAL DE ESTADOS
+// ==========================================================
+
+export interface ClinicalCaseStatusHistoryItem {
+  id_history:
+    number;
+
+  previous_status:
+    ClinicalCaseStatus | null;
+
+  new_status:
+    ClinicalCaseStatus;
+
+  user_uuid:
+    string;
+
+  changed_at:
+    string;
+
+  observation:
+    string | null;
+}
+
+
+export interface ClinicalCaseStatusHistoryResponse {
+  data:
+    ClinicalCaseStatusHistoryItem[];
+
+  total:
+    number;
+}
+
+
+export interface AdvanceClinicalCaseStatusRequest {
+  observation?:
+    string | null;
+}
+
+
+// ==========================================================
 // FILTROS
 // ==========================================================
 
@@ -616,6 +656,52 @@ export async function createClinicalCase(
 
 
   return response.data;
+}
+
+
+// ==========================================================
+// ESTADO / HISTORIAL
+// ==========================================================
+
+export async function getClinicalCaseStatusHistory(
+  caseId:
+    string,
+): Promise<ClinicalCaseStatusHistoryResponse> {
+
+  const response =
+    await apiClinico
+      .get<ClinicalCaseStatusHistoryResponse>(
+        `/casos/${caseId}/historial-estados/`,
+      );
+
+
+  return response.data;
+}
+
+
+export async function advanceClinicalCaseStatus(
+  caseId:
+    string,
+
+  data:
+    AdvanceClinicalCaseStatusRequest = {},
+): Promise<ClinicalCase> {
+
+  const response =
+    await apiClinico
+      .patch<{
+        message:
+          string;
+
+        data:
+          ClinicalCase;
+      }>(
+        `/casos/${caseId}/estado/`,
+        data,
+      );
+
+
+  return response.data.data;
 }
 
 

@@ -42,6 +42,11 @@ from .manage_clinical_case_information import (
     ClinicalCaseInformationUseCase,
 )
 
+from .manage_clinical_case_status import (
+    AdvanceClinicalCaseStatusUseCase,
+    GetClinicalCaseStatusHistoryUseCase,
+)
+
 from .patient_photo import (
     DeletePatientPhotoUseCase,
     UpdatePatientPhotoUseCase,
@@ -90,4 +95,8 @@ __all__ = [
     "GetClinicalCaseCatalogsUseCase",
 
     "ClinicalCaseInformationUseCase",
+
+    "AdvanceClinicalCaseStatusUseCase",
+
+    "GetClinicalCaseStatusHistoryUseCase",
 ]

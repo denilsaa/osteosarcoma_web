@@ -9,6 +9,7 @@ from .change_dto import (
 )
 
 from .clinical_case_dto import (
+    AdvanceClinicalCaseStatusDTO,
     ClinicalCaseFiltersDTO,
     CreateClinicalAntecedentDTO,
     CreateClinicalCaseDTO,
@@ -35,6 +36,7 @@ __all__ = [
 
     "CreateClinicalCaseDTO",
     "ClinicalCaseFiltersDTO",
+    "AdvanceClinicalCaseStatusDTO",
 
     "CreateClinicalAntecedentDTO",
     "CreateClinicalSymptomDTO",

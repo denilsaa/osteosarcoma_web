@@ -3,12 +3,14 @@ from django.urls import (
 )
 
 from .views import (
+    clinical_case_advance_status_view,
     clinical_case_antecedents_view,
     clinical_case_catalogs_view,
     clinical_case_detail_view,
     clinical_case_list_view,
     clinical_case_observations_view,
     clinical_case_signs_view,
+    clinical_case_status_history_view,
     clinical_case_symptoms_view,
     patient_cases_view,
     patient_catalogs_view,
@@ -106,6 +108,23 @@ urlpatterns = [
         "casos/<uuid:case_id>/",
         clinical_case_detail_view,
         name="clinical-case-detail",
+    ),
+
+
+    # ======================================================
+    # FLUJO DE ESTADOS
+    # ======================================================
+
+    path(
+        "casos/<uuid:case_id>/historial-estados/",
+        clinical_case_status_history_view,
+        name="clinical-case-status-history",
+    ),
+
+    path(
+        "casos/<uuid:case_id>/estado/",
+        clinical_case_advance_status_view,
+        name="clinical-case-advance-status",
     ),
 
 

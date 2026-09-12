@@ -70,6 +70,10 @@ class ClinicalCaseRepository(
         raise NotImplementedError
 
 
+    # ======================================================
+    # HISTORIAL INICIAL
+    # ======================================================
+
     @abstractmethod
     def create_initial_history(
         self,
@@ -80,6 +84,10 @@ class ClinicalCaseRepository(
     ) -> None:
         raise NotImplementedError
 
+
+    # ======================================================
+    # CATALOGOS
+    # ======================================================
 
     @abstractmethod
     def list_catalogs(

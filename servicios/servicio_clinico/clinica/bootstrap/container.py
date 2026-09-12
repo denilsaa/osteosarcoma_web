@@ -7,12 +7,14 @@ from clinica.application.services import (
 )
 
 from clinica.application.use_cases import (
+    AdvanceClinicalCaseStatusUseCase,
     ClinicalCaseInformationUseCase,
     CreateClinicalCaseUseCase,
     CreatePatientUseCase,
     DeletePatientPhotoUseCase,
     FindPatientDuplicatesUseCase,
     GetClinicalCaseCatalogsUseCase,
+    GetClinicalCaseStatusHistoryUseCase,
     GetClinicalCaseUseCase,
     GetPatientCatalogsUseCase,
     GetPatientUseCase,
@@ -30,6 +32,7 @@ from clinica.infrastructure.messaging import (
 from clinica.infrastructure.persistence.repositories import (
     DjangoCatalogRepository,
     DjangoClinicalCaseRepository,
+    DjangoClinicalCaseStatusRepository,
     DjangoPatientRepository,
 )
 
@@ -54,6 +57,10 @@ class ApplicationContainer:
 
         self.clinical_case_repository = (
             DjangoClinicalCaseRepository()
+        )
+
+        self.clinical_case_status_repository = (
+            DjangoClinicalCaseStatusRepository()
         )
 
 
@@ -176,6 +183,18 @@ class ApplicationContainer:
         self.clinical_case_information = (
             ClinicalCaseInformationUseCase(
                 self.clinical_case_repository
+            )
+        )
+
+        self.advance_clinical_case_status = (
+            AdvanceClinicalCaseStatusUseCase(
+                self.clinical_case_status_repository
+            )
+        )
+
+        self.get_clinical_case_status_history = (
+            GetClinicalCaseStatusHistoryUseCase(
+                self.clinical_case_status_repository
             )
         )
 

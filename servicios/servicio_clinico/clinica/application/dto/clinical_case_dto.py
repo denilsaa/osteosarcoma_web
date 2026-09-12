@@ -72,3 +72,10 @@ class CreateClinicalObservationDTO:
     case_id: UUID
 
     content: str
+
+
+@dataclass(frozen=True)
+class AdvanceClinicalCaseStatusDTO:
+    case_id: UUID
+
+    observation: Optional[str] = None

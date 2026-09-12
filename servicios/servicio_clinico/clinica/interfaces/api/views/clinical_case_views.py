@@ -19,6 +19,7 @@ from rest_framework.response import (
 )
 
 from clinica.application.dto import (
+    AdvanceClinicalCaseStatusDTO,
     ClinicalCaseFiltersDTO,
     CreateClinicalAntecedentDTO,
     CreateClinicalCaseDTO,
@@ -44,6 +45,7 @@ from clinica.interfaces.api.presenters.clinical_case_presenter import (
 )
 
 from clinica.interfaces.api.serializers.clinical_case_serializers import (
+    AdvanceClinicalCaseStatusSerializer,
     CreateClinicalAntecedentSerializer,
     CreateClinicalCaseSerializer,
     CreateClinicalObservationSerializer,
@@ -51,6 +53,10 @@ from clinica.interfaces.api.serializers.clinical_case_serializers import (
     CreateClinicalSymptomSerializer,
 )
 
+
+# ==========================================================
+# HELPERS
+# ==========================================================
 
 def _get_actor_uuid(
     request: Request,
@@ -94,6 +100,7 @@ def _error_response(
         error,
         ValueError,
     ):
+
         return Response(
             {
                 "error":
@@ -212,6 +219,7 @@ def patient_cases_view(
         )
 
     except Exception as error:
+
         return _error_response(
             error
         )
@@ -330,7 +338,9 @@ def clinical_case_list_view(
         return Response(
             ClinicalCasePresenter
             .paginated(
-                cases=result["cases"],
+                cases=
+                    result["cases"],
+
                 pagination=
                     result["pagination"],
             ),
@@ -430,6 +440,143 @@ def clinical_case_catalogs_view(
 
 
 # ==========================================================
+# HISTORIAL DE ESTADOS
+# ==========================================================
+
+@api_view(
+    [
+        "GET",
+    ]
+)
+def clinical_case_status_history_view(
+    request: Request,
+    case_id: UUID,
+):
+
+    del request
+
+    container = get_container()
+
+    try:
+
+        history = (
+            container
+            .get_clinical_case_status_history
+            .execute(
+                case_id
+            )
+        )
+
+        return Response(
+            {
+                "data":
+                    history,
+
+                "total":
+                    len(
+                        history
+                    ),
+            },
+            status=200,
+        )
+
+    except ValueError as error:
+
+        return Response(
+            {
+                "error":
+                    str(error)
+            },
+            status=404,
+        )
+
+
+# ==========================================================
+# AVANZAR ESTADO
+# ==========================================================
+
+@api_view(
+    [
+        "PATCH",
+    ]
+)
+def clinical_case_advance_status_view(
+    request: Request,
+    case_id: UUID,
+):
+
+    container = get_container()
+
+    try:
+
+        serializer = (
+            AdvanceClinicalCaseStatusSerializer(
+                data=request.data
+            )
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        data = serializer.validated_data
+
+        actor_uuid = (
+            _get_actor_uuid(
+                request
+            )
+        )
+
+        dto = (
+            AdvanceClinicalCaseStatusDTO(
+                case_id=
+                    case_id,
+
+                observation=
+                    (
+                        data.get(
+                            "observation"
+                        )
+                        or None
+                    ),
+            )
+        )
+
+        case = (
+            container
+            .advance_clinical_case_status
+            .execute(
+                dto,
+                actor_uuid=
+                    actor_uuid,
+            )
+        )
+
+        return Response(
+            {
+                "message":
+                    (
+                        "Estado del caso clínico "
+                        "actualizado correctamente."
+                    ),
+
+                "data":
+                    ClinicalCasePresenter
+                    .detail(
+                        case
+                    ),
+            },
+            status=200,
+        )
+
+    except Exception as error:
+
+        return _error_response(
+            error
+        )
+
+
+# ==========================================================
 # ANTECEDENTES
 # ==========================================================
 
@@ -460,8 +607,13 @@ def clinical_case_antecedents_view(
 
             return Response(
                 {
-                    "data": items,
-                    "total": len(items),
+                    "data":
+                        items,
+
+                    "total":
+                        len(
+                            items
+                        ),
                 },
                 status=200,
             )
@@ -482,14 +634,21 @@ def clinical_case_antecedents_view(
             request
         )
 
-        dto = CreateClinicalAntecedentDTO(
-            case_id=case_id,
-            antecedent_type_id=
-                data[
-                    "antecedent_type_id"
-                ],
-            description=
-                data["description"],
+        dto = (
+            CreateClinicalAntecedentDTO(
+                case_id=
+                    case_id,
+
+                antecedent_type_id=
+                    data[
+                        "antecedent_type_id"
+                    ],
+
+                description=
+                    data[
+                        "description"
+                    ],
+            )
         )
 
         item = (
@@ -509,12 +668,15 @@ def clinical_case_antecedents_view(
                         "Antecedente registrado "
                         "correctamente."
                     ),
-                "data": item,
+
+                "data":
+                    item,
             },
             status=201,
         )
 
     except Exception as error:
+
         return _error_response(
             error
         )
@@ -551,8 +713,13 @@ def clinical_case_symptoms_view(
 
             return Response(
                 {
-                    "data": items,
-                    "total": len(items),
+                    "data":
+                        items,
+
+                    "total":
+                        len(
+                            items
+                        ),
                 },
                 status=200,
             )
@@ -573,23 +740,34 @@ def clinical_case_symptoms_view(
             request
         )
 
-        dto = CreateClinicalSymptomDTO(
-            case_id=case_id,
-            symptom_id=
-                data["symptom_id"],
-            intensity_id=
-                data.get(
-                    "intensity_id"
-                ),
-            start_date=
-                data.get(
-                    "start_date"
-                ),
-            observation=
-                data.get(
-                    "observation"
-                )
-                or None,
+        dto = (
+            CreateClinicalSymptomDTO(
+                case_id=
+                    case_id,
+
+                symptom_id=
+                    data[
+                        "symptom_id"
+                    ],
+
+                intensity_id=
+                    data.get(
+                        "intensity_id"
+                    ),
+
+                start_date=
+                    data.get(
+                        "start_date"
+                    ),
+
+                observation=
+                    (
+                        data.get(
+                            "observation"
+                        )
+                        or None
+                    ),
+            )
         )
 
         item = (
@@ -609,12 +787,15 @@ def clinical_case_symptoms_view(
                         "Síntoma registrado "
                         "correctamente."
                     ),
-                "data": item,
+
+                "data":
+                    item,
             },
             status=201,
         )
 
     except Exception as error:
+
         return _error_response(
             error
         )
@@ -651,8 +832,13 @@ def clinical_case_signs_view(
 
             return Response(
                 {
-                    "data": items,
-                    "total": len(items),
+                    "data":
+                        items,
+
+                    "total":
+                        len(
+                            items
+                        ),
                 },
                 status=200,
             )
@@ -673,15 +859,24 @@ def clinical_case_signs_view(
             request
         )
 
-        dto = CreateClinicalSignDTO(
-            case_id=case_id,
-            sign_id=
-                data["sign_id"],
-            finding_description=
-                data.get(
-                    "finding_description"
-                )
-                or None,
+        dto = (
+            CreateClinicalSignDTO(
+                case_id=
+                    case_id,
+
+                sign_id=
+                    data[
+                        "sign_id"
+                    ],
+
+                finding_description=
+                    (
+                        data.get(
+                            "finding_description"
+                        )
+                        or None
+                    ),
+            )
         )
 
         item = (
@@ -701,12 +896,15 @@ def clinical_case_signs_view(
                         "Signo registrado "
                         "correctamente."
                     ),
-                "data": item,
+
+                "data":
+                    item,
             },
             status=201,
         )
 
     except Exception as error:
+
         return _error_response(
             error
         )
@@ -743,8 +941,13 @@ def clinical_case_observations_view(
 
             return Response(
                 {
-                    "data": items,
-                    "total": len(items),
+                    "data":
+                        items,
+
+                    "total":
+                        len(
+                            items
+                        ),
                 },
                 status=200,
             )
@@ -765,9 +968,16 @@ def clinical_case_observations_view(
             request
         )
 
-        dto = CreateClinicalObservationDTO(
-            case_id=case_id,
-            content=data["content"],
+        dto = (
+            CreateClinicalObservationDTO(
+                case_id=
+                    case_id,
+
+                content=
+                    data[
+                        "content"
+                    ],
+            )
         )
 
         item = (
@@ -787,12 +997,15 @@ def clinical_case_observations_view(
                         "Observación registrada "
                         "correctamente."
                     ),
-                "data": item,
+
+                "data":
+                    item,
             },
             status=201,
         )
 
     except Exception as error:
+
         return _error_response(
             error
         )

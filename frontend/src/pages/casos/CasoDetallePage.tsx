@@ -1,6 +1,7 @@
 import {
   Activity,
   ArrowLeft,
+  ArrowRight,
   CalendarDays,
   CheckCircle2,
   CircleAlert,
@@ -8,6 +9,7 @@ import {
   ContactRound,
   FileImage,
   HeartPulse,
+  History,
   IdCard,
   Image,
   LoaderCircle,
@@ -32,6 +34,7 @@ import {
 } from "react-router-dom";
 
 import {
+  advanceClinicalCaseStatus,
   createClinicalAntecedent,
   createClinicalObservation,
   createClinicalSign,
@@ -39,12 +42,14 @@ import {
   getClinicalAntecedents,
   getClinicalCase,
   getClinicalCaseCatalogs,
+  getClinicalCaseStatusHistory,
   getClinicalObservations,
   getClinicalSigns,
   getClinicalSymptoms,
   type ClinicalAntecedent,
   type ClinicalCase,
   type ClinicalCaseCatalogs,
+  type ClinicalCaseStatusHistoryItem,
   type ClinicalObservation,
   type ClinicalSign,
   type ClinicalSymptom,
@@ -598,6 +603,17 @@ export function CasoDetallePage() {
     );
 
 
+  const [
+    statusHistory,
+    setStatusHistory,
+  ] =
+    useState<
+      ClinicalCaseStatusHistoryItem[]
+    >(
+      [],
+    );
+
+
   // ========================================================
   // UI
   // ========================================================
@@ -632,6 +648,15 @@ export function CasoDetallePage() {
   const [
     saving,
     setSaving,
+  ] =
+    useState(
+      false,
+    );
+
+
+  const [
+    advancingStatus,
+    setAdvancingStatus,
   ] =
     useState(
       false,
@@ -745,6 +770,15 @@ export function CasoDetallePage() {
     );
 
 
+  const [
+    statusObservation,
+    setStatusObservation,
+  ] =
+    useState(
+      "",
+    );
+
+
   // ========================================================
   // CARGAR INFORMACIÓN CLÍNICA
   // ========================================================
@@ -800,6 +834,32 @@ export function CasoDetallePage() {
 
         setObservations(
           observationResponse.data,
+        );
+
+      },
+      [],
+    );
+
+
+  // ========================================================
+  // CARGAR HISTORIAL DE ESTADOS
+  // ========================================================
+
+  const loadStatusHistory =
+    useCallback(
+      async (
+        caseId:
+          string,
+      ) => {
+
+        const response =
+          await getClinicalCaseStatusHistory(
+            caseId,
+          );
+
+
+        setStatusHistory(
+          response.data,
         );
 
       },
@@ -903,8 +963,16 @@ export function CasoDetallePage() {
           );
 
 
-          await loadClinicalInformation(
-            id!,
+          await Promise.all(
+            [
+              loadClinicalInformation(
+                id!,
+              ),
+
+              loadStatusHistory(
+                id!,
+              ),
+            ],
           );
 
         } catch (
@@ -954,6 +1022,7 @@ export function CasoDetallePage() {
     [
       id,
       loadClinicalInformation,
+      loadStatusHistory,
     ],
   );
 
@@ -1154,6 +1223,85 @@ export function CasoDetallePage() {
       },
       [
         clinicalCase,
+      ],
+    );
+
+
+  const nextStatus =
+    useMemo(
+      () => {
+
+        if (
+          !clinicalCase
+          ||
+          clinicalCase.status.code
+          ===
+          "CERRADO"
+        ) {
+          return null;
+        }
+
+
+        return (
+          CASE_STATUS_FLOW[
+            currentStatusIndex
+            +
+            1
+          ]
+          ??
+          null
+        );
+
+      },
+      [
+        clinicalCase,
+        currentStatusIndex,
+      ],
+    );
+
+
+  const statusDateMap =
+    useMemo(
+      () => {
+
+        const result:
+          Record<
+            string,
+            string
+          > = {};
+
+
+        for (
+          const item
+          of statusHistory
+        ) {
+
+          result[
+            item.new_status.code
+          ] =
+            item.changed_at;
+
+        }
+
+
+        if (
+          clinicalCase
+          &&
+          !result.REGISTRADO
+        ) {
+
+          result.REGISTRADO =
+            clinicalCase.opening_date;
+
+        }
+
+
+        return result;
+
+      },
+      [
+        clinicalCase,
+        statusHistory,
       ],
     );
 
@@ -1575,6 +1723,99 @@ export function CasoDetallePage() {
     } finally {
 
       setSaving(
+        false,
+      );
+
+    }
+
+  }
+
+
+  // ========================================================
+  // AVANZAR ESTADO
+  // ========================================================
+
+  async function handleAdvanceStatus() {
+
+    if (
+      !id
+      ||
+      !clinicalCase
+      ||
+      !nextStatus
+    ) {
+      return;
+    }
+
+
+    const confirmed =
+      window.confirm(
+        `¿Confirmas avanzar el caso de ${clinicalCase.status.name} a ${nextStatus.name}?`,
+      );
+
+
+    if (!confirmed) {
+      return;
+    }
+
+
+    setAdvancingStatus(
+      true,
+    );
+
+
+    setError(
+      null,
+    );
+
+
+    try {
+
+      const updatedCase =
+        await advanceClinicalCaseStatus(
+          id,
+          {
+            observation:
+              statusObservation
+                .trim()
+              ||
+              null,
+          },
+        );
+
+
+      setClinicalCase(
+        updatedCase,
+      );
+
+
+      setStatusObservation(
+        "",
+      );
+
+
+      await loadStatusHistory(
+        id,
+      );
+
+
+      showSuccess(
+        `Estado actualizado a ${updatedCase.status.name}.`,
+      );
+
+    } catch (
+      requestError
+    ) {
+
+      setError(
+        extractErrorMessage(
+          requestError,
+        ),
+      );
+
+    } finally {
+
+      setAdvancingStatus(
         false,
       );
 
@@ -3716,22 +3957,13 @@ export function CasoDetallePage() {
 
                             <span>
                               {
-                                item.code ===
-                                "REGISTRADO"
-                                  ? formatDate(
-                                      clinicalCase
-                                        .opening_date,
-                                    )
-                                  : item.code ===
-                                    "CERRADO"
-                                    &&
-                                    clinicalCase
-                                      .closing_date
-                                      ? formatDate(
-                                          clinicalCase
-                                            .closing_date,
-                                        )
-                                      : "—"
+                                formatDate(
+                                  statusDateMap[
+                                    item.code
+                                  ]
+                                  ??
+                                  null,
+                                )
                               }
                             </span>
 
@@ -3770,32 +4002,90 @@ export function CasoDetallePage() {
 
 
                 <div
-                  className="case-detail-history-row"
+                  className="case-detail-history-list"
                 >
 
-                  <div
-                    className="case-detail-history-dot"
-                  />
+                  {
+                    statusHistory.length ===
+                    0
+                      ? (
 
+                          <div
+                            className="case-detail-empty"
+                          >
+                            <History
+                              size={27}
+                            />
 
-                  <div>
-                    <strong>
-                      Caso clínico registrado
-                    </strong>
+                            <strong>
+                              Sin historial disponible
+                            </strong>
+                          </div>
 
-                    <span>
-                      {
-                        formatDateTime(
-                          clinicalCase
-                            .opening_date,
                         )
-                      }
-                    </span>
+                      : statusHistory
+                          .slice()
+                          .reverse()
+                          .map(
+                            (
+                              item,
+                            ) => (
 
-                    <p>
-                      Apertura del caso clínico.
-                    </p>
-                  </div>
+                              <div
+                                key={
+                                  item.id_history
+                                }
+                                className="case-detail-history-row"
+                              >
+
+                                <div
+                                  className="case-detail-history-dot"
+                                />
+
+
+                                <div>
+                                  <strong>
+                                    {
+                                      item.previous_status
+                                        ? (
+                                            `${item.previous_status.name} → ${item.new_status.name}`
+                                          )
+                                        : (
+                                            `Caso ${item.new_status.name.toLowerCase()}`
+                                          )
+                                    }
+                                  </strong>
+
+                                  <span>
+                                    {
+                                      formatDateTime(
+                                        item.changed_at,
+                                      )
+                                    }
+                                  </span>
+
+                                  <p>
+                                    {
+                                      item.observation
+                                      ??
+                                      "Sin observación."
+                                    }
+                                  </p>
+
+                                  <small>
+                                    {
+                                      getAuthorName(
+                                        item.user_uuid,
+                                      )
+                                    }
+                                  </small>
+                                </div>
+
+                              </div>
+
+                            ),
+                          )
+                  }
 
                 </div>
 
@@ -3840,10 +4130,107 @@ export function CasoDetallePage() {
                   </span>
 
 
-                  <p>
-                    El cambio controlado de estado
-                    se implementará en la siguiente fase.
-                  </p>
+                  {
+                    nextStatus
+                      ? (
+
+                          <div
+                            className="case-detail-status-action"
+                          >
+
+                            <div
+                              className="case-detail-next-status"
+                            >
+                              <span>
+                                Siguiente estado
+                              </span>
+
+                              <strong>
+                                {
+                                  clinicalCase
+                                    .status
+                                    .name
+                                }
+                              </strong>
+
+                              <ArrowRight
+                                size={17}
+                              />
+
+                              <strong>
+                                {
+                                  nextStatus.name
+                                }
+                              </strong>
+                            </div>
+
+
+                            <label>
+                              Observación del cambio
+
+                              <textarea
+                                rows={3}
+                                value={
+                                  statusObservation
+                                }
+                                onChange={
+                                  (
+                                    event,
+                                  ) =>
+                                    setStatusObservation(
+                                      event.target.value,
+                                    )
+                                }
+                                placeholder="Opcional. Ej.: caso enviado a evaluación clínica."
+                              />
+                            </label>
+
+
+                            <button
+                              type="button"
+                              className="case-detail-primary-button case-detail-advance-button"
+                              disabled={
+                                advancingStatus
+                              }
+                              onClick={
+                                () =>
+                                  void handleAdvanceStatus()
+                              }
+                            >
+
+                              {
+                                advancingStatus
+                                  ? (
+                                      <LoaderCircle
+                                        size={16}
+                                        className="case-detail-spin"
+                                      />
+                                    )
+                                  : (
+                                      <ArrowRight
+                                        size={16}
+                                      />
+                                    )
+                              }
+
+                              Avanzar a {
+                                nextStatus.name
+                              }
+
+                            </button>
+
+                          </div>
+
+                        )
+                      : (
+
+                          <p>
+                            El caso clínico se encuentra cerrado.
+                            No existen más estados disponibles.
+                          </p>
+
+                        )
+                  }
 
                 </div>
 

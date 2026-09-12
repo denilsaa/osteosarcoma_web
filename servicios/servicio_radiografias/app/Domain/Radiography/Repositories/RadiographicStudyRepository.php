@@ -12,4 +12,17 @@ interface RadiographicStudyRepository
     public function findByCaseUuid(
         string $caseUuid
     ): array;
+
+
+    public function create(
+        string $studyUuid,
+        string $caseUuid,
+        string $registeredByUuid,
+        int $studyTypeId,
+        int $anatomicalRegionId,
+        int $lateralityId,
+        ?string $studyDate,
+        ?string $observation,
+        array $fileData,
+    ): RadiographicStudy;
 }

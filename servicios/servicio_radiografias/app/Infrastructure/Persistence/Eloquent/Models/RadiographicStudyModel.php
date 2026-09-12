@@ -8,22 +8,31 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RadiographicStudyModel extends Model
 {
-    protected $table = 'estudios_radiograficos';
+    protected $table =
+        'estudios_radiograficos';
 
-    protected $primaryKey = 'id_estudio';
+    protected $primaryKey =
+        'id_estudio';
 
-    public $incrementing = false;
+    public $incrementing =
+        false;
 
-    protected $keyType = 'string';
+    protected $keyType =
+        'string';
 
-    public $timestamps = false;
+    public $timestamps =
+        false;
 
     protected $guarded = [];
 
     protected $casts = [
-        'fecha_estudio' => 'date',
-        'fecha_registro' => 'datetime',
+        'fecha_estudio' =>
+            'date',
+
+        'fecha_registro' =>
+            'datetime',
     ];
+
 
     public function studyType(): BelongsTo
     {
@@ -34,6 +43,7 @@ class RadiographicStudyModel extends Model
         );
     }
 
+
     public function anatomicalRegion(): BelongsTo
     {
         return $this->belongsTo(
@@ -42,6 +52,17 @@ class RadiographicStudyModel extends Model
             'id_region_anatomica'
         );
     }
+
+
+    public function laterality(): BelongsTo
+    {
+        return $this->belongsTo(
+            Laterality::class,
+            'id_lateralidad',
+            'id_lateralidad'
+        );
+    }
+
 
     public function files(): HasMany
     {

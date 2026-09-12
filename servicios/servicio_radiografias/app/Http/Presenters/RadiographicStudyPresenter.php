@@ -12,37 +12,72 @@ final class RadiographicStudyPresenter
     ): array {
         return [
             'data' => array_map(
-                fn (RadiographicStudy $study): array =>
-                    self::item($study),
+                fn (
+                    RadiographicStudy $study
+                ): array =>
+                    self::item(
+                        $study
+                    ),
+
                 $studies
             ),
 
-            'total' => count($studies),
+            'total' =>
+                count(
+                    $studies
+                ),
         ];
     }
+
 
     public static function item(
         RadiographicStudy $study
     ): array {
         return [
-            'id_study' => $study->id,
+            'id_study' =>
+                $study->id,
 
-            'case_uuid' => $study->caseUuid,
+            'case_uuid' =>
+                $study->caseUuid,
 
             'registered_by_uuid' =>
                 $study->registeredByUuid,
 
             'study_type' => [
-                'id' => $study->studyTypeId,
-                'code' => $study->studyTypeCode,
-                'name' => $study->studyTypeName,
+                'id' =>
+                    $study->studyTypeId,
+
+                'code' =>
+                    $study->studyTypeCode,
+
+                'name' =>
+                    $study->studyTypeName,
             ],
 
             'anatomical_region' => [
-                'id' => $study->anatomicalRegionId,
-                'code' => $study->anatomicalRegionCode,
-                'name' => $study->anatomicalRegionName,
+                'id' =>
+                    $study->anatomicalRegionId,
+
+                'code' =>
+                    $study->anatomicalRegionCode,
+
+                'name' =>
+                    $study->anatomicalRegionName,
             ],
+
+            'laterality' =>
+                $study->lateralityId !== null
+                    ? [
+                        'id' =>
+                            $study->lateralityId,
+
+                        'code' =>
+                            $study->lateralityCode,
+
+                        'name' =>
+                            $study->lateralityName,
+                    ]
+                    : null,
 
             'study_date' =>
                 $study->studyDate,
@@ -54,9 +89,14 @@ final class RadiographicStudyPresenter
                 $study->registeredAt,
 
             'files' => array_map(
-                fn (RadiographicFile $file): array => [
-                    'id_file' => $file->id,
-                    'version' => $file->version,
+                fn (
+                    RadiographicFile $file
+                ): array => [
+                    'id_file' =>
+                        $file->id,
+
+                    'version' =>
+                        $file->version,
 
                     'original_name' =>
                         $file->originalName,
@@ -65,9 +105,11 @@ final class RadiographicStudyPresenter
                         $file->storedName,
 
                     /*
-                     * La ruta se devuelve como metadato.
-                     * No exponemos aquí acceso directo al
-                     * filesystem del contenedor.
+                     * Se mantiene como metadato interno.
+                     * Más adelante quitaremos este dato
+                     * de la respuesta pública/privada
+                     * cuando creemos el endpoint seguro
+                     * de visualización.
                      */
                     'storage_path' =>
                         $file->storagePath,
@@ -88,14 +130,20 @@ final class RadiographicStudyPresenter
                         $file->active,
 
                     'mime' => [
-                        'code' => $file->mimeCode,
-                        'mime_type' => $file->mimeType,
-                        'extension' => $file->extension,
+                        'code' =>
+                            $file->mimeCode,
+
+                        'mime_type' =>
+                            $file->mimeType,
+
+                        'extension' =>
+                            $file->extension,
                     ],
 
                     'uploaded_at' =>
                         $file->uploadedAt,
                 ],
+
                 $study->files
             ),
         ];
