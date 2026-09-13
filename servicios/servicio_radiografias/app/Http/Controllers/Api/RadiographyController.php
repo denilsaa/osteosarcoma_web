@@ -12,9 +12,11 @@ use App\Infrastructure\Security\ClinicalCaseAccessVerifier;
 use App\Infrastructure\Security\RequestActorExtractor;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -24,11 +26,8 @@ final class RadiographyController extends Controller
 {
     public function __construct(
         private readonly ListCaseRadiographicStudies $listCaseStudies,
-
         private readonly CreateRadiographicStudy $createStudy,
-
         private readonly GetRadiographyCatalogs $getCatalogs,
-
         private readonly GetPrivateRadiographicFile $getPrivateFile,
     ) {
     }
@@ -152,18 +151,14 @@ final class RadiographyController extends Controller
         string $caseUuid,
     ): JsonResponse {
         try {
-            // Primero servicio_clinico valida criptográficamente
-            // el token y autoriza el acceso al caso.
-            ClinicalCaseAccessVerifier::assertCanAccess(
-                $caseUuid,
+            $actor = RequestActorExtractor::extractAuthenticatedActor(
                 $request->header(
                     'Authorization'
                 )
             );
 
-            // Solo después de esa validación confiable leemos
-            // los claims necesarios para registrar al autor.
-            $actor = RequestActorExtractor::extractAuthenticatedActor(
+            ClinicalCaseAccessVerifier::assertCanAccess(
+                $caseUuid,
                 $request->header(
                     'Authorization'
                 )
@@ -282,6 +277,43 @@ final class RadiographyController extends Controller
                 201
             );
 
+        } catch (ValidationException $exception) {
+
+            $errors = $exception->errors();
+
+            $firstMessage = null;
+
+            foreach ($errors as $messages) {
+                if (
+                    is_array($messages)
+                    &&
+                    isset($messages[0])
+                ) {
+                    $firstMessage =
+                        (string) $messages[0];
+
+                    break;
+                }
+            }
+
+            return response()->json(
+                [
+                    'error' => [
+                        'code' =>
+                            'RADIOGRAPHY_VALIDATION_ERROR',
+
+                        'message' =>
+                            $firstMessage
+                            ??
+                            'Los datos enviados no son válidos.',
+
+                        'fields' =>
+                            $errors,
+                    ],
+                ],
+                422
+            );
+
         } catch (AuthenticationException $exception) {
             return $this->authenticationError(
                 $exception
@@ -306,6 +338,42 @@ final class RadiographyController extends Controller
                 422
             );
 
+        } catch (QueryException $exception) {
+
+            if (
+                (string) $exception->getCode()
+                ===
+                '23505'
+            ) {
+                return response()->json(
+                    [
+                        'error' => [
+                            'code' =>
+                                'RADIOGRAPHY_DUPLICATE_FILE',
+
+                            'message' =>
+                                'Esta radiografía ya fue registrada anteriormente.',
+                        ],
+                    ],
+                    409
+                );
+            }
+
+            report($exception);
+
+            return response()->json(
+                [
+                    'error' => [
+                        'code' =>
+                            'RADIOGRAPHY_DATABASE_ERROR',
+
+                        'message' =>
+                            'No fue posible guardar la radiografía en la base de datos.',
+                    ],
+                ],
+                500
+            );
+
         } catch (RuntimeException $exception) {
             if (
                 str_starts_with(
@@ -327,7 +395,8 @@ final class RadiographyController extends Controller
                             'RADIOGRAPHY_CREATE_ERROR',
 
                         'message' =>
-                            'No fue posible registrar la radiografía.',
+                            $exception->getMessage()
+                            ?: 'No fue posible registrar la radiografía.',
                     ],
                 ],
                 500
@@ -343,7 +412,8 @@ final class RadiographyController extends Controller
                             'RADIOGRAPHY_CREATE_ERROR',
 
                         'message' =>
-                            'No fue posible registrar la radiografía.',
+                            $exception->getMessage()
+                            ?: 'No fue posible registrar la radiografía.',
                     ],
                 ],
                 500
@@ -361,6 +431,12 @@ final class RadiographyController extends Controller
         string $fileUuid,
     ): BinaryFileResponse|JsonResponse {
         try {
+            RequestActorExtractor::extractAuthenticatedActor(
+                $request->header(
+                    'Authorization'
+                )
+            );
+
             $file = $this
                 ->getPrivateFile
                 ->execute(
@@ -409,8 +485,8 @@ final class RadiographyController extends Controller
 
                     'Content-Disposition' =>
                         'inline; filename="'
-                        .$file->originalName
-                        .'"',
+                        . $file->originalName
+                        . '"',
 
                     'Cache-Control' =>
                         'private, no-store, no-cache, must-revalidate',
@@ -500,6 +576,12 @@ final class RadiographyController extends Controller
         string $fileUuid,
     ): BinaryFileResponse|JsonResponse {
         try {
+            RequestActorExtractor::extractAuthenticatedActor(
+                $request->header(
+                    'Authorization'
+                )
+            );
+
             $file = $this
                 ->getPrivateFile
                 ->execute(
