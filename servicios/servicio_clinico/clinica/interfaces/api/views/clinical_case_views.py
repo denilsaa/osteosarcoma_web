@@ -33,7 +33,9 @@ from clinica.bootstrap.container import (
 )
 
 from clinica.infrastructure.security import (
-    RequestActorExtractor,
+    ClinicalAuthenticationError,
+    ClinicalAuthorizationError,
+    ClinicalCaseAccess,
 )
 
 from clinica.interfaces.api.error_handler import (
@@ -58,15 +60,24 @@ from clinica.interfaces.api.serializers.clinical_case_serializers import (
 # HELPERS
 # ==========================================================
 
+def _get_actor(
+    request: Request,
+):
+
+    return (
+        ClinicalCaseAccess
+        .get_actor(
+            request
+        )
+    )
+
+
 def _get_actor_uuid(
     request: Request,
 ) -> UUID:
 
-    actor = (
-        RequestActorExtractor
-        .extract(
-            request
-        )
+    actor = _get_actor(
+        request
     )
 
     actor_uuid = (
@@ -74,8 +85,7 @@ def _get_actor_uuid(
     )
 
     if actor_uuid is None:
-
-        raise ValueError(
+        raise ClinicalAuthenticationError(
             "No fue posible identificar "
             "al usuario autenticado."
         )
@@ -95,6 +105,32 @@ def _error_response(
 
     if response is not None:
         return response
+
+    if isinstance(
+        error,
+        ClinicalAuthenticationError,
+    ):
+
+        return Response(
+            {
+                "error":
+                    str(error)
+            },
+            status=401,
+        )
+
+    if isinstance(
+        error,
+        ClinicalAuthorizationError,
+    ):
+
+        return Response(
+            {
+                "error":
+                    str(error)
+            },
+            status=403,
+        )
 
     if isinstance(
         error,
@@ -131,6 +167,10 @@ def patient_cases_view(
 
     try:
 
+        actor = _get_actor(
+            request
+        )
+
         if request.method == "GET":
 
             cases = (
@@ -138,6 +178,14 @@ def patient_cases_view(
                 .list_patient_cases
                 .execute(
                     patient_id
+                )
+            )
+
+            cases = (
+                ClinicalCaseAccess
+                .filter_cases_for_actor(
+                    actor,
+                    cases,
                 )
             )
 
@@ -160,15 +208,18 @@ def patient_cases_view(
 
         data = serializer.validated_data
 
-        actor_uuid = _get_actor_uuid(
-            request
+        actor_uuid = (
+            actor.usuario_uuid
         )
 
         responsible_uuid = (
-            data.get(
-                "responsible_oncologist_uuid"
+            ClinicalCaseAccess
+            .resolve_responsible_for_create(
+                actor,
+                data.get(
+                    "responsible_oncologist_uuid"
+                ),
             )
-            or actor_uuid
         )
 
         dto = CreateClinicalCaseDTO(
@@ -242,6 +293,10 @@ def clinical_case_list_view(
 
     try:
 
+        actor = _get_actor(
+            request
+        )
+
         search = (
             request.query_params.get(
                 "search"
@@ -307,6 +362,14 @@ def clinical_case_list_view(
             else None
         )
 
+        oncologist_id = (
+            ClinicalCaseAccess
+            .resolve_list_oncologist_filter(
+                actor,
+                oncologist_id,
+            )
+        )
+
         opening_date = (
             date.fromisoformat(
                 opening_date_raw
@@ -347,17 +410,10 @@ def clinical_case_list_view(
             status=200,
         )
 
-    except (
-        ValueError,
-        TypeError,
-    ) as error:
+    except Exception as error:
 
-        return Response(
-            {
-                "error":
-                    str(error)
-            },
-            status=400,
+        return _error_response(
+            error
         )
 
 
@@ -375,11 +431,13 @@ def clinical_case_detail_view(
     case_id: UUID,
 ):
 
-    del request
-
     container = get_container()
 
     try:
+
+        actor = _get_actor(
+            request
+        )
 
         case = (
             container
@@ -387,6 +445,11 @@ def clinical_case_detail_view(
             .execute(
                 case_id
             )
+        )
+
+        ClinicalCaseAccess.assert_case_access(
+            actor,
+            case,
         )
 
         return Response(
@@ -400,14 +463,10 @@ def clinical_case_detail_view(
             status=200,
         )
 
-    except ValueError as error:
+    except Exception as error:
 
-        return Response(
-            {
-                "error":
-                    str(error)
-            },
-            status=404,
+        return _error_response(
+            error
         )
 
 
@@ -453,11 +512,26 @@ def clinical_case_status_history_view(
     case_id: UUID,
 ):
 
-    del request
-
     container = get_container()
 
     try:
+
+        actor = _get_actor(
+            request
+        )
+
+        case = (
+            container
+            .get_clinical_case
+            .execute(
+                case_id
+            )
+        )
+
+        ClinicalCaseAccess.assert_case_access(
+            actor,
+            case,
+        )
 
         history = (
             container
@@ -480,14 +554,10 @@ def clinical_case_status_history_view(
             status=200,
         )
 
-    except ValueError as error:
+    except Exception as error:
 
-        return Response(
-            {
-                "error":
-                    str(error)
-            },
-            status=404,
+        return _error_response(
+            error
         )
 
 
@@ -521,10 +591,25 @@ def clinical_case_advance_status_view(
 
         data = serializer.validated_data
 
-        actor_uuid = (
-            _get_actor_uuid(
-                request
+        actor = _get_actor(
+            request
+        )
+
+        case = (
+            container
+            .get_clinical_case
+            .execute(
+                case_id
             )
+        )
+
+        ClinicalCaseAccess.assert_case_access(
+            actor,
+            case,
+        )
+
+        actor_uuid = (
+            actor.usuario_uuid
         )
 
         dto = (
@@ -595,6 +680,23 @@ def clinical_case_antecedents_view(
 
     try:
 
+        actor = _get_actor(
+            request
+        )
+
+        case = (
+            container
+            .get_clinical_case
+            .execute(
+                case_id
+            )
+        )
+
+        ClinicalCaseAccess.assert_case_access(
+            actor,
+            case,
+        )
+
         if request.method == "GET":
 
             items = (
@@ -630,8 +732,8 @@ def clinical_case_antecedents_view(
 
         data = serializer.validated_data
 
-        actor_uuid = _get_actor_uuid(
-            request
+        actor_uuid = (
+            actor.usuario_uuid
         )
 
         dto = (
@@ -701,6 +803,23 @@ def clinical_case_symptoms_view(
 
     try:
 
+        actor = _get_actor(
+            request
+        )
+
+        case = (
+            container
+            .get_clinical_case
+            .execute(
+                case_id
+            )
+        )
+
+        ClinicalCaseAccess.assert_case_access(
+            actor,
+            case,
+        )
+
         if request.method == "GET":
 
             items = (
@@ -736,8 +855,8 @@ def clinical_case_symptoms_view(
 
         data = serializer.validated_data
 
-        actor_uuid = _get_actor_uuid(
-            request
+        actor_uuid = (
+            actor.usuario_uuid
         )
 
         dto = (
@@ -820,6 +939,23 @@ def clinical_case_signs_view(
 
     try:
 
+        actor = _get_actor(
+            request
+        )
+
+        case = (
+            container
+            .get_clinical_case
+            .execute(
+                case_id
+            )
+        )
+
+        ClinicalCaseAccess.assert_case_access(
+            actor,
+            case,
+        )
+
         if request.method == "GET":
 
             items = (
@@ -855,8 +991,8 @@ def clinical_case_signs_view(
 
         data = serializer.validated_data
 
-        actor_uuid = _get_actor_uuid(
-            request
+        actor_uuid = (
+            actor.usuario_uuid
         )
 
         dto = (
@@ -929,6 +1065,23 @@ def clinical_case_observations_view(
 
     try:
 
+        actor = _get_actor(
+            request
+        )
+
+        case = (
+            container
+            .get_clinical_case
+            .execute(
+                case_id
+            )
+        )
+
+        ClinicalCaseAccess.assert_case_access(
+            actor,
+            case,
+        )
+
         if request.method == "GET":
 
             items = (
@@ -964,8 +1117,8 @@ def clinical_case_observations_view(
 
         data = serializer.validated_data
 
-        actor_uuid = _get_actor_uuid(
-            request
+        actor_uuid = (
+            actor.usuario_uuid
         )
 
         dto = (

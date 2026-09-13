@@ -8,7 +8,10 @@ use App\Application\Radiography\GetRadiographyCatalogs;
 use App\Application\Radiography\ListCaseRadiographicStudies;
 use App\Http\Controllers\Controller;
 use App\Http\Presenters\RadiographicStudyPresenter;
+use App\Infrastructure\Security\ClinicalCaseAccessVerifier;
 use App\Infrastructure\Security\RequestActorExtractor;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -69,9 +72,17 @@ final class RadiographyController extends Controller
     // ==========================================================
 
     public function byCase(
+        Request $request,
         string $caseUuid
     ): JsonResponse {
         try {
+            ClinicalCaseAccessVerifier::assertCanAccess(
+                $caseUuid,
+                $request->header(
+                    'Authorization'
+                )
+            );
+
             $studies = $this
                 ->listCaseStudies
                 ->execute(
@@ -82,6 +93,16 @@ final class RadiographyController extends Controller
                 RadiographicStudyPresenter::collection(
                     $studies
                 )
+            );
+
+        } catch (AuthenticationException $exception) {
+            return $this->authenticationError(
+                $exception
+            );
+
+        } catch (AuthorizationException $exception) {
+            return $this->authorizationError(
+                $exception
             );
 
         } catch (InvalidArgumentException $exception) {
@@ -96,6 +117,11 @@ final class RadiographyController extends Controller
                     ],
                 ],
                 422
+            );
+
+        } catch (RuntimeException $exception) {
+            return $this->clinicalAccessRuntimeError(
+                $exception
             );
 
         } catch (Throwable $exception) {
@@ -126,6 +152,23 @@ final class RadiographyController extends Controller
         string $caseUuid,
     ): JsonResponse {
         try {
+            // Primero servicio_clinico valida criptográficamente
+            // el token y autoriza el acceso al caso.
+            ClinicalCaseAccessVerifier::assertCanAccess(
+                $caseUuid,
+                $request->header(
+                    'Authorization'
+                )
+            );
+
+            // Solo después de esa validación confiable leemos
+            // los claims necesarios para registrar al autor.
+            $actor = RequestActorExtractor::extractAuthenticatedActor(
+                $request->header(
+                    'Authorization'
+                )
+            );
+
             $request->validate([
                 'study_type_id' => [
                     'required',
@@ -163,26 +206,15 @@ final class RadiographyController extends Controller
                 ],
             ]);
 
-
-            $registeredByUuid =
-                RequestActorExtractor::extractUserUuid(
-                    $request->header(
-                        'Authorization'
-                    )
-                );
-
-
             $file = $request->file(
                 'file'
             );
-
 
             if ($file === null) {
                 throw new InvalidArgumentException(
                     'Debe adjuntar un archivo radiográfico.'
                 );
             }
-
 
             $study = $this
                 ->createStudy
@@ -191,7 +223,7 @@ final class RadiographyController extends Controller
                         $caseUuid,
 
                     registeredByUuid:
-                        $registeredByUuid,
+                        $actor['user_uuid'],
 
                     studyTypeId:
                         (int)
@@ -237,7 +269,6 @@ final class RadiographyController extends Controller
                         $file,
                 );
 
-
             return response()->json(
                 [
                     'message' =>
@@ -249,6 +280,16 @@ final class RadiographyController extends Controller
                         ),
                 ],
                 201
+            );
+
+        } catch (AuthenticationException $exception) {
+            return $this->authenticationError(
+                $exception
+            );
+
+        } catch (AuthorizationException $exception) {
+            return $this->authorizationError(
+                $exception
             );
 
         } catch (InvalidArgumentException $exception) {
@@ -263,6 +304,33 @@ final class RadiographyController extends Controller
                     ],
                 ],
                 422
+            );
+
+        } catch (RuntimeException $exception) {
+            if (
+                str_starts_with(
+                    $exception->getMessage(),
+                    'CLINICAL_'
+                )
+            ) {
+                return $this->clinicalAccessRuntimeError(
+                    $exception
+                );
+            }
+
+            report($exception);
+
+            return response()->json(
+                [
+                    'error' => [
+                        'code' =>
+                            'RADIOGRAPHY_CREATE_ERROR',
+
+                        'message' =>
+                            'No fue posible registrar la radiografía.',
+                    ],
+                ],
+                500
             );
 
         } catch (Throwable $exception) {
@@ -293,26 +361,18 @@ final class RadiographyController extends Controller
         string $fileUuid,
     ): BinaryFileResponse|JsonResponse {
         try {
-            /*
-             * En FASE 4 validaremos criptográficamente
-             * JWT, sesión y rol.
-             *
-             * Por ahora exigimos que exista un actor
-             * identificable dentro del Bearer Token.
-             */
-            RequestActorExtractor::extractUserUuid(
-                $request->header(
-                    'Authorization'
-                )
-            );
-
-
             $file = $this
                 ->getPrivateFile
                 ->execute(
                     $fileUuid
                 );
 
+            ClinicalCaseAccessVerifier::assertCanAccess(
+                $file->caseUuid,
+                $request->header(
+                    'Authorization'
+                )
+            );
 
             if (
                 ! Storage::disk(
@@ -335,13 +395,11 @@ final class RadiographyController extends Controller
                 );
             }
 
-
             $absolutePath = Storage::disk(
                 'local'
             )->path(
                 $file->storagePath
             );
-
 
             return response()->file(
                 $absolutePath,
@@ -356,7 +414,23 @@ final class RadiographyController extends Controller
 
                     'Cache-Control' =>
                         'private, no-store, no-cache, must-revalidate',
+
+                    'Pragma' =>
+                        'no-cache',
+
+                    'Expires' =>
+                        '0',
                 ]
+            );
+
+        } catch (AuthenticationException $exception) {
+            return $this->authenticationError(
+                $exception
+            );
+
+        } catch (AuthorizationException $exception) {
+            return $this->authorizationError(
+                $exception
             );
 
         } catch (InvalidArgumentException $exception) {
@@ -374,6 +448,17 @@ final class RadiographyController extends Controller
             );
 
         } catch (RuntimeException $exception) {
+            if (
+                str_starts_with(
+                    $exception->getMessage(),
+                    'CLINICAL_'
+                )
+            ) {
+                return $this->clinicalAccessRuntimeError(
+                    $exception
+                );
+            }
+
             return response()->json(
                 [
                     'error' => [
@@ -415,19 +500,18 @@ final class RadiographyController extends Controller
         string $fileUuid,
     ): BinaryFileResponse|JsonResponse {
         try {
-            RequestActorExtractor::extractUserUuid(
-                $request->header(
-                    'Authorization'
-                )
-            );
-
-
             $file = $this
                 ->getPrivateFile
                 ->execute(
                     $fileUuid
                 );
 
+            ClinicalCaseAccessVerifier::assertCanAccess(
+                $file->caseUuid,
+                $request->header(
+                    'Authorization'
+                )
+            );
 
             if (
                 ! Storage::disk(
@@ -450,13 +534,11 @@ final class RadiographyController extends Controller
                 );
             }
 
-
             $absolutePath = Storage::disk(
                 'local'
             )->path(
                 $file->storagePath
             );
-
 
             return response()->download(
                 $absolutePath,
@@ -467,7 +549,23 @@ final class RadiographyController extends Controller
 
                     'Cache-Control' =>
                         'private, no-store, no-cache, must-revalidate',
+
+                    'Pragma' =>
+                        'no-cache',
+
+                    'Expires' =>
+                        '0',
                 ]
+            );
+
+        } catch (AuthenticationException $exception) {
+            return $this->authenticationError(
+                $exception
+            );
+
+        } catch (AuthorizationException $exception) {
+            return $this->authorizationError(
+                $exception
             );
 
         } catch (InvalidArgumentException $exception) {
@@ -485,6 +583,17 @@ final class RadiographyController extends Controller
             );
 
         } catch (RuntimeException $exception) {
+            if (
+                str_starts_with(
+                    $exception->getMessage(),
+                    'CLINICAL_'
+                )
+            ) {
+                return $this->clinicalAccessRuntimeError(
+                    $exception
+                );
+            }
+
             return response()->json(
                 [
                     'error' => [
@@ -514,5 +623,116 @@ final class RadiographyController extends Controller
                 500
             );
         }
+    }
+
+
+    // ==========================================================
+    // RESPUESTAS DE SEGURIDAD
+    // ==========================================================
+
+    private function authenticationError(
+        AuthenticationException $exception
+    ): JsonResponse {
+        return response()->json(
+            [
+                'error' => [
+                    'code' =>
+                        'AUTHENTICATION_REQUIRED',
+
+                    'message' =>
+                        $exception->getMessage()
+                        ?: 'Debe autenticarse para acceder a este recurso.',
+                ],
+            ],
+            401
+        );
+    }
+
+
+    private function authorizationError(
+        AuthorizationException $exception
+    ): JsonResponse {
+        return response()->json(
+            [
+                'error' => [
+                    'code' =>
+                        'RADIOGRAPHY_ACCESS_DENIED',
+
+                    'message' =>
+                        $exception->getMessage()
+                        ?: 'No tiene permisos para acceder a las radiografías de este caso.',
+                ],
+            ],
+            403
+        );
+    }
+
+
+    private function clinicalAccessRuntimeError(
+        RuntimeException $exception
+    ): JsonResponse {
+        $message = $exception->getMessage();
+
+        if (
+            str_starts_with(
+                $message,
+                'CLINICAL_CASE_NOT_FOUND:'
+            )
+        ) {
+            return response()->json(
+                [
+                    'error' => [
+                        'code' =>
+                            'CLINICAL_CASE_NOT_FOUND',
+
+                        'message' =>
+                            trim(
+                                substr(
+                                    $message,
+                                    strlen(
+                                        'CLINICAL_CASE_NOT_FOUND:'
+                                    )
+                                )
+                            ),
+                    ],
+                ],
+                404
+            );
+        }
+
+        if (
+            str_starts_with(
+                $message,
+                'CLINICAL_SERVICE_UNAVAILABLE:'
+            )
+        ) {
+            return response()->json(
+                [
+                    'error' => [
+                        'code' =>
+                            'CLINICAL_SERVICE_UNAVAILABLE',
+
+                        'message' =>
+                            'El servicio clínico no está disponible para validar los permisos.',
+                    ],
+                ],
+                503
+            );
+        }
+
+        report($exception);
+
+        return response()->json(
+            [
+                'error' => [
+                    'code' =>
+                        'CLINICAL_ACCESS_VALIDATION_ERROR',
+
+                    'message' =>
+                        'No fue posible validar el acceso al caso clínico.',
+                ],
+            ],
+            502
+        );
     }
 }

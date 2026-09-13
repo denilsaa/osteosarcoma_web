@@ -6,6 +6,7 @@ final readonly class RadiographicFile
 {
     public function __construct(
         public string $id,
+        public string $caseUuid,
         public int $version,
         public string $originalName,
         public string $storedName,

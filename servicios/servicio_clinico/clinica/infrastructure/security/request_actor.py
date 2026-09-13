@@ -1,6 +1,9 @@
 import base64
 import json
+import os
 from uuid import UUID
+
+import jwt
 
 from clinica.application.dto import (
     AuditActorDTO,
@@ -14,21 +17,55 @@ class RequestActorExtractor:
     El servicio Clínico NO consulta la base de datos
     de servicio_usuarios.
 
-    El JWT es emitido por servicio_usuarios y contiene:
-        - usuario_id
-        - correo
-        - sid
-        - type
-        - iat
-        - exp
+    Para operaciones de auditoría se conserva `extract`,
+    que tolera requests sin autenticación.
+
+    Para operaciones clínicas protegidas debe utilizarse
+    `extract_authenticated`, que valida criptográficamente
+    el JWT emitido por servicio_usuarios.
     """
 
+    ALGORITHM = "HS256"
+
     # ======================================================
-    # DECODIFICAR PAYLOAD JWT
+    # OBTENER TOKEN BEARER
     # ======================================================
 
     @staticmethod
-    def _decode_payload(
+    def _extract_bearer_token(
+        request,
+    ) -> str | None:
+
+        authorization = (
+            request.headers.get(
+                "Authorization",
+                "",
+            )
+        )
+
+        if not (
+            authorization
+            .lower()
+            .startswith(
+                "bearer "
+            )
+        ):
+            return None
+
+        token = (
+            authorization[7:]
+            .strip()
+        )
+
+        return token or None
+
+    # ======================================================
+    # DECODIFICAR PAYLOAD SIN VERIFICAR
+    # SOLO COMPATIBILIDAD PARA AUDITORÍA
+    # ======================================================
+
+    @staticmethod
+    def _decode_payload_unverified(
         token: str,
     ) -> dict:
 
@@ -68,6 +105,76 @@ class RequestActorExtractor:
             UnicodeDecodeError,
         ):
             return {}
+
+    # ======================================================
+    # VALIDAR JWT FIRMADO
+    # ======================================================
+
+    @classmethod
+    def _decode_payload_verified(
+        cls,
+        token: str,
+    ) -> dict:
+
+        signing_key = (
+            os.environ.get(
+                "JWT_SIGNING_KEY"
+            )
+        )
+
+        if not signing_key:
+            raise ValueError(
+                "El servicio clínico no tiene configurada "
+                "la clave de validación JWT."
+            )
+
+        try:
+            payload = jwt.decode(
+                token,
+                signing_key,
+                algorithms=[
+                    cls.ALGORITHM
+                ],
+                options={
+                    "require": [
+                        "exp",
+                        "iat",
+                        "type",
+                        "usuario_id",
+                        "sid",
+                    ]
+                },
+            )
+
+        except jwt.ExpiredSignatureError as error:
+            raise ValueError(
+                "La sesión expiró. Inicie sesión nuevamente."
+            ) from error
+
+        except jwt.InvalidSignatureError as error:
+            raise ValueError(
+                "La firma del token de acceso no es válida."
+            ) from error
+
+        except jwt.MissingRequiredClaimError as error:
+            raise ValueError(
+                "El token de acceso está incompleto."
+            ) from error
+
+        except jwt.InvalidTokenError as error:
+            raise ValueError(
+                "El token de acceso no es válido."
+            ) from error
+
+        if (
+            payload.get("type")
+            != "access"
+        ):
+            raise ValueError(
+                "Se requiere un access token válido."
+            )
+
+        return payload
 
     # ======================================================
     # NORMALIZAR UUID
@@ -120,50 +227,15 @@ class RequestActorExtractor:
         )
 
     # ======================================================
-    # EXTRAER ACTOR
+    # CONSTRUIR ACTOR
     # ======================================================
 
     @classmethod
-    def extract(
+    def _build_actor(
         cls,
         request,
+        payload: dict,
     ) -> AuditActorDTO:
-
-        authorization = (
-            request.headers.get(
-                "Authorization",
-                "",
-            )
-        )
-
-        payload = {}
-
-        if (
-            authorization
-            .lower()
-            .startswith(
-                "bearer "
-            )
-        ):
-            token = (
-                authorization[
-                    7:
-                ]
-                .strip()
-            )
-
-            payload = (
-                cls._decode_payload(
-                    token
-                )
-            )
-
-        # ==================================================
-        # UUID
-        #
-        # El JWT real de servicio_usuarios utiliza
-        # "usuario_id".
-        # ==================================================
 
         raw_uuid = (
             payload.get(
@@ -189,13 +261,6 @@ class RequestActorExtractor:
             )
         )
 
-        # ==================================================
-        # NOMBRE
-        #
-        # El JWT actual no contiene nombre completo.
-        # Como identificador legible utilizamos correo.
-        # ==================================================
-
         nombre = (
             payload.get(
                 "nombre_completo"
@@ -210,14 +275,6 @@ class RequestActorExtractor:
                 "correo"
             )
         )
-
-        # ==================================================
-        # ROL
-        #
-        # El JWT actual no contiene rol.
-        # Se conserva compatibilidad por si en el futuro
-        # servicio_usuarios lo incorpora.
-        # ==================================================
 
         rol = (
             payload.get(
@@ -252,10 +309,10 @@ class RequestActorExtractor:
             ):
                 rol = (
                     first_role.get(
-                        "nombre"
+                        "codigo"
                     )
                     or first_role.get(
-                        "codigo"
+                        "nombre"
                     )
                 )
 
@@ -264,21 +321,12 @@ class RequestActorExtractor:
                     first_role
                 )
 
-        # ==================================================
-        # CONTEXTO HTTP
-        # ==================================================
-
-        ip = (
-            cls._extract_ip(
-                request
+        if rol is not None:
+            rol = (
+                str(rol)
+                .strip()
+                .upper()
             )
-        )
-
-        user_agent = (
-            request.headers.get(
-                "User-Agent"
-            )
-        )
 
         return AuditActorDTO(
             usuario_uuid=
@@ -291,8 +339,89 @@ class RequestActorExtractor:
                 rol,
 
             ip=
-                ip,
+                cls._extract_ip(
+                    request
+                ),
 
             user_agent=
-                user_agent,
+                request.headers.get(
+                    "User-Agent"
+                ),
         )
+
+    # ======================================================
+    # EXTRAER ACTOR PARA AUDITORÍA
+    # ======================================================
+
+    @classmethod
+    def extract(
+        cls,
+        request,
+    ) -> AuditActorDTO:
+
+        token = (
+            cls._extract_bearer_token(
+                request
+            )
+        )
+
+        payload = {}
+
+        if token:
+            payload = (
+                cls
+                ._decode_payload_unverified(
+                    token
+                )
+            )
+
+        return cls._build_actor(
+            request,
+            payload,
+        )
+
+    # ======================================================
+    # EXTRAER ACTOR AUTENTICADO
+    # ======================================================
+
+    @classmethod
+    def extract_authenticated(
+        cls,
+        request,
+    ) -> AuditActorDTO:
+
+        token = (
+            cls._extract_bearer_token(
+                request
+            )
+        )
+
+        if not token:
+            raise ValueError(
+                "Debe iniciar sesión para realizar esta operación."
+            )
+
+        payload = (
+            cls
+            ._decode_payload_verified(
+                token
+            )
+        )
+
+        actor = cls._build_actor(
+            request,
+            payload,
+        )
+
+        if actor.usuario_uuid is None:
+            raise ValueError(
+                "No fue posible identificar al usuario autenticado."
+            )
+
+        if not actor.rol:
+            raise ValueError(
+                "El token no contiene un rol activo. "
+                "Cierre sesión e inicie sesión nuevamente."
+            )
+
+        return actor

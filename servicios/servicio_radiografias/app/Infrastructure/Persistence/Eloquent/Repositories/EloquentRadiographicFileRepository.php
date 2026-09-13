@@ -12,9 +12,10 @@ final class EloquentRadiographicFileRepository implements RadiographicFileReposi
         string $fileUuid
     ): ?RadiographicFile {
         $model = RadiographicFileModel::query()
-            ->with(
-                'mimeType'
-            )
+            ->with([
+                'mimeType',
+                'study',
+            ])
             ->where(
                 'id_archivo',
                 $fileUuid
@@ -35,6 +36,12 @@ final class EloquentRadiographicFileRepository implements RadiographicFileReposi
             id:
                 (string)
                 $model->id_archivo,
+
+            caseUuid:
+                (string)
+                $model
+                    ->study
+                    ->caso_uuid,
 
             version:
                 (int)

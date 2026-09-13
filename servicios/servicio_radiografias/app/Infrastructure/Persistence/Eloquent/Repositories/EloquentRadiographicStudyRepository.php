@@ -244,12 +244,18 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
             ->map(
                 function (
                     $file
+                ) use (
+                    $model
                 ): RadiographicFile {
 
                     return new RadiographicFile(
                         id:
                             (string)
                             $file->id_archivo,
+
+                        caseUuid:
+                            (string)
+                            $model->caso_uuid,
 
                         version:
                             (int)

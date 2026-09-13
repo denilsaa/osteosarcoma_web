@@ -2,11 +2,128 @@
 
 namespace App\Infrastructure\Security;
 
-use InvalidArgumentException;
+use Illuminate\Auth\AuthenticationException;
 
 final class RequestActorExtractor
 {
+    private const ALLOWED_ROLES = [
+        'JEFE_ONCOLOGIA',
+        'ONCOLOGO',
+    ];
+
+
+    /**
+     * Extrae los claims del actor DESPUÉS de que el mismo
+     * Bearer token haya sido validado por servicio_clinico.
+     *
+     * IMPORTANTE:
+     * servicio_radiografias no vuelve a validar la firma JWT.
+     * La validación criptográfica y la autorización sobre el
+     * caso pertenecen a servicio_clinico, que es la autoridad
+     * del dominio clínico.
+     *
+     * @return array{
+     *     user_uuid: string,
+     *     role: string,
+     *     session_uuid: string
+     * }
+     */
+    public static function extractAuthenticatedActor(
+        ?string $authorization
+    ): array {
+        $token = self::extractBearerToken(
+            $authorization
+        );
+
+        $parts = explode(
+            '.',
+            $token
+        );
+
+        if (count($parts) !== 3) {
+            throw new AuthenticationException(
+                'El token de autenticación no tiene un formato válido.'
+            );
+        }
+
+        $payload = self::decodeJsonPart(
+            $parts[1],
+            'payload'
+        );
+
+        if (($payload['type'] ?? null) !== 'access') {
+            throw new AuthenticationException(
+                'El token recibido no es un access token válido.'
+            );
+        }
+
+        $userUuid = $payload['usuario_id'] ?? null;
+        $role = $payload['rol'] ?? null;
+        $sessionUuid = $payload['sid'] ?? null;
+
+        if (
+            ! is_string($userUuid)
+            ||
+            ! self::isUuid($userUuid)
+        ) {
+            throw new AuthenticationException(
+                'No fue posible identificar al usuario autenticado.'
+            );
+        }
+
+        if (
+            ! is_string($sessionUuid)
+            ||
+            ! self::isUuid($sessionUuid)
+        ) {
+            throw new AuthenticationException(
+                'El token no contiene una sesión válida.'
+            );
+        }
+
+        if (
+            ! is_string($role)
+            ||
+            ! in_array(
+                $role,
+                self::ALLOWED_ROLES,
+                true
+            )
+        ) {
+            throw new AuthenticationException(
+                'El token no contiene un rol autorizado para el módulo clínico.'
+            );
+        }
+
+        return [
+            'user_uuid' => $userUuid,
+            'role' => $role,
+            'session_uuid' => $sessionUuid,
+        ];
+    }
+
+
     public static function extractUserUuid(
+        ?string $authorization
+    ): string {
+        $actor = self::extractAuthenticatedActor(
+            $authorization
+        );
+
+        return $actor['user_uuid'];
+    }
+
+
+    public static function bearerToken(
+        ?string $authorization
+    ): string {
+        return self::extractBearerToken(
+            $authorization
+        );
+    }
+
+
+    private static function extractBearerToken(
         ?string $authorization
     ): string {
         if (
@@ -17,7 +134,7 @@ final class RequestActorExtractor
                 'bearer '
             )
         ) {
-            throw new InvalidArgumentException(
+            throw new AuthenticationException(
                 'No se encontró un token de autenticación.'
             );
         }
@@ -29,56 +146,39 @@ final class RequestActorExtractor
             )
         );
 
-        $parts = explode(
-            '.',
-            $token
-        );
-
-        if (count($parts) !== 3) {
-            throw new InvalidArgumentException(
-                'El token de autenticación no tiene un formato válido.'
+        if ($token === '') {
+            throw new AuthenticationException(
+                'El token de autenticación está vacío.'
             );
         }
 
-        $payload = self::decodeBase64Url(
-            $parts[1]
+        return $token;
+    }
+
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function decodeJsonPart(
+        string $encodedValue,
+        string $partName
+    ): array {
+        $decoded = self::decodeBase64Url(
+            $encodedValue
         );
 
         $data = json_decode(
-            $payload,
+            $decoded,
             true
         );
 
         if (! is_array($data)) {
-            throw new InvalidArgumentException(
-                'No fue posible interpretar el token de autenticación.'
+            throw new AuthenticationException(
+                'No fue posible interpretar la '.$partName.' del token.'
             );
         }
 
-        $userUuid =
-            $data['usuario_id']
-            ??
-            $data['id_usuario']
-            ??
-            $data['usuario_uuid']
-            ??
-            $data['user_id']
-            ??
-            $data['sub']
-            ??
-            null;
-
-        if (
-            ! is_string($userUuid)
-            ||
-            ! self::isUuid($userUuid)
-        ) {
-            throw new InvalidArgumentException(
-                'No fue posible identificar al usuario autenticado.'
-            );
-        }
-
-        return $userUuid;
+        return $data;
     }
 
 
@@ -106,8 +206,8 @@ final class RequestActorExtractor
         );
 
         if ($decoded === false) {
-            throw new InvalidArgumentException(
-                'El token de autenticación contiene un payload inválido.'
+            throw new AuthenticationException(
+                'El token de autenticación contiene una codificación inválida.'
             );
         }
 

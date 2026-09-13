@@ -1,7 +1,18 @@
-from django.db import IntegrityError
-from django.db.models import ProtectedError
-from rest_framework import status
-from rest_framework.response import Response
+from django.db import (
+    IntegrityError,
+)
+
+from django.db.models import (
+    ProtectedError,
+)
+
+from rest_framework import (
+    status,
+)
+
+from rest_framework.response import (
+    Response,
+)
 
 from clinica.domain.exceptions import (
     DuplicatePatientError,
@@ -11,10 +22,63 @@ from clinica.domain.exceptions import (
     PatientWithoutChangesError,
 )
 
+from clinica.infrastructure.security import (
+    ClinicalAuthenticationError,
+    ClinicalAuthorizationError,
+)
+
 
 def domain_error_response(
     exception: Exception,
 ) -> Response:
+
+    # ======================================================
+    # AUTENTICACIÓN
+    # ======================================================
+
+    if isinstance(
+        exception,
+        ClinicalAuthenticationError,
+    ):
+        return Response(
+            {
+                "error": {
+                    "code":
+                        "AUTHENTICATION_REQUIRED",
+
+                    "message":
+                        str(exception),
+                }
+            },
+            status=
+                status.HTTP_401_UNAUTHORIZED,
+        )
+
+    # ======================================================
+    # AUTORIZACIÓN
+    # ======================================================
+
+    if isinstance(
+        exception,
+        ClinicalAuthorizationError,
+    ):
+        return Response(
+            {
+                "error": {
+                    "code":
+                        "ACCESS_DENIED",
+
+                    "message":
+                        str(exception),
+                }
+            },
+            status=
+                status.HTTP_403_FORBIDDEN,
+        )
+
+    # ======================================================
+    # PACIENTE NO ENCONTRADO
+    # ======================================================
 
     if isinstance(
         exception,
@@ -34,6 +98,10 @@ def domain_error_response(
                 status.HTTP_404_NOT_FOUND,
         )
 
+    # ======================================================
+    # PACIENTE DUPLICADO
+    # ======================================================
+
     if isinstance(
         exception,
         DuplicatePatientError,
@@ -51,6 +119,10 @@ def domain_error_response(
             status=
                 status.HTTP_409_CONFLICT,
         )
+
+    # ======================================================
+    # MOTIVO DE EDICIÓN
+    # ======================================================
 
     if isinstance(
         exception,
@@ -70,6 +142,10 @@ def domain_error_response(
                 status.HTTP_400_BAD_REQUEST,
         )
 
+    # ======================================================
+    # SIN CAMBIOS
+    # ======================================================
+
     if isinstance(
         exception,
         PatientWithoutChangesError,
@@ -88,6 +164,10 @@ def domain_error_response(
                 status.HTTP_400_BAD_REQUEST,
         )
 
+    # ======================================================
+    # DATOS INVÁLIDOS
+    # ======================================================
+
     if isinstance(
         exception,
         InvalidPatientDataError,
@@ -105,6 +185,32 @@ def domain_error_response(
             status=
                 status.HTTP_400_BAD_REQUEST,
         )
+
+    # ======================================================
+    # VALUE ERROR
+    # ======================================================
+
+    if isinstance(
+        exception,
+        ValueError,
+    ):
+        return Response(
+            {
+                "error": {
+                    "code":
+                        "INVALID_REQUEST",
+
+                    "message":
+                        str(exception),
+                }
+            },
+            status=
+                status.HTTP_400_BAD_REQUEST,
+        )
+
+    # ======================================================
+    # CONFLICTO DE BASE DE DATOS
+    # ======================================================
 
     if isinstance(
         exception,
@@ -128,6 +234,10 @@ def domain_error_response(
                 status.HTTP_409_CONFLICT,
         )
 
+    # ======================================================
+    # RECURSO PROTEGIDO
+    # ======================================================
+
     if isinstance(
         exception,
         ProtectedError,
@@ -150,5 +260,9 @@ def domain_error_response(
             status=
                 status.HTTP_409_CONFLICT,
         )
+
+    # ======================================================
+    # ERROR NO CONTROLADO
+    # ======================================================
 
     raise exception

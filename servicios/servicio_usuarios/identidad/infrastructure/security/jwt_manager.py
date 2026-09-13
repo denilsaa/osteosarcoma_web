@@ -29,7 +29,10 @@ class JWTManager:
     def __init__(self):
 
         self.secret_key = (
-            settings.SECRET_KEY
+            os.environ.get(
+                "JWT_SIGNING_KEY",
+                settings.SECRET_KEY,
+            )
         )
 
         self.algorithm = "HS256"
@@ -76,6 +79,53 @@ class JWTManager:
             )
         )
 
+
+    # ======================================================
+    # ROL ACTIVO
+    # ======================================================
+
+    @staticmethod
+    def _obtener_rol_activo(
+        usuario,
+    ):
+        """
+        Obtiene el código del rol activo más reciente
+        del usuario para incluirlo en el access token.
+
+        El código es el valor estable utilizado para
+        autorización entre microservicios, por ejemplo:
+        JEFE_ONCOLOGIA u ONCOLOGO.
+        """
+
+        try:
+            asignacion = (
+                usuario
+                .asignaciones_roles
+                .select_related(
+                    "rol"
+                )
+                .filter(
+                    activo=True,
+                    rol__activo=True,
+                )
+                .order_by(
+                    "-fecha_asignacion"
+                )
+                .first()
+            )
+
+            if not asignacion:
+                return None
+
+            return (
+                asignacion
+                .rol
+                .codigo
+            )
+
+        except Exception:
+            return None
+
     # ======================================================
     # ACCESS TOKEN
     # ======================================================
@@ -108,6 +158,11 @@ class JWTManager:
 
             "correo":
                 usuario.correo,
+
+            "rol":
+                self._obtener_rol_activo(
+                    usuario
+                ),
 
             # Identificador de la sesión
             # persistida en PostgreSQL.

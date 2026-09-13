@@ -33,6 +33,7 @@ services:
     networks:
       - osteosarcoma_network
 
+
   # =========================================================
   # SERVICIO - USUARIOS
   # =========================================================
@@ -56,6 +57,7 @@ services:
       # =====================================================
       JWT_ACCESS_MINUTES: ${JWT_ACCESS_MINUTES:-15}
       JWT_REFRESH_DAYS: ${JWT_REFRESH_DAYS:-7}
+      JWT_SIGNING_KEY: ${USUARIOS_DJANGO_SECRET_KEY}
 
       # =====================================================
       # CORREO
@@ -140,7 +142,6 @@ services:
       POSTGRES_USER: ${POSTGRES_CLINICO_USER}
       POSTGRES_PASSWORD: ${POSTGRES_CLINICO_PASSWORD}
 
-      # Usuario restringido utilizado por Django
       POSTGRES_APP_USER: ${POSTGRES_CLINICO_APP_USER}
       POSTGRES_APP_PASSWORD: ${POSTGRES_CLINICO_APP_PASSWORD}
 
@@ -149,8 +150,6 @@ services:
 
     volumes:
       - postgres_clinico_data:/var/lib/postgresql/data
-
-      # Se ejecuta únicamente al inicializar una BD nueva
       - ./servicios/servicio_clinico/postgres/01-create-app-user.sh:/docker-entrypoint-initdb.d/01-create-app-user.sh:ro
 
     healthcheck:
@@ -182,6 +181,8 @@ services:
       DJANGO_SECRET_KEY: ${CLINICO_DJANGO_SECRET_KEY}
       DJANGO_DEBUG: ${CLINICO_DJANGO_DEBUG}
 
+      JWT_SIGNING_KEY: ${USUARIOS_DJANGO_SECRET_KEY}
+
       DB_NAME: ${POSTGRES_CLINICO_DB}
       DB_USER: ${POSTGRES_CLINICO_APP_USER}
       DB_PASSWORD: ${POSTGRES_CLINICO_APP_PASSWORD}
@@ -190,14 +191,13 @@ services:
 
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-
       RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
-
       RABBITMQ_VHOST: /
 
       AUDIT_EXCHANGE: osteosarcoma.events
       AUDIT_ROUTING_KEY: clinico.audit.v1
+
     ports:
       - "8001:8000"
 
@@ -207,10 +207,14 @@ services:
     depends_on:
       postgres_clinico:
         condition: service_healthy
+
       rabbitmq:
         condition: service_healthy
+
     networks:
-      - osteosarcoma_network
+      osteosarcoma_network:
+        aliases:
+          - servicio-clinico
 
 
   # =========================================================
@@ -226,7 +230,6 @@ services:
       POSTGRES_USER: ${POSTGRES_IA_USER}
       POSTGRES_PASSWORD: ${POSTGRES_IA_PASSWORD}
 
-      # Usuario restringido utilizado por Django
       POSTGRES_APP_USER: ${POSTGRES_IA_APP_USER}
       POSTGRES_APP_PASSWORD: ${POSTGRES_IA_APP_PASSWORD}
 
@@ -235,8 +238,6 @@ services:
 
     volumes:
       - postgres_ia_data:/var/lib/postgresql/data
-
-      # Se ejecuta únicamente al inicializar una BD nueva
       - ./servicios/servicio_ia/postgres/01-create-app-user.sh:/docker-entrypoint-initdb.d/01-create-app-user.sh:ro
 
     healthcheck:
@@ -309,7 +310,6 @@ services:
       POSTGRES_USER: ${POSTGRES_RADIOGRAFIAS_USER}
       POSTGRES_PASSWORD: ${POSTGRES_RADIOGRAFIAS_PASSWORD}
 
-      # Usuario restringido utilizado por Laravel
       POSTGRES_APP_USER: ${POSTGRES_RADIOGRAFIAS_APP_USER}
       POSTGRES_APP_PASSWORD: ${POSTGRES_RADIOGRAFIAS_APP_PASSWORD}
 
@@ -318,8 +318,6 @@ services:
 
     volumes:
       - postgres_radiografias_data:/var/lib/postgresql/data
-
-      # Se ejecuta únicamente al inicializar una BD nueva
       - ./servicios/servicio_radiografias/postgres/01-create-app-user.sh:/docker-entrypoint-initdb.d/01-create-app-user.sh:ro
 
     healthcheck:
@@ -358,6 +356,10 @@ services:
       DB_USERNAME: ${POSTGRES_RADIOGRAFIAS_APP_USER}
       DB_PASSWORD: ${POSTGRES_RADIOGRAFIAS_APP_PASSWORD}
 
+      JWT_SIGNING_KEY: ${USUARIOS_DJANGO_SECRET_KEY}
+
+      CLINICO_SERVICE_BASE_URL: http://servicio-clinico:8000/api
+
     ports:
       - "8003:8000"
 
@@ -367,6 +369,9 @@ services:
     depends_on:
       postgres_radiografias:
         condition: service_healthy
+
+      servicio_clinico:
+        condition: service_started
 
     networks:
       - osteosarcoma_network
@@ -448,129 +453,63 @@ services:
   # =========================================================
   # WORKER - AUDITORIA / RABBITMQ
   # =========================================================
-
   servicio_auditoria_worker:
-
     build:
-
       context: ./servicios/servicio_auditoria
-
       dockerfile: Dockerfile
 
-
-    container_name:
-      osteosarcoma_servicio_auditoria_worker
-
+    container_name: osteosarcoma_servicio_auditoria_worker
 
     restart: unless-stopped
 
-
     entrypoint:
-
       [
         "/bin/sh",
         "/app/entrypoint-worker.sh"
       ]
 
-
     environment:
-
-      # =====================================================
-      # LARAVEL
-      # =====================================================
-
       APP_ENV: local
-
       APP_DEBUG: "true"
 
-
-      # =====================================================
-      # POSTGRESQL AUDITORIA
-      # =====================================================
-
       DB_CONNECTION: pgsql
-
       DB_HOST: postgres_auditoria
-
       DB_PORT: 5432
-
       DB_DATABASE: ${POSTGRES_AUDITORIA_DB}
-
       DB_USERNAME: ${POSTGRES_AUDITORIA_APP_USER}
-
       DB_PASSWORD: ${POSTGRES_AUDITORIA_APP_PASSWORD}
 
-
-      # =====================================================
-      # RABBITMQ
-      # =====================================================
-
       RABBITMQ_HOST: rabbitmq
-
       RABBITMQ_PORT: 5672
-
       RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
-
       RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
-
       RABBITMQ_VHOST: /
 
       RABBITMQ_HEARTBEAT: 30
-
       RABBITMQ_CONNECTION_TIMEOUT: 3
-
       RABBITMQ_READ_WRITE_TIMEOUT: 60
 
-
-      # =====================================================
-      # AUDITORIA
-      # =====================================================
-
-      AUDIT_EXCHANGE:
-        osteosarcoma.events
-
-      AUDIT_QUEUE:
-        auditoria.eventos.v1
-
-      AUDIT_BINDING:
-        "*.audit.v1"
-
-      AUDIT_RETRY_EXCHANGE:
-        osteosarcoma.audit.retry
-
-      AUDIT_RETRY_QUEUE:
-        auditoria.eventos.retry.v1
-
+      AUDIT_EXCHANGE: osteosarcoma.events
+      AUDIT_QUEUE: auditoria.eventos.v1
+      AUDIT_BINDING: "*.audit.v1"
+      AUDIT_RETRY_EXCHANGE: osteosarcoma.audit.retry
+      AUDIT_RETRY_QUEUE: auditoria.eventos.retry.v1
       AUDIT_RETRY_DELAY_MS: 5000
-
       AUDIT_MAX_RETRIES: 3
-
-      AUDIT_DLX_EXCHANGE:
-        osteosarcoma.audit.dlx
-
-      AUDIT_DLQ:
-        auditoria.eventos.dlq.v1
-
+      AUDIT_DLX_EXCHANGE: osteosarcoma.audit.dlx
+      AUDIT_DLQ: auditoria.eventos.dlq.v1
 
     volumes:
-
       - ./servicios/servicio_auditoria:/app
 
-
     depends_on:
-
       postgres_auditoria:
-
         condition: service_healthy
-
 
       rabbitmq:
-
         condition: service_healthy
 
-
     networks:
-
       - osteosarcoma_network
 
 
@@ -607,6 +546,7 @@ services:
     networks:
       - osteosarcoma_network
 
+
   # =========================================================
   # FRONTEND - REACT
   # =========================================================
@@ -630,13 +570,6 @@ services:
       VITE_API_CLINICO_URL: http://localhost:8001
       VITE_API_IA_URL: http://localhost:8002
       VITE_API_RADIOGRAFIAS_URL: /radiografias-api
-
-      # Auditoría se consume mediante el proxy de Vite.
-      # Navegador:
-      #   /auditoria-api/api/...
-      #
-      # Vite:
-      #   servicio_auditoria:8000/api/...
       VITE_API_AUDITORIA_URL: /auditoria-api
 
     depends_on:
