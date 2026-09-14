@@ -11,14 +11,24 @@ final class GetRadiographyCatalogs
     public function execute(): array
     {
         return [
+
+            // ==================================================
+            // TIPOS DE ESTUDIO ACTIVOS
+            // ==================================================
+
             'study_types' =>
                 StudyType::query()
+                    ->where(
+                        'activo',
+                        true
+                    )
                     ->orderBy(
                         'id_tipo_estudio'
                     )
                     ->get()
                     ->map(
                         fn ($item): array => [
+
                             'id' =>
                                 (int)
                                 $item->id_tipo_estudio,
@@ -34,14 +44,24 @@ final class GetRadiographyCatalogs
                     )
                     ->all(),
 
+
+            // ==================================================
+            // REGIONES ANATÓMICAS ACTIVAS
+            // ==================================================
+
             'anatomical_regions' =>
                 AnatomicalRegion::query()
+                    ->where(
+                        'activo',
+                        true
+                    )
                     ->orderBy(
                         'id_region_anatomica'
                     )
                     ->get()
                     ->map(
                         fn ($item): array => [
+
                             'id' =>
                                 (int)
                                 $item->id_region_anatomica,
@@ -57,6 +77,11 @@ final class GetRadiographyCatalogs
                     )
                     ->all(),
 
+
+            // ==================================================
+            // LATERALIDADES
+            // ==================================================
+
             'lateralities' =>
                 Laterality::query()
                     ->orderBy(
@@ -65,6 +90,7 @@ final class GetRadiographyCatalogs
                     ->get()
                     ->map(
                         fn ($item): array => [
+
                             'id' =>
                                 (int)
                                 $item->id_lateralidad,
