@@ -7,15 +7,26 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StudyType extends Model
 {
-    protected $table = 'tipos_estudio';
+    protected $table =
+        'tipos_estudio';
 
-    protected $primaryKey = 'id_tipo_estudio';
+    protected $primaryKey =
+        'id_tipo_estudio';
 
-    public $incrementing = true;
+    public $incrementing =
+        true;
 
-    protected $keyType = 'int';
+    protected $keyType =
+        'int';
 
-    protected $guarded = [];
+    protected $guarded =
+        [];
+
+    protected $casts = [
+        'activo' =>
+            'boolean',
+    ];
+
 
     public function studies(): HasMany
     {

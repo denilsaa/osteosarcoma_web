@@ -7,15 +7,26 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AnatomicalRegion extends Model
 {
-    protected $table = 'regiones_anatomicas';
+    protected $table =
+        'regiones_anatomicas';
 
-    protected $primaryKey = 'id_region_anatomica';
+    protected $primaryKey =
+        'id_region_anatomica';
 
-    public $incrementing = true;
+    public $incrementing =
+        true;
 
-    protected $keyType = 'int';
+    protected $keyType =
+        'int';
 
-    protected $guarded = [];
+    protected $guarded =
+        [];
+
+    protected $casts = [
+        'activo' =>
+            'boolean',
+    ];
+
 
     public function studies(): HasMany
     {
