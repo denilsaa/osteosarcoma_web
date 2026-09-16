@@ -4,29 +4,48 @@ namespace App\Infrastructure\Persistence\Eloquent\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RadiographicFileModel extends Model
 {
-    protected $table = 'archivos_radiograficos';
+    protected $table =
+        'archivos_radiograficos';
 
-    protected $primaryKey = 'id_archivo';
+    protected $primaryKey =
+        'id_archivo';
 
-    public $incrementing = false;
+    public $incrementing =
+        false;
 
-    protected $keyType = 'string';
+    protected $keyType =
+        'string';
 
-    public $timestamps = false;
+    public $timestamps =
+        false;
 
-    protected $guarded = [];
+    protected $guarded =
+        [];
 
     protected $casts = [
-        'activo' => 'boolean',
-        'version' => 'integer',
-        'tamano_bytes' => 'integer',
-        'ancho_px' => 'integer',
-        'alto_px' => 'integer',
-        'fecha_carga' => 'datetime',
+        'activo' =>
+            'boolean',
+
+        'version' =>
+            'integer',
+
+        'tamano_bytes' =>
+            'integer',
+
+        'ancho_px' =>
+            'integer',
+
+        'alto_px' =>
+            'integer',
+
+        'fecha_carga' =>
+            'datetime',
     ];
+
 
     public function study(): BelongsTo
     {
@@ -37,6 +56,7 @@ class RadiographicFileModel extends Model
         );
     }
 
+
     public function mimeType(): BelongsTo
     {
         return $this->belongsTo(
@@ -44,5 +64,18 @@ class RadiographicFileModel extends Model
             'id_tipo_mime',
             'id_tipo_mime'
         );
+    }
+
+
+    public function validations(): HasMany
+    {
+        return $this->hasMany(
+            RadiographicFileValidation::class,
+            'id_archivo',
+            'id_archivo'
+        )
+            ->orderBy(
+                'id_validacion'
+            );
     }
 }

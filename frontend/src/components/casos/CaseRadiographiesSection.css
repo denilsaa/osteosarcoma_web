@@ -473,3 +473,198 @@
   }
 
 }
+/* =========================================================
+   CONFIRMACIÓN DE CARGA
+   ========================================================= */
+
+.case-radiographies-confirmation {
+  margin: 0 14px 14px;
+  overflow: hidden;
+  border: 1px solid #bae6fd;
+  border-radius: 11px;
+  background: #f8fdff;
+}
+
+.case-radiographies-confirmation-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 14px;
+  border-bottom: 1px solid #dbeef5;
+  background: #f0faff;
+  color: #0891b2;
+}
+
+.case-radiographies-confirmation-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.case-radiographies-confirmation-heading strong {
+  color: #16355c;
+  font-size: 0.78rem;
+}
+
+.case-radiographies-confirmation-heading span {
+  color: #64748b;
+  font-size: 0.67rem;
+}
+
+.case-radiographies-confirmation-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  gap: 9px;
+  padding: 14px;
+}
+
+.case-radiographies-confirmation-grid > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.case-radiographies-confirmation-grid span {
+  color: #64748b;
+  font-size: 0.64rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.case-radiographies-confirmation-grid strong {
+  overflow: hidden;
+  color: #334155;
+  font-size: 0.73rem;
+  text-overflow: ellipsis;
+}
+
+.case-radiographies-confirmation-grid small {
+  color: #94a3b8;
+  font-size: 0.64rem;
+}
+
+.case-radiographies-confirmation-wide {
+  grid-column: 1 / -1;
+}
+
+.case-radiographies-confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 14px 14px;
+}
+
+
+/* =========================================================
+   PROGRESO DE CARGA
+   ========================================================= */
+
+.case-radiographies-progress {
+  margin: 0 14px 14px;
+  padding: 14px;
+  border: 1px solid #bae6fd;
+  border-radius: 11px;
+  background: #f8fdff;
+}
+
+.case-radiographies-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.case-radiographies-progress-header > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #0891b2;
+}
+
+.case-radiographies-progress-header strong {
+  color: #334155;
+  font-size: 0.74rem;
+}
+
+.case-radiographies-progress-header > span {
+  color: #087f9d;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.case-radiographies-progress-track {
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dbeef5;
+}
+
+.case-radiographies-progress-bar {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: #0891b2;
+  transition:
+    width
+    0.18s
+    ease;
+}
+
+.case-radiographies-progress p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 0.65rem;
+  line-height: 1.45;
+}
+
+
+/* =========================================================
+   CAMPOS DESHABILITADOS DURANTE LA CARGA
+   ========================================================= */
+
+.case-radiographies-form-grid input:disabled,
+.case-radiographies-form-grid select:disabled,
+.case-radiographies-form-grid textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+
+/* =========================================================
+   RESPONSIVE CONFIRMACIÓN / PROGRESO
+   ========================================================= */
+
+@media (max-width: 760px) {
+
+  .case-radiographies-confirmation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .case-radiographies-confirmation-wide {
+    grid-column: auto;
+  }
+
+  .case-radiographies-confirmation-actions {
+    flex-direction: column-reverse;
+  }
+
+  .case-radiographies-confirmation-actions button {
+    width: 100%;
+  }
+
+  .case-radiographies-progress-header {
+    align-items: flex-start;
+  }
+
+}

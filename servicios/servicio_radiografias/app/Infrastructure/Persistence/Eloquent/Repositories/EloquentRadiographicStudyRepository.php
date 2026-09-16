@@ -6,8 +6,12 @@ use App\Domain\Radiography\Entities\RadiographicFile;
 use App\Domain\Radiography\Entities\RadiographicStudy;
 use App\Domain\Radiography\Repositories\RadiographicStudyRepository;
 use App\Infrastructure\Persistence\Eloquent\Models\RadiographicFileModel;
+use App\Infrastructure\Persistence\Eloquent\Models\RadiographicFileValidation;
 use App\Infrastructure\Persistence\Eloquent\Models\RadiographicStudyModel;
+use App\Infrastructure\Persistence\Eloquent\Models\ValidationResult;
+use App\Infrastructure\Persistence\Eloquent\Models\ValidationType;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 final class EloquentRadiographicStudyRepository implements RadiographicStudyRepository
 {
@@ -18,36 +22,38 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
     public function findByCaseUuid(
         string $caseUuid
     ): array {
-        $models = RadiographicStudyModel::query()
-            ->with([
-                'studyType',
+        $models =
+            RadiographicStudyModel::query()
+                ->with([
+                    'studyType',
 
-                'anatomicalRegion',
+                    'anatomicalRegion',
 
-                'laterality',
+                    'laterality',
 
-                'files' => function ($query) {
-                    $query
-                        ->where(
-                            'activo',
-                            true
-                        )
-                        ->with(
-                            'mimeType'
-                        )
-                        ->orderByDesc(
-                            'version'
-                        );
-                },
-            ])
-            ->where(
-                'caso_uuid',
-                $caseUuid
-            )
-            ->orderByDesc(
-                'fecha_registro'
-            )
-            ->get();
+                    'files' => function ($query) {
+                        $query
+                            ->where(
+                                'activo',
+                                true
+                            )
+                            ->with(
+                                'mimeType'
+                            )
+                            ->orderByDesc(
+                                'version'
+                            );
+                    },
+                ])
+                ->where(
+                    'caso_uuid',
+                    $caseUuid
+                )
+                ->orderByDesc(
+                    'fecha_registro'
+                )
+                ->get();
+
 
         return $models
             ->map(
@@ -63,7 +69,7 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
 
 
     // ==========================================================
-    // CREAR ESTUDIO + ARCHIVO
+    // CREAR ESTUDIO + ARCHIVO + VALIDACIONES
     // ==========================================================
 
     public function create(
@@ -181,47 +187,175 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
 
                         'activo' =>
                             true,
+
+                        'estado_validacion' =>
+                            $fileData[
+                                'estado_validacion'
+                            ]
+                            ??
+                            'PENDIENTE',
                     ]);
 
 
                 // ==================================================
-                // RECARGAR DESDE POSTGRESQL
-                //
-                // IMPORTANTE:
-                // fecha_registro y fecha_carga utilizan
-                // DEFAULT CURRENT_TIMESTAMP en PostgreSQL.
-                //
-                // Por eso volvemos a consultar el registro
-                // después de crearlo.
+                // REGISTRAR VALIDACIONES
                 // ==================================================
 
-                $study = RadiographicStudyModel::query()
-                    ->with([
-                        'studyType',
+                $validations =
+                    $fileData[
+                        'validaciones'
+                    ]
+                    ??
+                    [];
 
-                        'anatomicalRegion',
 
-                        'laterality',
+                foreach (
+                    $validations
+                    as
+                    $validation
+                ) {
+                    $type =
+                        ValidationType::query()
+                            ->where(
+                                'codigo',
+                                $validation[
+                                    'tipo_codigo'
+                                ]
+                            )
+                            ->first();
 
-                        'files' => function ($query) {
-                            $query
-                                ->where(
-                                    'activo',
-                                    true
-                                )
-                                ->with(
-                                    'mimeType'
-                                )
-                                ->orderByDesc(
-                                    'version'
-                                );
-                        },
-                    ])
-                    ->where(
-                        'id_estudio',
-                        $studyUuid
-                    )
-                    ->firstOrFail();
+
+                    if ($type === null) {
+                        throw new RuntimeException(
+                            'No existe el tipo de validación '
+                            .$validation[
+                                'tipo_codigo'
+                            ]
+                            .' en el catálogo.'
+                        );
+                    }
+
+
+                    $result =
+                        ValidationResult::query()
+                            ->where(
+                                'codigo',
+                                $validation[
+                                    'resultado_codigo'
+                                ]
+                            )
+                            ->first();
+
+
+                    if ($result === null) {
+                        throw new RuntimeException(
+                            'No existe el resultado de validación '
+                            .$validation[
+                                'resultado_codigo'
+                            ]
+                            .' en el catálogo.'
+                        );
+                    }
+
+
+                    /*
+                     * validaciones_archivo actualmente dispone
+                     * de un campo "detalle".
+                     *
+                     * Guardamos allí información estructurada
+                     * para no perder motivo/corrección y sin
+                     * agregar todavía columnas redundantes.
+                     */
+                    $detail =
+                        json_encode(
+                            [
+                                'detalle' =>
+                                    $validation[
+                                        'detalle'
+                                    ]
+                                    ??
+                                    null,
+
+                                'motivo' =>
+                                    $validation[
+                                        'motivo'
+                                    ]
+                                    ??
+                                    null,
+
+                                'correccion' =>
+                                    $validation[
+                                        'correccion'
+                                    ]
+                                    ??
+                                    null,
+                            ],
+                            JSON_UNESCAPED_UNICODE
+                            |
+                            JSON_UNESCAPED_SLASHES
+                        );
+
+
+                    if ($detail === false) {
+                        throw new RuntimeException(
+                            'No fue posible serializar el detalle de validación.'
+                        );
+                    }
+
+
+                    RadiographicFileValidation::query()
+                        ->create([
+                            'id_archivo' =>
+                                $fileData[
+                                    'id_archivo'
+                                ],
+
+                            'id_tipo_validacion' =>
+                                $type
+                                    ->id_tipo_validacion,
+
+                            'id_resultado_validacion' =>
+                                $result
+                                    ->id_resultado_validacion,
+
+                            'detalle' =>
+                                $detail,
+                        ]);
+                }
+
+
+                // ==================================================
+                // RECARGAR
+                // ==================================================
+
+                $study =
+                    RadiographicStudyModel::query()
+                        ->with([
+                            'studyType',
+
+                            'anatomicalRegion',
+
+                            'laterality',
+
+                            'files' => function ($query) {
+                                $query
+                                    ->where(
+                                        'activo',
+                                        true
+                                    )
+                                    ->with(
+                                        'mimeType'
+                                    )
+                                    ->orderByDesc(
+                                        'version'
+                                    );
+                            },
+                        ])
+                        ->where(
+                            'id_estudio',
+                            $studyUuid
+                        )
+                        ->firstOrFail();
 
 
                 return $this->toEntity(
@@ -233,112 +367,145 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
 
 
     // ==========================================================
-    // ORM -> ENTIDAD DE DOMINIO
+    // ORM -> ENTIDAD
     // ==========================================================
 
     private function toEntity(
         RadiographicStudyModel $model
     ): RadiographicStudy {
-        $files = $model
-            ->files
-            ->map(
-                function (
-                    $file
-                ) use (
-                    $model
-                ): RadiographicFile {
+        $files =
+            $model
+                ->files
+                ->map(
+                    function (
+                        $file
+                    ) use (
+                        $model
+                    ): RadiographicFile {
 
-                    return new RadiographicFile(
-                        id:
-                            (string)
-                            $file->id_archivo,
+                        return new RadiographicFile(
+                            id:
+                                (string)
+                                $file
+                                    ->id_archivo,
 
-                        caseUuid:
-                            (string)
-                            $model->caso_uuid,
+                            caseUuid:
+                                (string)
+                                $model
+                                    ->caso_uuid,
 
-                        version:
-                            (int)
-                            $file->version,
+                            version:
+                                (int)
+                                $file
+                                    ->version,
 
-                        originalName:
-                            (string)
-                            $file->nombre_original,
+                            originalName:
+                                (string)
+                                $file
+                                    ->nombre_original,
 
-                        storedName:
-                            (string)
-                            $file->nombre_almacenado,
+                            storedName:
+                                (string)
+                                $file
+                                    ->nombre_almacenado,
 
-                        storagePath:
-                            (string)
-                            $file->ruta_almacenamiento,
+                            storagePath:
+                                (string)
+                                $file
+                                    ->ruta_almacenamiento,
 
-                        sizeBytes:
-                            (int)
-                            $file->tamano_bytes,
+                            sizeBytes:
+                                (int)
+                                $file
+                                    ->tamano_bytes,
 
-                        widthPx:
-                            $file->ancho_px !== null
-                                ? (int)
-                                    $file->ancho_px
-                                : null,
+                            widthPx:
+                                $file
+                                    ->ancho_px
+                                !==
+                                null
+                                    ? (int)
+                                        $file
+                                            ->ancho_px
+                                    : null,
 
-                        heightPx:
-                            $file->alto_px !== null
-                                ? (int)
-                                    $file->alto_px
-                                : null,
+                            heightPx:
+                                $file
+                                    ->alto_px
+                                !==
+                                null
+                                    ? (int)
+                                        $file
+                                            ->alto_px
+                                    : null,
 
-                        sha256:
-                            (string)
-                            $file->hash_sha256,
+                            sha256:
+                                (string)
+                                $file
+                                    ->hash_sha256,
 
-                        active:
-                            (bool)
-                            $file->activo,
+                            active:
+                                (bool)
+                                $file
+                                    ->activo,
 
-                        mimeCode:
-                            (string)
-                            $file
-                                ->mimeType
-                                ->codigo,
+                            validationStatus:
+                                (string)
+                                (
+                                    $file
+                                        ->estado_validacion
+                                    ??
+                                    'PENDIENTE'
+                                ),
 
-                        mimeType:
-                            (string)
-                            $file
-                                ->mimeType
-                                ->mime_type,
+                            mimeCode:
+                                (string)
+                                $file
+                                    ->mimeType
+                                    ->codigo,
 
-                        extension:
-                            (string)
-                            $file
-                                ->mimeType
-                                ->extension,
+                            mimeType:
+                                (string)
+                                $file
+                                    ->mimeType
+                                    ->mime_type,
 
-                        uploadedAt:
-                            $file->fecha_carga !== null
-                                ? $file
+                            extension:
+                                (string)
+                                $file
+                                    ->mimeType
+                                    ->extension,
+
+                            uploadedAt:
+                                $file
                                     ->fecha_carga
-                                    ->toIso8601String()
-                                : '',
-                    );
-                }
-            )
-            ->all();
+                                !==
+                                null
+                                    ? $file
+                                        ->fecha_carga
+                                        ->toIso8601String()
+                                    : '',
+                        );
+                    }
+                )
+                ->all();
 
 
         return new RadiographicStudy(
             id:
                 (string)
-                $model->id_estudio,
+                $model
+                    ->id_estudio,
 
             caseUuid:
                 (string)
-                $model->caso_uuid,
+                $model
+                    ->caso_uuid,
 
             registeredByUuid:
                 (string)
-                $model->registrado_por_uuid,
+                $model
+                    ->registrado_por_uuid,
 
             studyTypeId:
                 (int)
@@ -377,7 +544,10 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                     ->nombre,
 
             lateralityId:
-                $model->laterality !== null
+                $model
+                    ->laterality
+                !==
+                null
                     ? (int)
                         $model
                             ->laterality
@@ -385,7 +555,10 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                     : null,
 
             lateralityCode:
-                $model->laterality !== null
+                $model
+                    ->laterality
+                !==
+                null
                     ? (string)
                         $model
                             ->laterality
@@ -393,7 +566,10 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                     : null,
 
             lateralityName:
-                $model->laterality !== null
+                $model
+                    ->laterality
+                !==
+                null
                     ? (string)
                         $model
                             ->laterality
@@ -401,7 +577,10 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                     : null,
 
             studyDate:
-                $model->fecha_estudio !== null
+                $model
+                    ->fecha_estudio
+                !==
+                null
                     ? $model
                         ->fecha_estudio
                         ->format(
@@ -410,10 +589,14 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                     : null,
 
             observation:
-                $model->observacion,
+                $model
+                    ->observacion,
 
             registeredAt:
-                $model->fecha_registro !== null
+                $model
+                    ->fecha_registro
+                !==
+                null
                     ? $model
                         ->fecha_registro
                         ->toIso8601String()

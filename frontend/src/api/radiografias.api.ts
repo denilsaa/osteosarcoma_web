@@ -190,6 +190,19 @@ export interface CreateRadiographyRequest {
 
 
 // ==========================================================
+// OPCIONES DE CARGA
+// ==========================================================
+
+export interface CreateRadiographyOptions {
+  onUploadProgress?:
+    (
+      progress:
+        number,
+    ) => void;
+}
+
+
+// ==========================================================
 // CATÁLOGOS
 // ==========================================================
 
@@ -239,6 +252,9 @@ export async function createRadiography(
 
   data:
     CreateRadiographyRequest,
+
+  options:
+    CreateRadiographyOptions = {},
 ): Promise<CreateRadiographyResponse> {
 
   const formData =
@@ -303,28 +319,68 @@ export async function createRadiography(
 
 
   /*
-   * IMPORTANTE:
+   * No forzar Content-Type.
    *
-   * NO colocar:
-   *
-   * Content-Type: multipart/form-data
-   *
-   * ni application/json.
-   *
-   * El navegador genera automáticamente:
-   *
-   * multipart/form-data;
-   * boundary=--------------------xxxx
-   *
-   * Si nosotros forzamos el Content-Type,
-   * Laravel puede no recibir correctamente
-   * el archivo.
+   * El navegador genera automáticamente
+   * multipart/form-data con su boundary.
    */
   const response =
     await apiRadiografias
       .post<CreateRadiographyResponse>(
         `/casos/${caseId}/radiografias`,
         formData,
+        {
+          onUploadProgress:
+            (
+              progressEvent,
+            ) => {
+
+              if (
+                !options
+                  .onUploadProgress
+              ) {
+                return;
+              }
+
+
+              const total =
+                progressEvent.total;
+
+
+              if (
+                !total
+                ||
+                total <= 0
+              ) {
+                return;
+              }
+
+
+              const percentage =
+                Math.min(
+                  100,
+                  Math.max(
+                    0,
+                    Math.round(
+                      (
+                        progressEvent.loaded
+                        *
+                        100
+                      )
+                      /
+                      total,
+                    ),
+                  ),
+                );
+
+
+              options
+                .onUploadProgress(
+                  percentage,
+                );
+
+            },
+        },
       );
 
 

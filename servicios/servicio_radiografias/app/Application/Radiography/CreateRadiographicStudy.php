@@ -17,12 +17,10 @@ use Throwable;
 
 final readonly class CreateRadiographicStudy
 {
-    private const MAX_FILE_BYTES =
-        20 * 1024 * 1024;
-
-
     public function __construct(
         private RadiographicStudyRepository $repository,
+
+        private RadiographicFileValidator $fileValidator,
     ) {
     }
 
@@ -42,10 +40,12 @@ final readonly class CreateRadiographicStudy
             'caso clínico'
         );
 
+
         $this->validateUuid(
             $registeredByUuid,
             'usuario'
         );
+
 
         $this->validateCatalogs(
             $studyTypeId,
@@ -53,35 +53,68 @@ final readonly class CreateRadiographicStudy
             $lateralityId
         );
 
-        $this->validateFile(
-            $file
-        );
 
-        $mime = $this->resolveMimeType(
-            $file
-        );
+        /*
+         * Ya no rechazamos aquí por contenido técnico.
+         *
+         * El motor produce un reporte y el archivo,
+         * incluso si resulta RECHAZADO, se conserva
+         * para mantener trazabilidad y permitir
+         * posteriormente su reemplazo.
+         */
+        $validationReport =
+            $this
+                ->fileValidator
+                ->validate(
+                    $file
+                );
+
+
+        /*
+         * Para poder almacenar el archivo necesitamos
+         * resolver el MIME interno por extensión.
+         *
+         * El hecho de resolverlo NO significa que el
+         * contenido haya sido validado. Esa decisión
+         * corresponde al validationReport.
+         */
+        $mime =
+            $this->resolveMimeType(
+                $file
+            );
+
 
         $studyUuid =
             (string)
             Str::uuid();
 
+
         $fileUuid =
             (string)
             Str::uuid();
 
+
         $extension =
             strtolower(
-                $file->getClientOriginalExtension()
+                $file
+                    ->getClientOriginalExtension()
             );
 
-        if ($extension === 'jpeg') {
-            $extension = 'jpg';
+
+        if (
+            $extension ===
+            'jpeg'
+        ) {
+            $extension =
+                'jpg';
         }
+
 
         $storedName =
             $fileUuid
             .'.'
             .$extension;
+
 
         $relativeDirectory =
             'radiografias/'
@@ -89,21 +122,51 @@ final readonly class CreateRadiographicStudy
             .'/'
             .$studyUuid;
 
+
         $relativePath =
             $relativeDirectory
             .'/'
             .$storedName;
 
 
-        $content = file_get_contents(
-            $file->getRealPath()
-        );
+        $realPath =
+            $file
+                ->getRealPath();
 
-        if ($content === false) {
+
+        if (
+            $realPath ===
+            false
+            ||
+            ! is_file(
+                $realPath
+            )
+            ||
+            ! is_readable(
+                $realPath
+            )
+        ) {
+            throw new RuntimeException(
+                'No fue posible acceder al archivo radiográfico recibido.'
+            );
+        }
+
+
+        $content =
+            file_get_contents(
+                $realPath
+            );
+
+
+        if (
+            $content ===
+            false
+        ) {
             throw new RuntimeException(
                 'No fue posible leer el archivo radiográfico.'
             );
         }
+
 
         $hash =
             hash(
@@ -112,18 +175,23 @@ final readonly class CreateRadiographicStudy
             );
 
 
-        [$width, $height] =
+        [
+            $width,
+            $height,
+        ] =
             $this->imageDimensions(
                 $file
             );
 
 
-        $stored = Storage::disk(
-            'local'
-        )->put(
-            $relativePath,
-            $content
-        );
+        $stored =
+            Storage::disk(
+                'local'
+            )
+                ->put(
+                    $relativePath,
+                    $content
+                );
 
 
         if (! $stored) {
@@ -131,6 +199,38 @@ final readonly class CreateRadiographicStudy
                 'No fue posible almacenar el archivo radiográfico.'
             );
         }
+
+
+        $validations =
+            array_map(
+                static function (
+                    $result
+                ): array {
+                    return [
+                        'tipo_codigo' =>
+                            $result
+                                ->typeCode,
+
+                        'resultado_codigo' =>
+                            $result
+                                ->resultCode(),
+
+                        'detalle' =>
+                            $result
+                                ->detail,
+
+                        'motivo' =>
+                            $result
+                                ->reason,
+
+                        'correccion' =>
+                            $result
+                                ->correction,
+                    ];
+                },
+                $validationReport
+                    ->results
+            );
 
 
         try {
@@ -167,7 +267,8 @@ final readonly class CreateRadiographicStudy
 
                         'id_tipo_mime' =>
                             (int)
-                            $mime->id_tipo_mime,
+                            $mime
+                                ->id_tipo_mime,
 
                         'nombre_original' =>
                             $file
@@ -181,7 +282,8 @@ final readonly class CreateRadiographicStudy
 
                         'tamano_bytes' =>
                             (int)
-                            $file->getSize(),
+                            $file
+                                ->getSize(),
 
                         'ancho_px' =>
                             $width,
@@ -191,15 +293,26 @@ final readonly class CreateRadiographicStudy
 
                         'hash_sha256' =>
                             $hash,
+
+                        'estado_validacion' =>
+                            $validationReport
+                                ->status(),
+
+                        'validaciones' =>
+                            $validations,
                     ],
                 );
 
-        } catch (Throwable $exception) {
+        } catch (
+            Throwable $exception
+        ) {
             Storage::disk(
                 'local'
-            )->delete(
-                $relativePath
-            );
+            )
+                ->delete(
+                    $relativePath
+                );
+
 
             throw $exception;
         }
@@ -223,6 +336,7 @@ final readonly class CreateRadiographicStudy
             );
         }
 
+
         if (
             ! AnatomicalRegion::query()
                 ->whereKey(
@@ -234,6 +348,7 @@ final readonly class CreateRadiographicStudy
                 'La región anatómica seleccionada no existe.'
             );
         }
+
 
         if (
             ! Laterality::query()
@@ -249,89 +364,42 @@ final readonly class CreateRadiographicStudy
     }
 
 
-    private function validateFile(
-        UploadedFile $file
-    ): void {
-        if (! $file->isValid()) {
-            throw new InvalidArgumentException(
-                'El archivo radiográfico recibido no es válido.'
-            );
-        }
-
-        if (
-            $file->getSize() === false
-            ||
-            $file->getSize() <= 0
-        ) {
-            throw new InvalidArgumentException(
-                'El archivo radiográfico está vacío.'
-            );
-        }
-
-        if (
-            $file->getSize()
-            >
-            self::MAX_FILE_BYTES
-        ) {
-            throw new InvalidArgumentException(
-                'El archivo radiográfico supera el límite de 20 MB.'
-            );
-        }
-
-
-        $extension =
-            strtolower(
-                $file->getClientOriginalExtension()
-            );
-
-        $allowedExtensions = [
-            'jpg',
-            'jpeg',
-            'png',
-            'dcm',
-        ];
-
-
-        if (
-            ! in_array(
-                $extension,
-                $allowedExtensions,
-                true
-            )
-        ) {
-            throw new InvalidArgumentException(
-                'Solo se permiten archivos JPG, PNG o DICOM.'
-            );
-        }
-    }
-
-
     private function resolveMimeType(
         UploadedFile $file
     ): MimeType {
         $extension =
             strtolower(
-                $file->getClientOriginalExtension()
+                $file
+                    ->getClientOriginalExtension()
             );
 
-        if ($extension === 'jpeg') {
-            $extension = 'jpg';
+
+        if (
+            $extension ===
+            'jpeg'
+        ) {
+            $extension =
+                'jpg';
         }
 
 
-        $mime = MimeType::query()
-            ->where(
-                'activo',
-                true
-            )
-            ->where(
-                'extension',
-                $extension
-            )
-            ->first();
+        $mime =
+            MimeType::query()
+                ->where(
+                    'activo',
+                    true
+                )
+                ->where(
+                    'extension',
+                    $extension
+                )
+                ->first();
 
 
-        if ($mime === null) {
+        if (
+            $mime ===
+            null
+        ) {
             throw new InvalidArgumentException(
                 'El tipo de archivo no está habilitado en el sistema.'
             );
@@ -347,7 +415,8 @@ final readonly class CreateRadiographicStudy
     ): array {
         $extension =
             strtolower(
-                $file->getClientOriginalExtension()
+                $file
+                    ->getClientOriginalExtension()
             );
 
 
@@ -369,9 +438,26 @@ final readonly class CreateRadiographicStudy
         }
 
 
-        $dimensions = @getimagesize(
-            $file->getRealPath()
-        );
+        $path =
+            $file
+                ->getRealPath();
+
+
+        if (
+            $path ===
+            false
+        ) {
+            return [
+                null,
+                null,
+            ];
+        }
+
+
+        $dimensions =
+            @getimagesize(
+                $path
+            );
 
 
         if (
@@ -387,12 +473,16 @@ final readonly class CreateRadiographicStudy
 
 
         return [
-            isset($dimensions[0])
+            isset(
+                $dimensions[0]
+            )
                 ? (int)
                     $dimensions[0]
                 : null,
 
-            isset($dimensions[1])
+            isset(
+                $dimensions[1]
+            )
                 ? (int)
                     $dimensions[1]
                 : null,

@@ -1,5 +1,6 @@
 import {
   CalendarDays,
+  CheckCircle2,
   Download,
   Eye,
   FileImage,
@@ -52,10 +53,12 @@ function formatDate(
     return "—";
   }
 
+
   const date =
     new Date(
       `${value.substring(0, 10)}T00:00:00`,
     );
+
 
   if (
     Number.isNaN(
@@ -64,6 +67,7 @@ function formatDate(
   ) {
     return value;
   }
+
 
   return new Intl.DateTimeFormat(
     "es-BO",
@@ -92,10 +96,12 @@ function formatDateTime(
     return "—";
   }
 
+
   const date =
     new Date(
       value,
     );
+
 
   if (
     Number.isNaN(
@@ -104,6 +110,7 @@ function formatDateTime(
   ) {
     return value;
   }
+
 
   return new Intl.DateTimeFormat(
     "es-BO",
@@ -140,6 +147,7 @@ function formatBytes(
     return `${value} B`;
   }
 
+
   if (
     value
     <
@@ -153,6 +161,7 @@ function formatBytes(
       ).toFixed(1)} KB`
     );
   }
+
 
   return (
     `${(
@@ -222,10 +231,12 @@ function getErrorMessage(
         ?.error
         ?.message
     ) {
+
       return response
         .data
         .error
         .message;
+
     }
 
 
@@ -236,9 +247,11 @@ function getErrorMessage(
       ===
       "string"
     ) {
+
       return response
         .data
         .error;
+
     }
 
 
@@ -247,9 +260,11 @@ function getErrorMessage(
         ?.data
         ?.message
     ) {
+
       return response
         .data
         .message;
+
     }
 
 
@@ -275,7 +290,9 @@ function getErrorMessage(
       if (first) {
         return first;
       }
+
     }
+
   }
 
 
@@ -326,6 +343,24 @@ export function CaseRadiographiesSection({
   const [
     saving,
     setSaving,
+  ] =
+    useState(
+      false,
+    );
+
+
+  const [
+    uploadProgress,
+    setUploadProgress,
+  ] =
+    useState(
+      0,
+    );
+
+
+  const [
+    confirming,
+    setConfirming,
   ] =
     useState(
       false,
@@ -431,6 +466,7 @@ export function CaseRadiographiesSection({
             caseId,
           );
 
+
         setStudies(
           response.data,
         );
@@ -450,9 +486,11 @@ export function CaseRadiographiesSection({
           true,
         );
 
+
         setError(
           null,
         );
+
 
         try {
 
@@ -470,9 +508,11 @@ export function CaseRadiographiesSection({
               ],
             );
 
+
           setCatalogs(
             catalogData,
           );
+
 
           setStudies(
             radiographyData.data,
@@ -521,87 +561,122 @@ export function CaseRadiographiesSection({
       "",
     );
 
+
     setAnatomicalRegionId(
       "",
     );
+
 
     setLateralityId(
       "",
     );
 
+
     setStudyDate(
       "",
     );
+
 
     setObservation(
       "",
     );
 
+
     setSelectedFile(
       null,
     );
 
+
+    setUploadProgress(
+      0,
+    );
+
+
+    setConfirming(
+      false,
+    );
+
+
     if (
       fileInputRef.current
     ) {
+
       fileInputRef
         .current
         .value =
           "";
+
     }
+
   }
 
 
   function closeForm() {
 
+    if (saving) {
+      return;
+    }
+
+
     resetForm();
+
 
     setShowForm(
       false,
     );
 
+
     setError(
       null,
     );
+
   }
 
 
-  async function handleSave() {
+  function validateForm():
+    string | null {
 
     if (
       !studyTypeId
     ) {
-      setError(
-        "Seleccione el tipo de estudio.",
+
+      return (
+        "Seleccione el tipo de estudio."
       );
-      return;
+
     }
+
 
     if (
       !anatomicalRegionId
     ) {
-      setError(
-        "Seleccione la región anatómica.",
+
+      return (
+        "Seleccione la región anatómica."
       );
-      return;
+
     }
+
 
     if (
       !lateralityId
     ) {
-      setError(
-        "Seleccione la lateralidad.",
+
+      return (
+        "Seleccione la lateralidad."
       );
-      return;
+
     }
+
 
     if (
       !selectedFile
     ) {
-      setError(
-        "Seleccione una radiografía.",
+
+      return (
+        "Seleccione una radiografía."
       );
-      return;
+
     }
 
 
@@ -625,10 +700,11 @@ export function CaseRadiographiesSection({
         extension,
       )
     ) {
-      setError(
-        "Solo se permiten archivos JPG, PNG o DICOM.",
+
+      return (
+        "Solo se permiten archivos JPG, PNG o DICOM."
       );
-      return;
+
     }
 
 
@@ -637,9 +713,83 @@ export function CaseRadiographiesSection({
       >
       20 * 1024 * 1024
     ) {
-      setError(
-        "El archivo no puede superar los 20 MB.",
+
+      return (
+        "El archivo no puede superar los 20 MB."
       );
+
+    }
+
+
+    return null;
+  }
+
+
+  function handleRequestConfirmation() {
+
+    const validationError =
+      validateForm();
+
+
+    if (
+      validationError
+    ) {
+
+      setError(
+        validationError,
+      );
+
+
+      setConfirming(
+        false,
+      );
+
+
+      return;
+
+    }
+
+
+    setError(
+      null,
+    );
+
+
+    setConfirming(
+      true,
+    );
+
+  }
+
+
+  async function handleConfirmedSave() {
+
+    const validationError =
+      validateForm();
+
+
+    if (
+      validationError
+    ) {
+
+      setError(
+        validationError,
+      );
+
+
+      setConfirming(
+        false,
+      );
+
+
+      return;
+
+    }
+
+
+    if (
+      !selectedFile
+    ) {
       return;
     }
 
@@ -647,6 +797,17 @@ export function CaseRadiographiesSection({
     setSaving(
       true,
     );
+
+
+    setConfirming(
+      false,
+    );
+
+
+    setUploadProgress(
+      0,
+    );
+
 
     setError(
       null,
@@ -687,16 +848,36 @@ export function CaseRadiographiesSection({
           file:
             selectedFile,
         },
+        {
+          onUploadProgress:
+            (
+              progress,
+            ) => {
+
+              setUploadProgress(
+                progress,
+              );
+
+            },
+        },
+      );
+
+
+      setUploadProgress(
+        100,
       );
 
 
       await loadStudies();
 
+
       resetForm();
+
 
       setShowForm(
         false,
       );
+
 
       setSuccess(
         "Radiografía registrada correctamente.",
@@ -718,6 +899,11 @@ export function CaseRadiographiesSection({
       requestError
     ) {
 
+      setUploadProgress(
+        0,
+      );
+
+
       setError(
         getErrorMessage(
           requestError,
@@ -731,6 +917,7 @@ export function CaseRadiographiesSection({
       );
 
     }
+
   }
 
 
@@ -742,6 +929,7 @@ export function CaseRadiographiesSection({
     setWorkingFileId(
       fileId,
     );
+
 
     setError(
       null,
@@ -777,16 +965,21 @@ export function CaseRadiographiesSection({
             "a",
           );
 
+
         anchor.href =
           url;
+
 
         anchor.target =
           "_blank";
 
+
         anchor.rel =
           "noopener noreferrer";
 
+
         anchor.click();
+
       }
 
 
@@ -818,6 +1011,7 @@ export function CaseRadiographiesSection({
       );
 
     }
+
   }
 
 
@@ -832,6 +1026,7 @@ export function CaseRadiographiesSection({
     setWorkingFileId(
       fileId,
     );
+
 
     setError(
       null,
@@ -857,19 +1052,25 @@ export function CaseRadiographiesSection({
           "a",
         );
 
+
       anchor.href =
         url;
 
+
       anchor.download =
         fileName;
+
 
       document.body.appendChild(
         anchor,
       );
 
+
       anchor.click();
 
+
       anchor.remove();
+
 
       URL.revokeObjectURL(
         url,
@@ -892,7 +1093,53 @@ export function CaseRadiographiesSection({
       );
 
     }
+
   }
+
+
+  const selectedStudyType =
+    catalogs
+      ?.study_types
+      .find(
+        (
+          item,
+        ) =>
+          String(
+            item.id,
+          )
+          ===
+          studyTypeId,
+      );
+
+
+  const selectedRegion =
+    catalogs
+      ?.anatomical_regions
+      .find(
+        (
+          item,
+        ) =>
+          String(
+            item.id,
+          )
+          ===
+          anatomicalRegionId,
+      );
+
+
+  const selectedLaterality =
+    catalogs
+      ?.lateralities
+      .find(
+        (
+          item,
+        ) =>
+          String(
+            item.id,
+          )
+          ===
+          lateralityId,
+      );
 
 
   if (
@@ -910,6 +1157,7 @@ export function CaseRadiographiesSection({
           className="case-radiographies-spin"
         />
 
+
         <span>
           Cargando radiografías...
         </span>
@@ -917,6 +1165,7 @@ export function CaseRadiographiesSection({
       </div>
 
     );
+
   }
 
 
@@ -961,19 +1210,31 @@ export function CaseRadiographiesSection({
         <button
           type="button"
           className="case-radiographies-primary"
+          disabled={
+            saving
+          }
           onClick={
             () => {
 
-              setShowForm(
-                (
-                  current,
-                ) =>
-                  !current,
-              );
+              if (
+                showForm
+              ) {
 
-              setError(
-                null,
-              );
+                closeForm();
+
+              } else {
+
+                setShowForm(
+                  true,
+                );
+
+
+                setError(
+                  null,
+                );
+
+              }
+
             }
           }
         >
@@ -991,6 +1252,7 @@ export function CaseRadiographiesSection({
                   />
                 )
           }
+
 
           {
             showForm
@@ -1045,9 +1307,11 @@ export function CaseRadiographiesSection({
             <div
               className="case-radiographies-form-heading"
             >
+
               <Upload
                 size={20}
               />
+
 
               <div>
                 <strong>
@@ -1055,10 +1319,11 @@ export function CaseRadiographiesSection({
                 </strong>
 
                 <span>
-                  Complete los datos y seleccione
-                  la radiografía correspondiente.
+                  Complete los datos obligatorios
+                  y seleccione la radiografía.
                 </span>
               </div>
+
             </div>
 
 
@@ -1070,6 +1335,9 @@ export function CaseRadiographiesSection({
                 Tipo de estudio *
 
                 <select
+                  disabled={
+                    saving
+                  }
                   value={
                     studyTypeId
                   }
@@ -1116,6 +1384,9 @@ export function CaseRadiographiesSection({
                 Zona anatómica *
 
                 <select
+                  disabled={
+                    saving
+                  }
                   value={
                     anatomicalRegionId
                   }
@@ -1162,6 +1433,9 @@ export function CaseRadiographiesSection({
                 Lateralidad *
 
                 <select
+                  disabled={
+                    saving
+                  }
                   value={
                     lateralityId
                   }
@@ -1209,6 +1483,9 @@ export function CaseRadiographiesSection({
 
                 <input
                   type="date"
+                  disabled={
+                    saving
+                  }
                   value={
                     studyDate
                   }
@@ -1232,6 +1509,9 @@ export function CaseRadiographiesSection({
                 <textarea
                   rows={3}
                   maxLength={4000}
+                  disabled={
+                    saving
+                  }
                   value={
                     observation
                   }
@@ -1262,6 +1542,9 @@ export function CaseRadiographiesSection({
                     fileInputRef
                   }
                   type="file"
+                  disabled={
+                    saving
+                  }
                   accept=".jpg,.jpeg,.png,.dcm,image/jpeg,image/png,application/dicom"
                   onChange={
                     (
@@ -1276,9 +1559,26 @@ export function CaseRadiographiesSection({
                         ??
                         null;
 
+
                       setSelectedFile(
                         file,
                       );
+
+
+                      setError(
+                        null,
+                      );
+
+
+                      setConfirming(
+                        false,
+                      );
+
+
+                      setUploadProgress(
+                        0,
+                      );
+
                     }
                   }
                 />
@@ -1287,9 +1587,11 @@ export function CaseRadiographiesSection({
                 <div
                   className="case-radiographies-file-box"
                 >
+
                   <FileImage
                     size={29}
                   />
+
 
                   {
                     selectedFile
@@ -1324,6 +1626,7 @@ export function CaseRadiographiesSection({
                           </>
                         )
                   }
+
                 </div>
 
               </label>
@@ -1331,60 +1634,280 @@ export function CaseRadiographiesSection({
             </div>
 
 
-            <div
-              className="case-radiographies-form-actions"
-            >
+            {
+              confirming
+              &&
+              selectedFile
+              &&
+              (
 
-              <button
-                type="button"
-                className="case-radiographies-secondary"
-                disabled={
-                  saving
-                }
-                onClick={
-                  closeForm
-                }
-              >
-                Cancelar
-              </button>
+                <div
+                  className="case-radiographies-confirmation"
+                >
+
+                  <div
+                    className="case-radiographies-confirmation-heading"
+                  >
+
+                    <CheckCircle2
+                      size={22}
+                    />
 
 
-              <button
-                type="button"
-                className="case-radiographies-primary"
-                disabled={
-                  saving
-                }
-                onClick={
-                  () =>
-                    void handleSave()
-                }
-              >
+                    <div>
+                      <strong>
+                        Confirme la carga
+                      </strong>
 
-                {
-                  saving
-                    ? (
-                        <LoaderCircle
-                          size={17}
-                          className="case-radiographies-spin"
-                        />
-                      )
-                    : (
-                        <Save
-                          size={17}
-                        />
-                      )
-                }
+                      <span>
+                        Revise la información antes de
+                        enviar la radiografía.
+                      </span>
+                    </div>
 
-                {
-                  saving
-                    ? "Guardando..."
-                    : "Guardar radiografía"
-                }
+                  </div>
 
-              </button>
 
-            </div>
+                  <div
+                    className="case-radiographies-confirmation-grid"
+                  >
+
+                    <div>
+                      <span>
+                        Tipo de estudio
+                      </span>
+
+                      <strong>
+                        {
+                          selectedStudyType
+                            ?.name
+                          ??
+                          "—"
+                        }
+                      </strong>
+                    </div>
+
+
+                    <div>
+                      <span>
+                        Región anatómica
+                      </span>
+
+                      <strong>
+                        {
+                          selectedRegion
+                            ?.name
+                          ??
+                          "—"
+                        }
+                      </strong>
+                    </div>
+
+
+                    <div>
+                      <span>
+                        Lateralidad
+                      </span>
+
+                      <strong>
+                        {
+                          selectedLaterality
+                            ?.name
+                          ??
+                          "—"
+                        }
+                      </strong>
+                    </div>
+
+
+                    <div>
+                      <span>
+                        Fecha del estudio
+                      </span>
+
+                      <strong>
+                        {
+                          studyDate
+                            ? formatDate(
+                                studyDate,
+                              )
+                            : "No especificada"
+                        }
+                      </strong>
+                    </div>
+
+
+                    <div
+                      className="case-radiographies-confirmation-wide"
+                    >
+                      <span>
+                        Archivo
+                      </span>
+
+                      <strong>
+                        {
+                          selectedFile.name
+                        }
+                      </strong>
+
+                      <small>
+                        {
+                          formatBytes(
+                            selectedFile.size,
+                          )
+                        }
+                      </small>
+                    </div>
+
+                  </div>
+
+
+                  <div
+                    className="case-radiographies-confirmation-actions"
+                  >
+
+                    <button
+                      type="button"
+                      className="case-radiographies-secondary"
+                      onClick={
+                        () =>
+                          setConfirming(
+                            false,
+                          )
+                      }
+                    >
+                      Volver a editar
+                    </button>
+
+
+                    <button
+                      type="button"
+                      className="case-radiographies-primary"
+                      onClick={
+                        () =>
+                          void handleConfirmedSave()
+                      }
+                    >
+                      <Upload
+                        size={17}
+                      />
+
+                      Confirmar y cargar
+                    </button>
+
+                  </div>
+
+                </div>
+
+              )
+            }
+
+
+            {
+              saving
+              &&
+              (
+
+                <div
+                  className="case-radiographies-progress"
+                  aria-live="polite"
+                >
+
+                  <div
+                    className="case-radiographies-progress-header"
+                  >
+
+                    <div>
+                      <LoaderCircle
+                        size={18}
+                        className="case-radiographies-spin"
+                      />
+
+                      <strong>
+                        Cargando radiografía...
+                      </strong>
+                    </div>
+
+
+                    <span>
+                      {uploadProgress}%
+                    </span>
+
+                  </div>
+
+
+                  <div
+                    className="case-radiographies-progress-track"
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={
+                      uploadProgress
+                    }
+                  >
+                    <div
+                      className="case-radiographies-progress-bar"
+                      style={{
+                        width:
+                          `${uploadProgress}%`,
+                      }}
+                    />
+                  </div>
+
+
+                  <p>
+                    No cierre esta pantalla mientras
+                    se completa la carga.
+                  </p>
+
+                </div>
+
+              )
+            }
+
+
+            {
+              !confirming
+              &&
+              !saving
+              &&
+              (
+
+                <div
+                  className="case-radiographies-form-actions"
+                >
+
+                  <button
+                    type="button"
+                    className="case-radiographies-secondary"
+                    onClick={
+                      closeForm
+                    }
+                  >
+                    Cancelar
+                  </button>
+
+
+                  <button
+                    type="button"
+                    className="case-radiographies-primary"
+                    onClick={
+                      handleRequestConfirmation
+                    }
+                  >
+
+                    <Save
+                      size={17}
+                    />
+
+                    Revisar y continuar
+
+                  </button>
+
+                </div>
+
+              )
+            }
 
           </div>
 
@@ -1405,9 +1928,11 @@ export function CaseRadiographiesSection({
                   size={42}
                 />
 
+
                 <strong>
                   Sin radiografías registradas
                 </strong>
+
 
                 <span>
                   Registre el primer estudio radiográfico
@@ -1456,6 +1981,7 @@ export function CaseRadiographiesSection({
                             <div
                               className="case-radiographies-study-title"
                             >
+
                               <strong>
                                 {
                                   study
@@ -1464,6 +1990,7 @@ export function CaseRadiographiesSection({
                                 }
                               </strong>
 
+
                               <span>
                                 {
                                   study
@@ -1471,6 +1998,7 @@ export function CaseRadiographiesSection({
                                     .name
                                 }
                               </span>
+
                             </div>
 
 
@@ -1596,13 +2124,16 @@ export function CaseRadiographiesSection({
                                               .mime
                                               .code
                                           }
+
                                           {" · "}
+
                                           {
                                             formatBytes(
                                               file
                                                 .size_bytes,
                                             )
                                           }
+
 
                                           {
                                             file.width_px
@@ -1654,6 +2185,7 @@ export function CaseRadiographiesSection({
                                                   )
                                               }
                                             >
+
                                               {
                                                 workingFileId
                                                 ===
@@ -1672,6 +2204,7 @@ export function CaseRadiographiesSection({
                                               }
 
                                               Ver
+
                                             </button>
 
                                           )
@@ -1693,11 +2226,13 @@ export function CaseRadiographiesSection({
                                               )
                                           }
                                         >
+
                                           <Download
                                             size={15}
                                           />
 
                                           Descargar
+
                                         </button>
 
                                       </div>

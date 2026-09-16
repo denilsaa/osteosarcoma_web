@@ -16,10 +16,23 @@ final readonly class RadiographicFile
         public ?int $heightPx,
         public string $sha256,
         public bool $active,
+        public string $validationStatus,
         public string $mimeCode,
         public string $mimeType,
         public string $extension,
         public string $uploadedAt,
     ) {
+    }
+
+
+    public function isValid(): bool
+    {
+        return $this->validationStatus === 'VALIDA';
+    }
+
+
+    public function isRejected(): bool
+    {
+        return $this->validationStatus === 'RECHAZADA';
     }
 }
