@@ -63,6 +63,48 @@ export interface RadiographicMime {
 
 
 // ==========================================================
+// VALIDACIÓN DE ARCHIVO
+// ==========================================================
+
+export type RadiographicValidationStatus =
+  | "PENDIENTE"
+  | "VALIDA"
+  | "RECHAZADA";
+
+
+export type RadiographicValidationResultCode =
+  | "VALIDO"
+  | "INVALIDO";
+
+
+export interface RadiographicFileValidation {
+  type_code:
+    string;
+
+  type_name:
+    string;
+
+  result_code:
+    RadiographicValidationResultCode;
+
+  result_name:
+    string;
+
+  detail:
+    string | null;
+
+  reason:
+    string | null;
+
+  correction:
+    string | null;
+
+  validated_at:
+    string | null;
+}
+
+
+// ==========================================================
 // ARCHIVO
 // ==========================================================
 
@@ -90,6 +132,12 @@ export interface RadiographicFile {
 
   active:
     boolean;
+
+  validation_status:
+    RadiographicValidationStatus;
+
+  validations:
+    RadiographicFileValidation[];
 
   mime:
     RadiographicMime;

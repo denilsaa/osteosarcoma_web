@@ -17,6 +17,7 @@ final readonly class RadiographicFile
         public string $sha256,
         public bool $active,
         public string $validationStatus,
+        public array $validations,
         public string $mimeCode,
         public string $mimeType,
         public string $extension,
@@ -34,5 +35,11 @@ final readonly class RadiographicFile
     public function isRejected(): bool
     {
         return $this->validationStatus === 'RECHAZADA';
+    }
+
+
+    public function isPending(): bool
+    {
+        return $this->validationStatus === 'PENDIENTE';
     }
 }

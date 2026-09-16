@@ -116,6 +116,12 @@ final class RadiographicStudyPresenter
                     'active' =>
                         $file->active,
 
+                    'validation_status' =>
+                        $file->validationStatus,
+
+                    'validations' =>
+                        $file->validations,
+
                     'mime' => [
                         'code' =>
                             $file->mimeCode,

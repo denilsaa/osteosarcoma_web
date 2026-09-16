@@ -37,9 +37,13 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                                 'activo',
                                 true
                             )
-                            ->with(
-                                'mimeType'
-                            )
+                            ->with([
+                                'mimeType',
+
+                                'validations.validationType',
+
+                                'validations.validationResult',
+                            ])
                             ->orderByDesc(
                                 'version'
                             );
@@ -258,14 +262,6 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                     }
 
 
-                    /*
-                     * validaciones_archivo actualmente dispone
-                     * de un campo "detalle".
-                     *
-                     * Guardamos allí información estructurada
-                     * para no perder motivo/corrección y sin
-                     * agregar todavía columnas redundantes.
-                     */
                     $detail =
                         json_encode(
                             [
@@ -326,7 +322,7 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
 
                 // ==================================================
                 // RECARGAR
-                // ==================================================
+                // ==========================================================
 
                 $study =
                     RadiographicStudyModel::query()
@@ -343,9 +339,13 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                                         'activo',
                                         true
                                     )
-                                    ->with(
-                                        'mimeType'
-                                    )
+                                    ->with([
+                                        'mimeType',
+
+                                        'validations.validationType',
+
+                                        'validations.validationResult',
+                                    ])
                                     ->orderByDesc(
                                         'version'
                                     );
@@ -382,6 +382,112 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                     ) use (
                         $model
                     ): RadiographicFile {
+
+                        // ==========================================
+                        // VALIDACIONES DEL ARCHIVO
+                        // ==========================================
+
+                        $validations =
+                            $file
+                                ->validations
+                                ->map(
+                                    function (
+                                        RadiographicFileValidation $validation
+                                    ): array {
+
+                                        $decodedDetail =
+                                            json_decode(
+                                                (string)
+                                                (
+                                                    $validation
+                                                        ->detalle
+                                                    ??
+                                                    ''
+                                                ),
+                                                true
+                                            );
+
+
+                                        if (
+                                            ! is_array(
+                                                $decodedDetail
+                                            )
+                                        ) {
+                                            $decodedDetail = [
+                                                'detalle' =>
+                                                    $validation
+                                                        ->detalle,
+
+                                                'motivo' =>
+                                                    null,
+
+                                                'correccion' =>
+                                                    null,
+                                            ];
+                                        }
+
+
+                                        return [
+                                            'type_code' =>
+                                                (string)
+                                                $validation
+                                                    ->validationType
+                                                    ->codigo,
+
+                                            'type_name' =>
+                                                (string)
+                                                $validation
+                                                    ->validationType
+                                                    ->nombre,
+
+                                            'result_code' =>
+                                                (string)
+                                                $validation
+                                                    ->validationResult
+                                                    ->codigo,
+
+                                            'result_name' =>
+                                                (string)
+                                                $validation
+                                                    ->validationResult
+                                                    ->nombre,
+
+                                            'detail' =>
+                                                $decodedDetail[
+                                                    'detalle'
+                                                ]
+                                                ??
+                                                null,
+
+                                            'reason' =>
+                                                $decodedDetail[
+                                                    'motivo'
+                                                ]
+                                                ??
+                                                null,
+
+                                            'correction' =>
+                                                $decodedDetail[
+                                                    'correccion'
+                                                ]
+                                                ??
+                                                null,
+
+                                            'validated_at' =>
+                                                $validation
+                                                    ->fecha_validacion
+                                                !==
+                                                null
+                                                    ? $validation
+                                                        ->fecha_validacion
+                                                        ->toIso8601String()
+                                                    : null,
+                                        ];
+                                    }
+                                )
+                                ->values()
+                                ->all();
+
 
                         return new RadiographicFile(
                             id:
@@ -457,6 +563,9 @@ final class EloquentRadiographicStudyRepository implements RadiographicStudyRepo
                                     ??
                                     'PENDIENTE'
                                 ),
+
+                            validations:
+                                $validations,
 
                             mimeCode:
                                 (string)
