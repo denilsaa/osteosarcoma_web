@@ -668,3 +668,372 @@
   }
 
 }
+
+/* =========================================================
+   2.3D - ESTADO Y VALIDACIÓN DE ARCHIVOS RADIOGRÁFICOS
+   ========================================================= */
+
+.case-radiographies-file-card {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  background: #ffffff;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.case-radiographies-file-card--valid {
+  border-color: #bbf7d0;
+}
+
+.case-radiographies-file-card--rejected {
+  border-color: #fecaca;
+  background: #fffdfd;
+}
+
+
+/* =========================================================
+   AJUSTE DEL ARCHIVO DENTRO DE LA TARJETA
+   ========================================================= */
+
+.case-radiographies-file-card
+.case-radiographies-file {
+  border: 0;
+  border-radius: 0;
+}
+
+.case-radiographies-file-name-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.case-radiographies-file-name-row > strong {
+  min-width: 0;
+  max-width: 100%;
+}
+
+
+/* =========================================================
+   BADGE DE ESTADO
+   ========================================================= */
+
+.case-radiographies-status {
+  display: inline-flex;
+  min-height: 23px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.61rem !important;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.case-radiographies-status--valid {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #047857 !important;
+}
+
+.case-radiographies-status--rejected {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c !important;
+}
+
+.case-radiographies-status--pending {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #a16207 !important;
+}
+
+
+/* =========================================================
+   AVISO DE ARCHIVO VÁLIDO
+   ========================================================= */
+
+.case-radiographies-valid-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0 11px 11px;
+  padding: 10px 11px;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #059669;
+}
+
+.case-radiographies-valid-notice > svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.case-radiographies-valid-notice > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.case-radiographies-valid-notice strong {
+  color: #047857;
+  font-size: 0.69rem;
+}
+
+.case-radiographies-valid-notice span {
+  color: #4b7b69;
+  font-size: 0.64rem;
+  line-height: 1.45;
+}
+
+
+/* =========================================================
+   RADIOGRAFÍA RECHAZADA
+   ========================================================= */
+
+.case-radiographies-rejection {
+  margin: 0 11px 11px;
+  overflow: hidden;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #fffafa;
+}
+
+.case-radiographies-rejection-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border-bottom: 1px solid #fee2e2;
+  background: #fef2f2;
+}
+
+.case-radiographies-rejection-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 8px;
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.case-radiographies-rejection-header > div:last-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.case-radiographies-rejection-header strong {
+  color: #991b1b;
+  font-size: 0.73rem;
+}
+
+.case-radiographies-rejection-header span {
+  color: #7f1d1d;
+  font-size: 0.64rem;
+  line-height: 1.45;
+}
+
+
+/* =========================================================
+   LISTA DE VALIDACIONES
+   ========================================================= */
+
+.case-radiographies-validation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 11px;
+}
+
+.case-radiographies-validation-item {
+  overflow: hidden;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.case-radiographies-validation-heading {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #fee2e2;
+  background: #fff7f7;
+}
+
+.case-radiographies-validation-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #dc2626;
+}
+
+.case-radiographies-validation-heading strong {
+  color: #991b1b;
+  font-size: 0.68rem;
+}
+
+.case-radiographies-validation-heading > span {
+  display: inline-flex;
+  min-height: 21px;
+  align-items: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.59rem;
+  font-weight: 800;
+}
+
+.case-radiographies-validation-detail {
+  margin: 0;
+  padding: 10px;
+  color: #475569;
+  font-size: 0.67rem;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   MOTIVO / CORRECCIÓN
+   ========================================================= */
+
+.case-radiographies-validation-block {
+  margin: 0 10px 9px;
+  padding: 9px 10px;
+  border-radius: 7px;
+}
+
+.case-radiographies-validation-block > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.case-radiographies-validation-block strong {
+  font-size: 0.65rem;
+}
+
+.case-radiographies-validation-block p {
+  margin: 0;
+  font-size: 0.64rem;
+  line-height: 1.5;
+}
+
+.case-radiographies-validation-block--reason {
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.case-radiographies-validation-block--correction {
+  border: 1px solid #bae6fd;
+  background: #f0f9ff;
+  color: #075985;
+}
+
+.case-radiographies-validation-date {
+  display: block;
+  padding: 0 10px 9px;
+  color: #94a3b8;
+  font-size: 0.59rem;
+}
+
+
+/* =========================================================
+   SIN DETALLE DE VALIDACIÓN
+   ========================================================= */
+
+.case-radiographies-validation-missing {
+  margin: 11px;
+  padding: 10px;
+  border: 1px dashed #fecaca;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #991b1b;
+  font-size: 0.65rem;
+  text-align: center;
+}
+
+
+/* =========================================================
+   ANÁLISIS BLOQUEADO
+   ========================================================= */
+
+.case-radiographies-analysis-blocked {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0 11px 11px;
+  padding: 10px 11px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.case-radiographies-analysis-blocked > svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.case-radiographies-analysis-blocked > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.case-radiographies-analysis-blocked strong {
+  color: #991b1b;
+  font-size: 0.68rem;
+}
+
+.case-radiographies-analysis-blocked span {
+  color: #7f1d1d;
+  font-size: 0.63rem;
+  line-height: 1.45;
+}
+
+
+/* =========================================================
+   RESPONSIVE 2.3D
+   ========================================================= */
+
+@media (max-width: 760px) {
+
+  .case-radiographies-file-name-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .case-radiographies-status {
+    align-self: flex-start;
+  }
+
+  .case-radiographies-validation-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .case-radiographies-rejection-header {
+    align-items: flex-start;
+  }
+
+}

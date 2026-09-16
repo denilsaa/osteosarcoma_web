@@ -1,15 +1,19 @@
 import {
+  AlertTriangle,
   CalendarDays,
   CheckCircle2,
   Download,
   Eye,
   FileImage,
   Image,
+  Info,
   LoaderCircle,
   Plus,
   Save,
+  ShieldAlert,
   Upload,
   X,
+  XCircle,
 } from "lucide-react";
 
 import {
@@ -25,6 +29,7 @@ import {
   getCaseRadiographies,
   getRadiographicFileBlob,
   getRadiographyCatalogs,
+  type RadiographicFile,
   type RadiographicStudy,
   type RadiographyCatalogs,
 } from "../../api/radiografias.api";
@@ -53,12 +58,10 @@ function formatDate(
     return "—";
   }
 
-
   const date =
     new Date(
       `${value.substring(0, 10)}T00:00:00`,
     );
-
 
   if (
     Number.isNaN(
@@ -67,7 +70,6 @@ function formatDate(
   ) {
     return value;
   }
-
 
   return new Intl.DateTimeFormat(
     "es-BO",
@@ -96,12 +98,10 @@ function formatDateTime(
     return "—";
   }
 
-
   const date =
     new Date(
       value,
     );
-
 
   if (
     Number.isNaN(
@@ -110,7 +110,6 @@ function formatDateTime(
   ) {
     return value;
   }
-
 
   return new Intl.DateTimeFormat(
     "es-BO",
@@ -147,7 +146,6 @@ function formatBytes(
     return `${value} B`;
   }
 
-
   if (
     value
     <
@@ -161,7 +159,6 @@ function formatBytes(
       ).toFixed(1)} KB`
     );
   }
-
 
   return (
     `${(
@@ -218,7 +215,6 @@ function getErrorMessage(
       )
         .response;
 
-
     if (
       typeof response
         ?.data
@@ -236,9 +232,7 @@ function getErrorMessage(
         .data
         .error
         .message;
-
     }
-
 
     if (
       typeof response
@@ -251,9 +245,7 @@ function getErrorMessage(
       return response
         .data
         .error;
-
     }
-
 
     if (
       response
@@ -264,15 +256,12 @@ function getErrorMessage(
       return response
         .data
         .message;
-
     }
-
 
     const errors =
       response
         ?.data
         ?.errors;
-
 
     if (errors) {
 
@@ -286,19 +275,60 @@ function getErrorMessage(
             Boolean,
           );
 
-
       if (first) {
         return first;
       }
-
     }
-
   }
-
 
   return (
     "No fue posible completar la operación."
   );
+}
+
+
+function getValidationStatusLabel(
+  file:
+    RadiographicFile,
+): string {
+
+  switch (
+    file.validation_status
+  ) {
+
+    case "VALIDA":
+      return "Radiografía válida";
+
+    case "RECHAZADA":
+      return "Radiografía rechazada";
+
+    case "PENDIENTE":
+      return "Validación pendiente";
+
+    default:
+      return file.validation_status;
+  }
+}
+
+
+function getValidationStatusClass(
+  file:
+    RadiographicFile,
+): string {
+
+  switch (
+    file.validation_status
+  ) {
+
+    case "VALIDA":
+      return "case-radiographies-status--valid";
+
+    case "RECHAZADA":
+      return "case-radiographies-status--rejected";
+
+    default:
+      return "case-radiographies-status--pending";
+  }
 }
 
 
@@ -312,7 +342,6 @@ export function CaseRadiographiesSection({
       null,
     );
 
-
   const [
     catalogs,
     setCatalogs,
@@ -320,7 +349,6 @@ export function CaseRadiographiesSection({
     useState<RadiographyCatalogs | null>(
       null,
     );
-
 
   const [
     studies,
@@ -330,7 +358,6 @@ export function CaseRadiographiesSection({
       [],
     );
 
-
   const [
     loading,
     setLoading,
@@ -338,7 +365,6 @@ export function CaseRadiographiesSection({
     useState(
       true,
     );
-
 
   const [
     saving,
@@ -348,7 +374,6 @@ export function CaseRadiographiesSection({
       false,
     );
 
-
   const [
     uploadProgress,
     setUploadProgress,
@@ -356,7 +381,6 @@ export function CaseRadiographiesSection({
     useState(
       0,
     );
-
 
   const [
     confirming,
@@ -366,7 +390,6 @@ export function CaseRadiographiesSection({
       false,
     );
 
-
   const [
     workingFileId,
     setWorkingFileId,
@@ -374,7 +397,6 @@ export function CaseRadiographiesSection({
     useState<string | null>(
       null,
     );
-
 
   const [
     showForm,
@@ -384,7 +406,6 @@ export function CaseRadiographiesSection({
       false,
     );
 
-
   const [
     error,
     setError,
@@ -392,7 +413,6 @@ export function CaseRadiographiesSection({
     useState<string | null>(
       null,
     );
-
 
   const [
     success,
@@ -402,7 +422,6 @@ export function CaseRadiographiesSection({
       null,
     );
 
-
   const [
     studyTypeId,
     setStudyTypeId,
@@ -410,7 +429,6 @@ export function CaseRadiographiesSection({
     useState(
       "",
     );
-
 
   const [
     anatomicalRegionId,
@@ -420,7 +438,6 @@ export function CaseRadiographiesSection({
       "",
     );
 
-
   const [
     lateralityId,
     setLateralityId,
@@ -428,7 +445,6 @@ export function CaseRadiographiesSection({
     useState(
       "",
     );
-
 
   const [
     studyDate,
@@ -438,7 +454,6 @@ export function CaseRadiographiesSection({
       "",
     );
 
-
   const [
     observation,
     setObservation,
@@ -446,7 +461,6 @@ export function CaseRadiographiesSection({
     useState(
       "",
     );
-
 
   const [
     selectedFile,
@@ -465,7 +479,6 @@ export function CaseRadiographiesSection({
           await getCaseRadiographies(
             caseId,
           );
-
 
         setStudies(
           response.data,
@@ -486,11 +499,9 @@ export function CaseRadiographiesSection({
           true,
         );
 
-
         setError(
           null,
         );
-
 
         try {
 
@@ -508,11 +519,9 @@ export function CaseRadiographiesSection({
               ],
             );
 
-
           setCatalogs(
             catalogData,
           );
-
 
           setStudies(
             radiographyData.data,
@@ -533,7 +542,6 @@ export function CaseRadiographiesSection({
           setLoading(
             false,
           );
-
         }
 
       },
@@ -561,41 +569,33 @@ export function CaseRadiographiesSection({
       "",
     );
 
-
     setAnatomicalRegionId(
       "",
     );
-
 
     setLateralityId(
       "",
     );
 
-
     setStudyDate(
       "",
     );
-
 
     setObservation(
       "",
     );
 
-
     setSelectedFile(
       null,
     );
-
 
     setUploadProgress(
       0,
     );
 
-
     setConfirming(
       false,
     );
-
 
     if (
       fileInputRef.current
@@ -605,9 +605,7 @@ export function CaseRadiographiesSection({
         .current
         .value =
           "";
-
     }
-
   }
 
 
@@ -617,19 +615,15 @@ export function CaseRadiographiesSection({
       return;
     }
 
-
     resetForm();
-
 
     setShowForm(
       false,
     );
 
-
     setError(
       null,
     );
-
   }
 
 
@@ -643,9 +637,7 @@ export function CaseRadiographiesSection({
       return (
         "Seleccione el tipo de estudio."
       );
-
     }
-
 
     if (
       !anatomicalRegionId
@@ -654,9 +646,7 @@ export function CaseRadiographiesSection({
       return (
         "Seleccione la región anatómica."
       );
-
     }
-
 
     if (
       !lateralityId
@@ -665,9 +655,7 @@ export function CaseRadiographiesSection({
       return (
         "Seleccione la lateralidad."
       );
-
     }
-
 
     if (
       !selectedFile
@@ -676,9 +664,7 @@ export function CaseRadiographiesSection({
       return (
         "Seleccione una radiografía."
       );
-
     }
-
 
     const extension =
       selectedFile
@@ -686,7 +672,6 @@ export function CaseRadiographiesSection({
         .split(".")
         .pop()
         ?.toLowerCase();
-
 
     if (
       !extension
@@ -704,9 +689,7 @@ export function CaseRadiographiesSection({
       return (
         "Solo se permiten archivos JPG, PNG o DICOM."
       );
-
     }
-
 
     if (
       selectedFile.size
@@ -717,9 +700,7 @@ export function CaseRadiographiesSection({
       return (
         "El archivo no puede superar los 20 MB."
       );
-
     }
-
 
     return null;
   }
@@ -730,7 +711,6 @@ export function CaseRadiographiesSection({
     const validationError =
       validateForm();
 
-
     if (
       validationError
     ) {
@@ -739,26 +719,20 @@ export function CaseRadiographiesSection({
         validationError,
       );
 
-
       setConfirming(
         false,
       );
 
-
       return;
-
     }
-
 
     setError(
       null,
     );
 
-
     setConfirming(
       true,
     );
-
   }
 
 
@@ -767,7 +741,6 @@ export function CaseRadiographiesSection({
     const validationError =
       validateForm();
 
-
     if (
       validationError
     ) {
@@ -776,16 +749,12 @@ export function CaseRadiographiesSection({
         validationError,
       );
 
-
       setConfirming(
         false,
       );
 
-
       return;
-
     }
-
 
     if (
       !selectedFile
@@ -793,107 +762,133 @@ export function CaseRadiographiesSection({
       return;
     }
 
-
     setSaving(
       true,
     );
-
 
     setConfirming(
       false,
     );
 
-
     setUploadProgress(
       0,
     );
-
 
     setError(
       null,
     );
 
-
     try {
 
-      await createRadiography(
-        caseId,
-        {
-          study_type_id:
-            Number(
-              studyTypeId,
-            ),
+      const response =
+        await createRadiography(
+          caseId,
+          {
+            study_type_id:
+              Number(
+                studyTypeId,
+              ),
 
-          anatomical_region_id:
-            Number(
-              anatomicalRegionId,
-            ),
+            anatomical_region_id:
+              Number(
+                anatomicalRegionId,
+              ),
 
-          laterality_id:
-            Number(
-              lateralityId,
-            ),
+            laterality_id:
+              Number(
+                lateralityId,
+              ),
 
-          study_date:
-            studyDate
-            ||
-            null,
+            study_date:
+              studyDate
+              ||
+              null,
 
-          observation:
-            observation
-              .trim()
-            ||
-            null,
+            observation:
+              observation
+                .trim()
+              ||
+              null,
 
-          file:
-            selectedFile,
-        },
-        {
-          onUploadProgress:
-            (
-              progress,
-            ) => {
-
-              setUploadProgress(
+            file:
+              selectedFile,
+          },
+          {
+            onUploadProgress:
+              (
                 progress,
-              );
+              ) => {
 
-            },
-        },
-      );
-
+                setUploadProgress(
+                  progress,
+                );
+              },
+          },
+        );
 
       setUploadProgress(
         100,
       );
 
-
       await loadStudies();
 
+      const createdFile =
+        response
+          .data
+          .files
+          .find(
+            (
+              file,
+            ) =>
+              file.active,
+          )
+        ??
+        response
+          .data
+          .files[0];
 
       resetForm();
-
 
       setShowForm(
         false,
       );
 
+      if (
+        createdFile
+          ?.validation_status
+        ===
+        "RECHAZADA"
+      ) {
 
-      setSuccess(
-        "Radiografía registrada correctamente.",
-      );
+        setSuccess(
+          null,
+        );
 
+        setError(
+          "La radiografía fue recibida, pero fue rechazada durante la validación. Revise el motivo y la corrección necesaria antes de enviarla al análisis.",
+        );
 
-      window.setTimeout(
-        () => {
+      } else {
 
-          setSuccess(
-            null,
-          );
+        setError(
+          null,
+        );
 
-        },
-        3500,
-      );
+        setSuccess(
+          "Radiografía registrada y validada correctamente.",
+        );
+
+        window.setTimeout(
+          () => {
+
+            setSuccess(
+              null,
+            );
+
+          },
+          3500,
+        );
+      }
 
     } catch (
       requestError
@@ -902,7 +897,6 @@ export function CaseRadiographiesSection({
       setUploadProgress(
         0,
       );
-
 
       setError(
         getErrorMessage(
@@ -915,9 +909,7 @@ export function CaseRadiographiesSection({
       setSaving(
         false,
       );
-
     }
-
   }
 
 
@@ -930,11 +922,9 @@ export function CaseRadiographiesSection({
       fileId,
     );
 
-
     setError(
       null,
     );
-
 
     try {
 
@@ -943,12 +933,10 @@ export function CaseRadiographiesSection({
           fileId,
         );
 
-
       const url =
         URL.createObjectURL(
           blob,
         );
-
 
       const popup =
         window.open(
@@ -957,7 +945,6 @@ export function CaseRadiographiesSection({
           "noopener,noreferrer",
         );
 
-
       if (!popup) {
 
         const anchor =
@@ -965,23 +952,17 @@ export function CaseRadiographiesSection({
             "a",
           );
 
-
         anchor.href =
           url;
-
 
         anchor.target =
           "_blank";
 
-
         anchor.rel =
           "noopener noreferrer";
 
-
         anchor.click();
-
       }
-
 
       window.setTimeout(
         () => {
@@ -1009,9 +990,7 @@ export function CaseRadiographiesSection({
       setWorkingFileId(
         null,
       );
-
     }
-
   }
 
 
@@ -1027,11 +1006,9 @@ export function CaseRadiographiesSection({
       fileId,
     );
 
-
     setError(
       null,
     );
-
 
     try {
 
@@ -1040,37 +1017,29 @@ export function CaseRadiographiesSection({
           fileId,
         );
 
-
       const url =
         URL.createObjectURL(
           blob,
         );
-
 
       const anchor =
         document.createElement(
           "a",
         );
 
-
       anchor.href =
         url;
 
-
       anchor.download =
         fileName;
-
 
       document.body.appendChild(
         anchor,
       );
 
-
       anchor.click();
 
-
       anchor.remove();
-
 
       URL.revokeObjectURL(
         url,
@@ -1091,9 +1060,7 @@ export function CaseRadiographiesSection({
       setWorkingFileId(
         null,
       );
-
     }
-
   }
 
 
@@ -1157,15 +1124,12 @@ export function CaseRadiographiesSection({
           className="case-radiographies-spin"
         />
 
-
         <span>
           Cargando radiografías...
         </span>
 
       </div>
-
     );
-
   }
 
 
@@ -1191,7 +1155,6 @@ export function CaseRadiographiesSection({
             />
           </div>
 
-
           <div>
             <h2>
               Radiografías del caso
@@ -1205,7 +1168,6 @@ export function CaseRadiographiesSection({
           </div>
 
         </div>
-
 
         <button
           type="button"
@@ -1228,13 +1190,10 @@ export function CaseRadiographiesSection({
                   true,
                 );
 
-
                 setError(
                   null,
                 );
-
               }
-
             }
           }
         >
@@ -1252,7 +1211,6 @@ export function CaseRadiographiesSection({
                   />
                 )
           }
-
 
           {
             showForm
@@ -1275,7 +1233,6 @@ export function CaseRadiographiesSection({
           >
             {error}
           </div>
-
         )
       }
 
@@ -1290,7 +1247,6 @@ export function CaseRadiographiesSection({
           >
             {success}
           </div>
-
         )
       }
 
@@ -1311,7 +1267,6 @@ export function CaseRadiographiesSection({
               <Upload
                 size={20}
               />
-
 
               <div>
                 <strong>
@@ -1372,7 +1327,6 @@ export function CaseRadiographiesSection({
                           >
                             {item.name}
                           </option>
-
                         ),
                       )
                   }
@@ -1421,7 +1375,6 @@ export function CaseRadiographiesSection({
                           >
                             {item.name}
                           </option>
-
                         ),
                       )
                   }
@@ -1470,7 +1423,6 @@ export function CaseRadiographiesSection({
                           >
                             {item.name}
                           </option>
-
                         ),
                       )
                   }
@@ -1536,7 +1488,6 @@ export function CaseRadiographiesSection({
                   Archivo radiográfico *
                 </span>
 
-
                 <input
                   ref={
                     fileInputRef
@@ -1559,30 +1510,24 @@ export function CaseRadiographiesSection({
                         ??
                         null;
 
-
                       setSelectedFile(
                         file,
                       );
-
 
                       setError(
                         null,
                       );
 
-
                       setConfirming(
                         false,
                       );
 
-
                       setUploadProgress(
                         0,
                       );
-
                     }
                   }
                 />
-
 
                 <div
                   className="case-radiographies-file-box"
@@ -1591,7 +1536,6 @@ export function CaseRadiographiesSection({
                   <FileImage
                     size={29}
                   />
-
 
                   {
                     selectedFile
@@ -1653,7 +1597,6 @@ export function CaseRadiographiesSection({
                       size={22}
                     />
 
-
                     <div>
                       <strong>
                         Confirme la carga
@@ -1687,7 +1630,6 @@ export function CaseRadiographiesSection({
                       </strong>
                     </div>
 
-
                     <div>
                       <span>
                         Región anatómica
@@ -1702,7 +1644,6 @@ export function CaseRadiographiesSection({
                         }
                       </strong>
                     </div>
-
 
                     <div>
                       <span>
@@ -1719,7 +1660,6 @@ export function CaseRadiographiesSection({
                       </strong>
                     </div>
 
-
                     <div>
                       <span>
                         Fecha del estudio
@@ -1735,7 +1675,6 @@ export function CaseRadiographiesSection({
                         }
                       </strong>
                     </div>
-
 
                     <div
                       className="case-radiographies-confirmation-wide"
@@ -1779,7 +1718,6 @@ export function CaseRadiographiesSection({
                       Volver a editar
                     </button>
 
-
                     <button
                       type="button"
                       className="case-radiographies-primary"
@@ -1798,7 +1736,6 @@ export function CaseRadiographiesSection({
                   </div>
 
                 </div>
-
               )
             }
 
@@ -1828,13 +1765,11 @@ export function CaseRadiographiesSection({
                       </strong>
                     </div>
 
-
                     <span>
                       {uploadProgress}%
                     </span>
 
                   </div>
-
 
                   <div
                     className="case-radiographies-progress-track"
@@ -1854,14 +1789,12 @@ export function CaseRadiographiesSection({
                     />
                   </div>
 
-
                   <p>
                     No cierre esta pantalla mientras
                     se completa la carga.
                   </p>
 
                 </div>
-
               )
             }
 
@@ -1887,7 +1820,6 @@ export function CaseRadiographiesSection({
                     Cancelar
                   </button>
 
-
                   <button
                     type="button"
                     className="case-radiographies-primary"
@@ -1905,12 +1837,10 @@ export function CaseRadiographiesSection({
                   </button>
 
                 </div>
-
               )
             }
 
           </div>
-
         )
       }
 
@@ -1928,11 +1858,9 @@ export function CaseRadiographiesSection({
                   size={42}
                 />
 
-
                 <strong>
                   Sin radiografías registradas
                 </strong>
-
 
                 <span>
                   Registre el primer estudio radiográfico
@@ -1940,7 +1868,6 @@ export function CaseRadiographiesSection({
                 </span>
 
               </div>
-
             )
           : (
 
@@ -1973,7 +1900,6 @@ export function CaseRadiographiesSection({
                             />
                           </div>
 
-
                           <div
                             className="case-radiographies-study-data"
                           >
@@ -1989,7 +1915,6 @@ export function CaseRadiographiesSection({
                                     .name
                                 }
                               </strong>
-
 
                               <span>
                                 {
@@ -2020,7 +1945,6 @@ export function CaseRadiographiesSection({
                                 }
                               </span>
 
-
                               <span>
                                 Lateralidad:{" "}
                                 {
@@ -2032,7 +1956,6 @@ export function CaseRadiographiesSection({
                                 }
                               </span>
 
-
                               <span>
                                 Registrado:{" "}
                                 {
@@ -2042,7 +1965,6 @@ export function CaseRadiographiesSection({
                                   )
                                 }
                               </span>
-
 
                               <span>
                                 Profesional:{" "}
@@ -2069,7 +1991,6 @@ export function CaseRadiographiesSection({
                                     study.observation
                                   }
                                 </p>
-
                               )
                             }
 
@@ -2092,84 +2013,231 @@ export function CaseRadiographiesSection({
                                   >
                                     Sin archivos disponibles.
                                   </span>
-
                                 )
                               : study.files.map(
                                   (
                                     file,
-                                  ) => (
+                                  ) => {
 
-                                    <div
-                                      key={
-                                        file.id_file
-                                      }
-                                      className="case-radiographies-file"
-                                    >
+                                    const isRejected =
+                                      file
+                                        .validation_status
+                                      ===
+                                      "RECHAZADA";
 
-                                      <div
-                                        className="case-radiographies-file-info"
-                                      >
+                                    const isValid =
+                                      file
+                                        .validation_status
+                                      ===
+                                      "VALIDA";
 
-                                        <strong>
-                                          {
-                                            file
-                                              .original_name
-                                          }
-                                        </strong>
-
-
-                                        <span>
-                                          {
-                                            file
-                                              .mime
-                                              .code
-                                          }
-
-                                          {" · "}
-
-                                          {
-                                            formatBytes(
-                                              file
-                                                .size_bytes,
-                                            )
-                                          }
-
-
-                                          {
-                                            file.width_px
-                                            &&
-                                            file.height_px
-                                              ? (
-                                                  <>
-                                                    {" · "}
-                                                    {
-                                                      file.width_px
-                                                    }
-                                                    ×
-                                                    {
-                                                      file.height_px
-                                                    }
-                                                  </>
-                                                )
-                                              : null
-                                          }
-                                        </span>
-
-                                      </div>
-
-
-                                      <div
-                                        className="case-radiographies-file-actions"
-                                      >
-
-                                        {
-                                          file
-                                            .mime
-                                            .code
-                                          !==
-                                          "DICOM"
-                                          &&
+                                    const invalidValidations =
+                                      file
+                                        .validations
+                                        .filter(
                                           (
+                                            validation,
+                                          ) =>
+                                            validation
+                                              .result_code
+                                            ===
+                                            "INVALIDO",
+                                        );
+
+                                    return (
+
+                                      <div
+                                        key={
+                                          file.id_file
+                                        }
+                                        className={
+                                          [
+                                            "case-radiographies-file-card",
+
+                                            isRejected
+                                              ? "case-radiographies-file-card--rejected"
+                                              : "",
+
+                                            isValid
+                                              ? "case-radiographies-file-card--valid"
+                                              : "",
+                                          ]
+                                            .filter(
+                                              Boolean,
+                                            )
+                                            .join(
+                                              " ",
+                                            )
+                                        }
+                                      >
+
+                                        <div
+                                          className="case-radiographies-file"
+                                        >
+
+                                          <div
+                                            className="case-radiographies-file-info"
+                                          >
+
+                                            <div
+                                              className="case-radiographies-file-name-row"
+                                            >
+
+                                              <strong>
+                                                {
+                                                  file
+                                                    .original_name
+                                                }
+                                              </strong>
+
+                                              <span
+                                                className={
+                                                  `case-radiographies-status ${getValidationStatusClass(
+                                                    file,
+                                                  )}`
+                                                }
+                                              >
+
+                                                {
+                                                  isValid
+                                                    ? (
+                                                        <CheckCircle2
+                                                          size={13}
+                                                        />
+                                                      )
+                                                    : isRejected
+                                                      ? (
+                                                          <XCircle
+                                                            size={13}
+                                                          />
+                                                        )
+                                                      : (
+                                                          <LoaderCircle
+                                                            size={13}
+                                                          />
+                                                        )
+                                                }
+
+                                                {
+                                                  getValidationStatusLabel(
+                                                    file,
+                                                  )
+                                                }
+
+                                              </span>
+
+                                            </div>
+
+
+                                            <span>
+                                              Versión{" "}
+                                              {
+                                                file.version
+                                              }
+
+                                              {" · "}
+
+                                              {
+                                                file
+                                                  .mime
+                                                  .code
+                                              }
+
+                                              {" · "}
+
+                                              {
+                                                formatBytes(
+                                                  file
+                                                    .size_bytes,
+                                                )
+                                              }
+
+                                              {
+                                                file.width_px
+                                                &&
+                                                file.height_px
+                                                  ? (
+                                                      <>
+                                                        {" · "}
+                                                        {
+                                                          file.width_px
+                                                        }
+                                                        ×
+                                                        {
+                                                          file.height_px
+                                                        }
+                                                      </>
+                                                    )
+                                                  : null
+                                              }
+
+                                              {" · "}
+
+                                              Cargado:{" "}
+                                              {
+                                                formatDateTime(
+                                                  file
+                                                    .uploaded_at,
+                                                )
+                                              }
+                                            </span>
+
+                                          </div>
+
+
+                                          <div
+                                            className="case-radiographies-file-actions"
+                                          >
+
+                                            {
+                                              isValid
+                                              &&
+                                              file
+                                                .mime
+                                                .code
+                                              !==
+                                              "DICOM"
+                                              &&
+                                              (
+
+                                                <button
+                                                  type="button"
+                                                  disabled={
+                                                    workingFileId
+                                                    ===
+                                                    file.id_file
+                                                  }
+                                                  onClick={
+                                                    () =>
+                                                      void handleView(
+                                                        file.id_file,
+                                                      )
+                                                  }
+                                                >
+
+                                                  {
+                                                    workingFileId
+                                                    ===
+                                                    file.id_file
+                                                      ? (
+                                                          <LoaderCircle
+                                                            size={15}
+                                                            className="case-radiographies-spin"
+                                                          />
+                                                        )
+                                                      : (
+                                                          <Eye
+                                                            size={15}
+                                                          />
+                                                        )
+                                                  }
+
+                                                  Ver
+
+                                                </button>
+                                              )
+                                            }
+
 
                                             <button
                                               type="button"
@@ -2180,83 +2248,295 @@ export function CaseRadiographiesSection({
                                               }
                                               onClick={
                                                 () =>
-                                                  void handleView(
+                                                  void handleDownload(
                                                     file.id_file,
+                                                    file.original_name,
                                                   )
                                               }
                                             >
 
-                                              {
-                                                workingFileId
-                                                ===
-                                                file.id_file
-                                                  ? (
-                                                      <LoaderCircle
-                                                        size={15}
-                                                        className="case-radiographies-spin"
-                                                      />
-                                                    )
-                                                  : (
-                                                      <Eye
-                                                        size={15}
-                                                      />
-                                                    )
-                                              }
+                                              <Download
+                                                size={15}
+                                              />
 
-                                              Ver
+                                              Descargar
 
                                             </button>
 
+                                          </div>
+
+                                        </div>
+
+
+                                        {
+                                          isValid
+                                          &&
+                                          (
+
+                                            <div
+                                              className="case-radiographies-valid-notice"
+                                            >
+
+                                              <CheckCircle2
+                                                size={17}
+                                              />
+
+                                              <div>
+                                                <strong>
+                                                  Archivo validado
+                                                </strong>
+
+                                                <span>
+                                                  La radiografía superó las validaciones
+                                                  registradas y está disponible para
+                                                  continuar con el flujo de análisis.
+                                                </span>
+                                              </div>
+
+                                            </div>
                                           )
                                         }
 
 
-                                        <button
-                                          type="button"
-                                          disabled={
-                                            workingFileId
-                                            ===
-                                            file.id_file
-                                          }
-                                          onClick={
-                                            () =>
-                                              void handleDownload(
-                                                file.id_file,
-                                                file.original_name,
-                                              )
-                                          }
-                                        >
+                                        {
+                                          isRejected
+                                          &&
+                                          (
 
-                                          <Download
-                                            size={15}
-                                          />
+                                            <div
+                                              className="case-radiographies-rejection"
+                                            >
 
-                                          Descargar
+                                              <div
+                                                className="case-radiographies-rejection-header"
+                                              >
 
-                                        </button>
+                                                <div
+                                                  className="case-radiographies-rejection-icon"
+                                                >
+                                                  <AlertTriangle
+                                                    size={21}
+                                                  />
+                                                </div>
+
+                                                <div>
+                                                  <strong>
+                                                    Radiografía rechazada
+                                                  </strong>
+
+                                                  <span>
+                                                    El archivo no superó la validación.
+                                                    Revise el motivo y realice la
+                                                    corrección indicada antes de
+                                                    continuar con el análisis.
+                                                  </span>
+                                                </div>
+
+                                              </div>
+
+
+                                              {
+                                                invalidValidations.length
+                                                >
+                                                0
+                                                  ? (
+
+                                                      <div
+                                                        className="case-radiographies-validation-list"
+                                                      >
+
+                                                        {
+                                                          invalidValidations.map(
+                                                            (
+                                                              validation,
+                                                              validationIndex,
+                                                            ) => (
+
+                                                              <div
+                                                                key={
+                                                                  `${file.id_file}-${validation.type_code}-${validationIndex}`
+                                                                }
+                                                                className="case-radiographies-validation-item"
+                                                              >
+
+                                                                <div
+                                                                  className="case-radiographies-validation-heading"
+                                                                >
+
+                                                                  <div>
+                                                                    <XCircle
+                                                                      size={16}
+                                                                    />
+
+                                                                    <strong>
+                                                                      {
+                                                                        validation
+                                                                          .type_name
+                                                                      }
+                                                                    </strong>
+                                                                  </div>
+
+                                                                  <span>
+                                                                    {
+                                                                      validation
+                                                                        .result_name
+                                                                    }
+                                                                  </span>
+
+                                                                </div>
+
+
+                                                                {
+                                                                  validation.detail
+                                                                  &&
+                                                                  (
+
+                                                                    <p
+                                                                      className="case-radiographies-validation-detail"
+                                                                    >
+                                                                      {
+                                                                        validation.detail
+                                                                      }
+                                                                    </p>
+                                                                  )
+                                                                }
+
+
+                                                                {
+                                                                  validation.reason
+                                                                  &&
+                                                                  (
+
+                                                                    <div
+                                                                      className="case-radiographies-validation-block case-radiographies-validation-block--reason"
+                                                                    >
+
+                                                                      <div>
+                                                                        <Info
+                                                                          size={15}
+                                                                        />
+
+                                                                        <strong>
+                                                                          Motivo
+                                                                        </strong>
+                                                                      </div>
+
+                                                                      <p>
+                                                                        {
+                                                                          validation.reason
+                                                                        }
+                                                                      </p>
+
+                                                                    </div>
+                                                                  )
+                                                                }
+
+
+                                                                {
+                                                                  validation.correction
+                                                                  &&
+                                                                  (
+
+                                                                    <div
+                                                                      className="case-radiographies-validation-block case-radiographies-validation-block--correction"
+                                                                    >
+
+                                                                      <div>
+                                                                        <CheckCircle2
+                                                                          size={15}
+                                                                        />
+
+                                                                        <strong>
+                                                                          Corrección necesaria
+                                                                        </strong>
+                                                                      </div>
+
+                                                                      <p>
+                                                                        {
+                                                                          validation.correction
+                                                                        }
+                                                                      </p>
+
+                                                                    </div>
+                                                                  )
+                                                                }
+
+
+                                                                <span
+                                                                  className="case-radiographies-validation-date"
+                                                                >
+                                                                  Validado:{" "}
+                                                                  {
+                                                                    formatDateTime(
+                                                                      validation
+                                                                        .validated_at,
+                                                                    )
+                                                                  }
+                                                                </span>
+
+                                                              </div>
+                                                            ),
+                                                          )
+                                                        }
+
+                                                      </div>
+                                                    )
+                                                  : (
+
+                                                      <div
+                                                        className="case-radiographies-validation-missing"
+                                                      >
+                                                        No se encontraron detalles
+                                                        adicionales de la validación.
+                                                      </div>
+                                                    )
+                                              }
+
+
+                                              <div
+                                                className="case-radiographies-analysis-blocked"
+                                              >
+
+                                                <ShieldAlert
+                                                  size={18}
+                                                />
+
+                                                <div>
+                                                  <strong>
+                                                    No disponible para análisis
+                                                  </strong>
+
+                                                  <span>
+                                                    Esta versión se conserva para
+                                                    trazabilidad, pero no puede
+                                                    utilizarse en el análisis mientras
+                                                    permanezca rechazada.
+                                                  </span>
+                                                </div>
+
+                                              </div>
+
+                                            </div>
+                                          )
+                                        }
 
                                       </div>
-
-                                    </div>
-
-                                  ),
+                                    );
+                                  },
                                 )
                           }
 
                         </div>
 
                       </section>
-
                     ),
                   )
                 }
 
               </div>
-
             )
       }
 
     </article>
-
   );
 }
