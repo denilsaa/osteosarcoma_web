@@ -98,6 +98,28 @@ Route::post(
 
 
 // ==========================================================
+// REEMPLAZAR RADIOGRAFÍA RECHAZADA
+// ==========================================================
+
+Route::post(
+    '/casos/{casoUuid}/radiografias/{fileUuid}/reemplazar',
+    [
+        RadiographyController::class,
+        'replaceRejectedFile',
+    ]
+)
+    ->whereUuid(
+        'casoUuid'
+    )
+    ->whereUuid(
+        'fileUuid'
+    )
+    ->name(
+        'radiographies.files.replace-rejected'
+    );
+
+
+// ==========================================================
 // ARCHIVOS RADIOGRÁFICOS PRIVADOS
 // ==========================================================
 

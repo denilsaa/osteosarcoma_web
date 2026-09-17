@@ -29,6 +29,7 @@ import {
   getCaseRadiographies,
   getRadiographicFileBlob,
   getRadiographyCatalogs,
+  replaceRejectedRadiographicFile,
   type RadiographicFile,
   type RadiographicStudy,
   type RadiographyCatalogs,
@@ -468,6 +469,52 @@ export function CaseRadiographiesSection({
   ] =
     useState<File | null>(
       null,
+    );
+
+
+  const replacementFileInputRef =
+    useRef<HTMLInputElement | null>(
+      null,
+    );
+
+  const [
+    replacementTarget,
+    setReplacementTarget,
+  ] =
+    useState<RadiographicFile | null>(
+      null,
+    );
+
+  const [
+    replacementFile,
+    setReplacementFile,
+  ] =
+    useState<File | null>(
+      null,
+    );
+
+  const [
+    replacementReason,
+    setReplacementReason,
+  ] =
+    useState(
+      "",
+    );
+
+  const [
+    replacing,
+    setReplacing,
+  ] =
+    useState(
+      false,
+    );
+
+  const [
+    replacementProgress,
+    setReplacementProgress,
+  ] =
+    useState(
+      0,
     );
 
 
@@ -1063,6 +1110,255 @@ export function CaseRadiographiesSection({
     }
   }
 
+
+  function resetReplacementForm() {
+
+    setReplacementTarget(
+      null,
+    );
+
+    setReplacementFile(
+      null,
+    );
+
+    setReplacementReason(
+      "",
+    );
+
+    setReplacementProgress(
+      0,
+    );
+
+    if (
+      replacementFileInputRef.current
+    ) {
+
+      replacementFileInputRef
+        .current
+        .value =
+        "";
+    }
+  }
+
+
+  function openReplacement(
+    file: RadiographicFile,
+  ) {
+
+    setError(
+      null,
+    );
+
+    setSuccess(
+      null,
+    );
+
+    setReplacementTarget(
+      file,
+    );
+
+    setReplacementFile(
+      null,
+    );
+
+    setReplacementReason(
+      "",
+    );
+
+    setReplacementProgress(
+      0,
+    );
+  }
+
+
+  function validateReplacement():
+    string | null {
+
+    if (
+      !replacementTarget
+    ) {
+      return "Seleccione la radiografía rechazada que desea reemplazar.";
+    }
+
+    if (
+      !replacementFile
+    ) {
+      return "Seleccione la nueva radiografía.";
+    }
+
+    const extension =
+      replacementFile
+        .name
+        .split(".")
+        .pop()
+        ?.toLowerCase();
+
+    if (
+      !extension
+      ||
+      ![
+        "jpg",
+        "jpeg",
+        "png",
+        "dcm",
+      ].includes(
+        extension,
+      )
+    ) {
+      return "Solo se permiten archivos JPG, PNG o DICOM.";
+    }
+
+    if (
+      replacementFile.size
+      >
+      20 * 1024 * 1024
+    ) {
+      return "El archivo no puede superar los 20 MB.";
+    }
+
+    if (
+      !replacementReason.trim()
+    ) {
+      return "Ingrese el motivo del reemplazo.";
+    }
+
+    return null;
+  }
+
+
+async function handleReplacement() {
+
+  const validationError =
+    validateReplacement();
+
+  if (
+    validationError
+  ) {
+    setError(
+      validationError,
+    );
+    return;
+  }
+
+  if (
+    !replacementTarget
+    ||
+    !replacementFile
+  ) {
+    return;
+  }
+
+  setReplacing(
+    true,
+  );
+
+  setReplacementProgress(
+    0,
+  );
+
+  setError(
+    null,
+  );
+
+  setSuccess(
+    null,
+  );
+
+  try {
+
+    const response =
+      await replaceRejectedRadiographicFile(
+        caseId,
+        replacementTarget.id_file,
+        {
+          file:
+            replacementFile,
+
+          replacement_reason:
+            replacementReason.trim(),
+        },
+        {
+          onUploadProgress:
+            (progress) => {
+              setReplacementProgress(
+                progress,
+              );
+            },
+        },
+      );
+
+    setReplacementProgress(
+      100,
+    );
+
+    /*
+     * El endpoint de reemplazo devuelve directamente
+     * el nuevo archivo dentro de response.data.
+     *
+     * No devuelve un estudio completo con .files.
+     */
+    const newestFile =
+      response.data;
+
+    /*
+     * Volvemos a consultar los estudios para que
+     * la interfaz refleje:
+     *
+     * - V1 como inactiva.
+     * - V2 como nueva versión activa.
+     * - sus validaciones actualizadas.
+     */
+    await loadStudies();
+
+    resetReplacementForm();
+
+    if (
+      newestFile
+        .validation_status
+      ===
+      "RECHAZADA"
+    ) {
+      setError(
+        "La nueva versión fue cargada, pero también fue rechazada durante la validación. Revise las correcciones indicadas antes de intentar otro reemplazo.",
+      );
+
+      return;
+    }
+
+    setSuccess(
+      `Radiografía reemplazada correctamente. Se registró la versión ${newestFile.version} y la versión anterior se conserva para trazabilidad.`,
+    );
+
+    window.setTimeout(
+      () => {
+        setSuccess(
+          null,
+        );
+      },
+      4500,
+    );
+
+  } catch (
+    requestError
+  ) {
+
+    setReplacementProgress(
+      0,
+    );
+
+    setError(
+      getErrorMessage(
+        requestError,
+      ),
+    );
+
+  } finally {
+
+    setReplacing(
+      false,
+    );
+  }
+}
 
   const selectedStudyType =
     catalogs
@@ -2263,6 +2559,35 @@ export function CaseRadiographiesSection({
 
                                             </button>
 
+
+                                            {
+                                              isRejected
+                                              &&
+                                              file.active
+                                              &&
+                                              (
+
+                                                <button
+                                                  type="button"
+                                                  disabled={
+                                                    replacing
+                                                  }
+                                                  onClick={
+                                                    () =>
+                                                      openReplacement(
+                                                        file,
+                                                      )
+                                                  }
+                                                >
+                                                  <Upload
+                                                    size={15}
+                                                  />
+
+                                                  Reemplazar
+                                                </button>
+                                              )
+                                            }
+
                                           </div>
 
                                         </div>
@@ -2515,6 +2840,238 @@ export function CaseRadiographiesSection({
                                                 </div>
 
                                               </div>
+
+
+                                              {
+                                                replacementTarget
+                                                  ?.id_file
+                                                ===
+                                                file.id_file
+                                                &&
+                                                (
+
+                                                  <div
+                                                    className="case-radiographies-form"
+                                                  >
+
+                                                    <div
+                                                      className="case-radiographies-form-heading"
+                                                    >
+                                                      <Upload
+                                                        size={20}
+                                                      />
+
+                                                      <div>
+                                                        <strong>
+                                                          Reemplazar radiografía rechazada
+                                                        </strong>
+                                                        <span>
+                                                          La versión {file.version} se conservará para trazabilidad.
+                                                        </span>
+                                                      </div>
+                                                    </div>
+
+
+                                                    <label
+                                                      className="case-radiographies-file-field case-radiographies-form-wide"
+                                                    >
+                                                      <span>
+                                                        Nueva radiografía *
+                                                      </span>
+
+                                                      <input
+                                                        ref={
+                                                          replacementFileInputRef
+                                                        }
+                                                        type="file"
+                                                        disabled={
+                                                          replacing
+                                                        }
+                                                        accept=".jpg,.jpeg,.png,.dcm,image/jpeg,image/png,application/dicom"
+                                                        onChange={
+                                                          (event) => {
+                                                            const nextFile =
+                                                              event
+                                                                .target
+                                                                .files
+                                                                ?.[0]
+                                                              ??
+                                                              null;
+
+                                                            setReplacementFile(
+                                                              nextFile,
+                                                            );
+
+                                                            setReplacementProgress(
+                                                              0,
+                                                            );
+
+                                                            setError(
+                                                              null,
+                                                            );
+                                                          }
+                                                        }
+                                                      />
+
+                                                      <div
+                                                        className="case-radiographies-file-box"
+                                                      >
+                                                        <FileImage
+                                                          size={29}
+                                                        />
+
+                                                        {
+                                                          replacementFile
+                                                            ? (
+                                                                <>
+                                                                  <strong>
+                                                                    {replacementFile.name}
+                                                                  </strong>
+                                                                  <span>
+                                                                    {formatBytes(replacementFile.size)}
+                                                                  </span>
+                                                                </>
+                                                              )
+                                                            : (
+                                                                <>
+                                                                  <strong>
+                                                                    Seleccione la radiografía corregida
+                                                                  </strong>
+                                                                  <span>
+                                                                    JPG, PNG o DICOM · máximo 20 MB
+                                                                  </span>
+                                                                </>
+                                                              )
+                                                        }
+                                                      </div>
+                                                    </label>
+
+
+                                                    <label
+                                                      className="case-radiographies-form-wide"
+                                                    >
+                                                      Motivo del reemplazo *
+
+                                                      <textarea
+                                                        rows={3}
+                                                        maxLength={1000}
+                                                        disabled={
+                                                          replacing
+                                                        }
+                                                        value={
+                                                          replacementReason
+                                                        }
+                                                        onChange={
+                                                          (event) =>
+                                                            setReplacementReason(
+                                                              event.target.value,
+                                                            )
+                                                        }
+                                                        placeholder="Ej.: se reemplaza el archivo rechazado por la radiografía original correcta."
+                                                      />
+                                                    </label>
+
+
+                                                    {
+                                                      replacing
+                                                      &&
+                                                      (
+                                                        <div
+                                                          className="case-radiographies-progress"
+                                                          aria-live="polite"
+                                                        >
+                                                          <div
+                                                            className="case-radiographies-progress-header"
+                                                          >
+                                                            <div>
+                                                              <LoaderCircle
+                                                                size={18}
+                                                                className="case-radiographies-spin"
+                                                              />
+                                                              <strong>
+                                                                Reemplazando radiografía...
+                                                              </strong>
+                                                            </div>
+                                                            <span>
+                                                              {replacementProgress}%
+                                                            </span>
+                                                          </div>
+
+                                                          <div
+                                                            className="case-radiographies-progress-track"
+                                                            role="progressbar"
+                                                            aria-valuemin={0}
+                                                            aria-valuemax={100}
+                                                            aria-valuenow={
+                                                              replacementProgress
+                                                            }
+                                                          >
+                                                            <div
+                                                              className="case-radiographies-progress-bar"
+                                                              style={{
+                                                                width:
+                                                                  `${replacementProgress}%`,
+                                                              }}
+                                                            />
+                                                          </div>
+                                                        </div>
+                                                      )
+                                                    }
+
+
+                                                    <div
+                                                      className="case-radiographies-form-actions"
+                                                    >
+                                                      <button
+                                                        type="button"
+                                                        className="case-radiographies-secondary"
+                                                        disabled={
+                                                          replacing
+                                                        }
+                                                        onClick={
+                                                          resetReplacementForm
+                                                        }
+                                                      >
+                                                        Cancelar
+                                                      </button>
+
+                                                      <button
+                                                        type="button"
+                                                        className="case-radiographies-primary"
+                                                        disabled={
+                                                          replacing
+                                                        }
+                                                        onClick={
+                                                          () =>
+                                                            void handleReplacement()
+                                                        }
+                                                      >
+                                                        {
+                                                          replacing
+                                                            ? (
+                                                                <LoaderCircle
+                                                                  size={17}
+                                                                  className="case-radiographies-spin"
+                                                                />
+                                                              )
+                                                            : (
+                                                                <Upload
+                                                                  size={17}
+                                                                />
+                                                              )
+                                                        }
+
+                                                        {
+                                                          replacing
+                                                            ? "Reemplazando..."
+                                                            : "Confirmar reemplazo"
+                                                        }
+                                                      </button>
+                                                    </div>
+
+                                                  </div>
+                                                )
+                                              }
 
                                             </div>
                                           )

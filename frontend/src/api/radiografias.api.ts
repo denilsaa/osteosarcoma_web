@@ -482,3 +482,147 @@ export async function downloadRadiographicFileBlob(
 
   return response.data;
 }
+
+// ==========================================================
+// REEMPLAZAR RADIOGRAFÍA RECHAZADA
+// ==========================================================
+
+export interface ReplaceRejectedRadiographicFileRequest {
+  file: File;
+  replacement_reason: string;
+}
+
+export interface ReplaceRejectedRadiographicFileOptions {
+  onUploadProgress?: (
+    progress: number,
+  ) => void;
+}
+
+export interface ReplacedRadiographicFile {
+  id_file: string;
+  id_study: string;
+  version: number;
+
+  original_name: string;
+
+  size_bytes: number;
+
+  width_px:
+    number | null;
+
+  height_px:
+    number | null;
+
+  sha256: string;
+
+  active: boolean;
+
+  validation_status:
+    RadiographicValidationStatus;
+
+  replaces_file_uuid:
+    string | null;
+
+  replaced_by_uuid:
+    string | null;
+
+  replacement_reason:
+    string | null;
+
+  replaced_at:
+    string | null;
+
+  uploaded_at:
+    string | null;
+}
+
+
+export interface ReplaceRejectedRadiographicFileResponse {
+  message: string;
+
+  data:
+    ReplacedRadiographicFile;
+}
+
+export async function replaceRejectedRadiographicFile(
+  caseId: string,
+  fileId: string,
+  data: ReplaceRejectedRadiographicFileRequest,
+  options: ReplaceRejectedRadiographicFileOptions = {},
+): Promise<ReplaceRejectedRadiographicFileResponse> {
+
+  const formData =
+    new FormData();
+
+  formData.append(
+    "file",
+    data.file,
+    data.file.name,
+  );
+
+  formData.append(
+    "reason",
+    data.replacement_reason.trim(),
+  );
+
+  /*
+   * No establecer manualmente Content-Type.
+   *
+   * Axios/navegador genera multipart/form-data
+   * incluyendo automáticamente el boundary.
+   */
+  const response =
+    await apiRadiografias
+      .post<ReplaceRejectedRadiographicFileResponse>(
+        `/casos/${caseId}/radiografias/${fileId}/reemplazar`,
+        formData,
+        {
+          onUploadProgress:
+            (
+              progressEvent,
+            ) => {
+
+              if (
+                !options.onUploadProgress
+              ) {
+                return;
+              }
+
+              const total =
+                progressEvent.total;
+
+              if (
+                !total
+                ||
+                total <= 0
+              ) {
+                return;
+              }
+
+              const percentage =
+                Math.min(
+                  100,
+                  Math.max(
+                    0,
+                    Math.round(
+                      (
+                        progressEvent.loaded
+                        *
+                        100
+                      )
+                      /
+                      total,
+                    ),
+                  ),
+                );
+
+              options
+                .onUploadProgress(
+                  percentage,
+                );
+            },
+        },
+      );
+
+  return response.data;
+}

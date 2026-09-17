@@ -15,6 +15,8 @@ final class EloquentRadiographicFileRepository implements RadiographicFileReposi
             ->with([
                 'mimeType',
                 'study',
+                'validations.validationType',
+                'validations.validationResult',
             ])
             ->where(
                 'id_archivo',
@@ -30,6 +32,51 @@ final class EloquentRadiographicFileRepository implements RadiographicFileReposi
         if ($model === null) {
             return null;
         }
+
+
+        $validations = $model
+            ->validations
+            ->map(
+                static function ($validation): array {
+                    return [
+                        'type_code' =>
+                            (string)
+                            $validation
+                                ->validationType
+                                ->codigo,
+
+                        'type_name' =>
+                            (string)
+                            $validation
+                                ->validationType
+                                ->nombre,
+
+                        'result_code' =>
+                            (string)
+                            $validation
+                                ->validationResult
+                                ->codigo,
+
+                        'result_name' =>
+                            (string)
+                            $validation
+                                ->validationResult
+                                ->nombre,
+
+                        'detail' =>
+                            $validation->detalle,
+
+                        'validated_at' =>
+                            $validation->fecha_validacion !== null
+                                ? $validation
+                                    ->fecha_validacion
+                                    ->toIso8601String()
+                                : null,
+                    ];
+                }
+            )
+            ->values()
+            ->all();
 
 
         return new RadiographicFile(
@@ -82,6 +129,13 @@ final class EloquentRadiographicFileRepository implements RadiographicFileReposi
             active:
                 (bool)
                 $model->activo,
+
+            validationStatus:
+                (string)
+                $model->estado_validacion,
+
+            validations:
+                $validations,
 
             mimeCode:
                 (string)

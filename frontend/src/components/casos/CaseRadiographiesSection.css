@@ -1037,3 +1037,226 @@
   }
 
 }
+/* =========================================================
+   2.3D-4 - REEMPLAZO DE RADIOGRAFÍA RECHAZADA
+   ========================================================= */
+
+/*
+ * El formulario de reemplazo reutiliza los componentes
+ * visuales del formulario principal, pero se encuentra
+ * dentro del panel de una radiografía rechazada.
+ */
+.case-radiographies-rejection
+.case-radiographies-form {
+  margin: 11px;
+  border-color: #bae6fd;
+  background: #f8fdff;
+}
+
+
+/* =========================================================
+   ENCABEZADO DEL REEMPLAZO
+   ========================================================= */
+
+.case-radiographies-rejection
+.case-radiographies-form-heading {
+  background: #f0faff;
+}
+
+.case-radiographies-rejection
+.case-radiographies-form-heading strong {
+  color: #16355c;
+}
+
+.case-radiographies-rejection
+.case-radiographies-form-heading span {
+  color: #64748b;
+}
+
+
+/* =========================================================
+   CAMPOS DEL REEMPLAZO
+   ========================================================= */
+
+.case-radiographies-rejection
+.case-radiographies-form
+> label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  margin: 14px 14px 0;
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.case-radiographies-rejection
+.case-radiographies-form
+> label
+textarea {
+  width: 100%;
+  min-height: 86px;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #d5dee8;
+  border-radius: 8px;
+  outline: 0;
+  background: #ffffff;
+  color: #334155;
+  font: inherit;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.case-radiographies-rejection
+.case-radiographies-form
+> label
+textarea:focus {
+  border-color: #38bdf8;
+  box-shadow:
+    0 0 0 3px
+    rgba(56, 189, 248, 0.1);
+}
+
+.case-radiographies-rejection
+.case-radiographies-form
+> label
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+
+/* =========================================================
+   SELECTOR DEL NUEVO ARCHIVO
+   ========================================================= */
+
+.case-radiographies-rejection
+.case-radiographies-file-field {
+  position: relative;
+}
+
+.case-radiographies-rejection
+.case-radiographies-file-box {
+  min-height: 95px;
+  border-color: #7dd3fc;
+  background: #ffffff;
+}
+
+.case-radiographies-rejection
+.case-radiographies-file-field:hover
+.case-radiographies-file-box {
+  border-color: #38bdf8;
+  background: #f0faff;
+}
+
+
+/* =========================================================
+   ACCIONES DEL REEMPLAZO
+   ========================================================= */
+
+.case-radiographies-rejection
+.case-radiographies-form-actions {
+  margin-top: 14px;
+  padding: 0 14px 14px;
+}
+
+
+/* =========================================================
+   PROGRESO DEL REEMPLAZO
+   ========================================================= */
+
+.case-radiographies-rejection
+.case-radiographies-progress {
+  margin: 14px 14px 0;
+  background: #ffffff;
+}
+
+
+/* =========================================================
+   BOTÓN REEMPLAZAR EN ARCHIVO RECHAZADO
+   ========================================================= */
+
+.case-radiographies-file-card--rejected
+.case-radiographies-file-actions
+button:last-child {
+  border-color: #fca5a5;
+  background: #fff7f7;
+  color: #b91c1c;
+}
+
+.case-radiographies-file-card--rejected
+.case-radiographies-file-actions
+button:last-child:hover:not(:disabled) {
+  border-color: #f87171;
+  background: #fef2f2;
+}
+
+
+/* =========================================================
+   TRANSICIÓN VISUAL
+   ========================================================= */
+
+.case-radiographies-rejection
+.case-radiographies-form {
+  animation:
+    case-radiographies-replacement-open
+    0.18s
+    ease-out;
+}
+
+@keyframes case-radiographies-replacement-open {
+  from {
+    opacity: 0;
+    transform:
+      translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateY(0);
+  }
+}
+
+
+/* =========================================================
+   RESPONSIVE DEL REEMPLAZO
+   ========================================================= */
+
+@media (max-width: 760px) {
+
+  .case-radiographies-rejection
+  .case-radiographies-form {
+    margin: 9px;
+  }
+
+  .case-radiographies-rejection
+  .case-radiographies-form
+  > label {
+    margin-right: 10px;
+    margin-left: 10px;
+  }
+
+  .case-radiographies-rejection
+  .case-radiographies-form-actions {
+    flex-direction: column-reverse;
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .case-radiographies-rejection
+  .case-radiographies-form-actions
+  button {
+    width: 100%;
+  }
+
+  .case-radiographies-rejection
+  .case-radiographies-progress {
+    margin-right: 10px;
+    margin-left: 10px;
+  }
+
+}

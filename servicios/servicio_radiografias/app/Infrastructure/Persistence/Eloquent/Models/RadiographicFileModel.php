@@ -5,6 +5,7 @@ namespace App\Infrastructure\Persistence\Eloquent\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class RadiographicFileModel extends Model
 {
@@ -44,6 +45,9 @@ class RadiographicFileModel extends Model
 
         'fecha_carga' =>
             'datetime',
+
+        'fecha_reemplazo' =>
+            'datetime',
     ];
 
 
@@ -77,5 +81,39 @@ class RadiographicFileModel extends Model
             ->orderBy(
                 'id_validacion'
             );
+    }
+
+
+    /*
+     * Versión anterior reemplazada por este archivo.
+     *
+     * Ejemplo:
+     *
+     * V2.reemplaza_archivo_uuid -> V1.id_archivo
+     */
+    public function replacedFile(): BelongsTo
+    {
+        return $this->belongsTo(
+            self::class,
+            'reemplaza_archivo_uuid',
+            'id_archivo'
+        );
+    }
+
+
+    /*
+     * Versión que reemplazó a este archivo.
+     *
+     * Ejemplo:
+     *
+     * V1 <- V2.reemplaza_archivo_uuid
+     */
+    public function replacementFile(): HasOne
+    {
+        return $this->hasOne(
+            self::class,
+            'reemplaza_archivo_uuid',
+            'id_archivo'
+        );
     }
 }
