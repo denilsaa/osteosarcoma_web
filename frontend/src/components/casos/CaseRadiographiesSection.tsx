@@ -2,18 +2,24 @@ import {
   AlertTriangle,
   CalendarDays,
   CheckCircle2,
-  Download,
   Eye,
   FileImage,
   Image,
   Info,
   LoaderCircle,
+  Maximize2,
+  Minus,
   Plus,
+  RotateCcw,
+  RotateCw,
   Save,
+  Sun,
   ShieldAlert,
   Upload,
   X,
   XCircle,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 
 import {
@@ -25,7 +31,6 @@ import {
 
 import {
   createRadiography,
-  downloadRadiographicFileBlob,
   getCaseRadiographies,
   getRadiographicFileBlob,
   getRadiographyCatalogs,
@@ -50,13 +55,19 @@ interface Props {
 }
 
 
+type ViewerPoint = {
+  x: number;
+  y: number;
+};
+
+
 function formatDate(
   value?:
     string | null,
 ): string {
 
   if (!value) {
-    return "—";
+    return "â€”";
   }
 
   const date =
@@ -96,7 +107,7 @@ function formatDateTime(
 ): string {
 
   if (!value) {
-    return "—";
+    return "â€”";
   }
 
   const date =
@@ -283,7 +294,7 @@ function getErrorMessage(
   }
 
   return (
-    "No fue posible completar la operación."
+    "No fue posible completar la operaciÃ³n."
   );
 }
 
@@ -298,13 +309,13 @@ function getValidationStatusLabel(
   ) {
 
     case "VALIDA":
-      return "Radiografía válida";
+      return "RadiografÃ­a vÃ¡lida";
 
     case "RECHAZADA":
-      return "Radiografía rechazada";
+      return "RadiografÃ­a rechazada";
 
     case "PENDIENTE":
-      return "Validación pendiente";
+      return "ValidaciÃ³n pendiente";
 
     default:
       return file.validation_status;
@@ -342,6 +353,26 @@ export function CaseRadiographiesSection({
     useRef<HTMLInputElement | null>(
       null,
     );
+
+  const viewerRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    );
+
+  const draggingRef =
+    useRef(false);
+
+  const dragStartRef =
+    useRef<ViewerPoint>({
+      x: 0,
+      y: 0,
+    });
+
+  const panStartRef =
+    useRef<ViewerPoint>({
+      x: 0,
+      y: 0,
+    });
 
   const [
     catalogs,
@@ -470,6 +501,65 @@ export function CaseRadiographiesSection({
     useState<File | null>(
       null,
     );
+
+
+  // ==========================================================
+  // VISOR RADIOGRÁFICO
+  // ==========================================================
+
+  const [
+    viewerUrl,
+    setViewerUrl,
+  ] =
+    useState<string | null>(
+      null,
+    );
+
+  const [
+    viewerFileName,
+    setViewerFileName,
+  ] =
+    useState("");
+
+  const [
+    viewerZoom,
+    setViewerZoom,
+  ] =
+    useState(1);
+
+  const [
+    viewerRotation,
+    setViewerRotation,
+  ] =
+    useState(0);
+
+  const [
+    viewerBrightness,
+    setViewerBrightness,
+  ] =
+    useState(100);
+
+  const [
+    viewerContrast,
+    setViewerContrast,
+  ] =
+    useState(100);
+
+  const [
+    viewerInvert,
+    setViewerInvert,
+  ] =
+    useState(false);
+
+  const [
+    viewerPan,
+    setViewerPan,
+  ] =
+    useState<ViewerPoint>({
+      x: 0,
+      y: 0,
+    });
+
 
 
   const replacementFileInputRef =
@@ -610,6 +700,76 @@ export function CaseRadiographiesSection({
   );
 
 
+  useEffect(
+    () => {
+      if (!viewerUrl) {
+        return;
+      }
+
+      document.body.classList.add(
+        "case-radiographies-viewer-open",
+      );
+
+      return () => {
+        document.body.classList.remove(
+          "case-radiographies-viewer-open",
+        );
+      };
+    },
+    [
+      viewerUrl,
+    ],
+  );
+
+
+  useEffect(
+    () => {
+      return () => {
+        if (viewerUrl) {
+          URL.revokeObjectURL(
+            viewerUrl,
+          );
+        }
+      };
+    },
+    [
+      viewerUrl,
+    ],
+  );
+
+
+  useEffect(
+    () => {
+      function handleKeyDown(
+        event: KeyboardEvent,
+      ) {
+        if (
+          event.key === "Escape"
+          &&
+          viewerUrl
+        ) {
+          closeViewer();
+        }
+      }
+
+      window.addEventListener(
+        "keydown",
+        handleKeyDown,
+      );
+
+      return () => {
+        window.removeEventListener(
+          "keydown",
+          handleKeyDown,
+        );
+      };
+    },
+    [
+      viewerUrl,
+    ],
+  );
+
+
   function resetForm() {
 
     setStudyTypeId(
@@ -674,6 +834,213 @@ export function CaseRadiographiesSection({
   }
 
 
+  function resetViewer() {
+    setViewerZoom(1);
+    setViewerRotation(0);
+    setViewerBrightness(100);
+    setViewerContrast(100);
+    setViewerInvert(false);
+
+    setViewerPan({
+      x: 0,
+      y: 0,
+    });
+  }
+
+
+  function closeViewer() {
+    if (viewerUrl) {
+      URL.revokeObjectURL(
+        viewerUrl,
+      );
+    }
+
+    setViewerUrl(null);
+    setViewerFileName("");
+
+    resetViewer();
+  }
+
+
+  function zoomIn() {
+    setViewerZoom(
+      (
+        current,
+      ) =>
+        Math.min(
+          4,
+          Number(
+            (
+              current
+              +
+              0.25
+            ).toFixed(2),
+          ),
+        ),
+    );
+  }
+
+
+  function zoomOut() {
+    setViewerZoom(
+      (
+        current,
+      ) =>
+        Math.max(
+          0.5,
+          Number(
+            (
+              current
+              -
+              0.25
+            ).toFixed(2),
+          ),
+        ),
+    );
+  }
+
+
+  function rotateViewer() {
+    setViewerRotation(
+      (
+        current,
+      ) =>
+        (
+          current
+          +
+          90
+        )
+        %
+        360,
+    );
+  }
+
+
+  async function toggleFullscreen() {
+    const element =
+      viewerRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    try {
+      if (
+        document.fullscreenElement
+      ) {
+        await document
+          .exitFullscreen();
+
+        return;
+      }
+
+      await element
+        .requestFullscreen();
+    } catch {
+      // El visor sigue funcionando aunque
+      // el navegador rechace pantalla completa.
+    }
+  }
+
+
+  function handlePointerDown(
+    event:
+      React.PointerEvent<HTMLDivElement>,
+  ) {
+    if (!viewerUrl) {
+      return;
+    }
+
+    draggingRef.current =
+      true;
+
+    dragStartRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+    };
+
+    panStartRef.current = {
+      ...viewerPan,
+    };
+
+    event.currentTarget
+      .setPointerCapture(
+        event.pointerId,
+      );
+  }
+
+
+  function handlePointerMove(
+    event:
+      React.PointerEvent<HTMLDivElement>,
+  ) {
+    if (
+      !draggingRef.current
+    ) {
+      return;
+    }
+
+    const deltaX =
+      event.clientX
+      -
+      dragStartRef.current.x;
+
+    const deltaY =
+      event.clientY
+      -
+      dragStartRef.current.y;
+
+    setViewerPan({
+      x:
+        panStartRef.current.x
+        +
+        deltaX,
+
+      y:
+        panStartRef.current.y
+        +
+        deltaY,
+    });
+  }
+
+
+  function handlePointerEnd(
+    event:
+      React.PointerEvent<HTMLDivElement>,
+  ) {
+    draggingRef.current =
+      false;
+
+    if (
+      event.currentTarget
+        .hasPointerCapture(
+          event.pointerId,
+        )
+    ) {
+      event.currentTarget
+        .releasePointerCapture(
+          event.pointerId,
+        );
+    }
+  }
+
+
+  function handleViewerWheel(
+    event:
+      React.WheelEvent<HTMLDivElement>,
+  ) {
+    event.preventDefault();
+
+    if (
+      event.deltaY < 0
+    ) {
+      zoomIn();
+    } else {
+      zoomOut();
+    }
+  }
+
+
   function validateForm():
     string | null {
 
@@ -691,7 +1058,7 @@ export function CaseRadiographiesSection({
     ) {
 
       return (
-        "Seleccione la región anatómica."
+        "Seleccione la regiÃ³n anatÃ³mica."
       );
     }
 
@@ -709,7 +1076,7 @@ export function CaseRadiographiesSection({
     ) {
 
       return (
-        "Seleccione una radiografía."
+        "Seleccione una radiografÃ­a."
       );
     }
 
@@ -912,7 +1279,7 @@ export function CaseRadiographiesSection({
         );
 
         setError(
-          "La radiografía fue recibida, pero fue rechazada durante la validación. Revise el motivo y la corrección necesaria antes de enviarla al análisis.",
+          "La radiografÃ­a fue recibida, pero fue rechazada durante la validaciÃ³n. Revise el motivo y la correcciÃ³n necesaria antes de enviarla al anÃ¡lisis.",
         );
 
       } else {
@@ -922,7 +1289,7 @@ export function CaseRadiographiesSection({
         );
 
         setSuccess(
-          "Radiografía registrada y validada correctamente.",
+          "RadiografÃ­a registrada y validada correctamente.",
         );
 
         window.setTimeout(
@@ -961,149 +1328,50 @@ export function CaseRadiographiesSection({
 
 
   async function handleView(
-    fileId:
-      string,
+    fileId: string,
+    fileName: string,
   ) {
-
     setWorkingFileId(
       fileId,
     );
 
-    setError(
-      null,
-    );
+    setError(null);
 
     try {
-
       const blob =
         await getRadiographicFileBlob(
           fileId,
         );
 
-      const url =
-        URL.createObjectURL(
-          blob,
+      if (viewerUrl) {
+        URL.revokeObjectURL(
+          viewerUrl,
         );
-
-      const popup =
-        window.open(
-          url,
-          "_blank",
-          "noopener,noreferrer",
-        );
-
-      if (!popup) {
-
-        const anchor =
-          document.createElement(
-            "a",
-          );
-
-        anchor.href =
-          url;
-
-        anchor.target =
-          "_blank";
-
-        anchor.rel =
-          "noopener noreferrer";
-
-        anchor.click();
       }
 
-      window.setTimeout(
-        () => {
-
-          URL.revokeObjectURL(
-            url,
-          );
-
-        },
-        60_000,
-      );
-
-    } catch (
-      requestError
-    ) {
-
-      setError(
-        getErrorMessage(
-          requestError,
-        ),
-      );
-
-    } finally {
-
-      setWorkingFileId(
-        null,
-      );
-    }
-  }
-
-
-  async function handleDownload(
-    fileId:
-      string,
-
-    fileName:
-      string,
-  ) {
-
-    setWorkingFileId(
-      fileId,
-    );
-
-    setError(
-      null,
-    );
-
-    try {
-
-      const blob =
-        await downloadRadiographicFileBlob(
-          fileId,
-        );
-
       const url =
         URL.createObjectURL(
           blob,
         );
 
-      const anchor =
-        document.createElement(
-          "a",
-        );
+      resetViewer();
 
-      anchor.href =
-        url;
-
-      anchor.download =
-        fileName;
-
-      document.body.appendChild(
-        anchor,
+      setViewerFileName(
+        fileName,
       );
 
-      anchor.click();
-
-      anchor.remove();
-
-      URL.revokeObjectURL(
+      setViewerUrl(
         url,
       );
-
     } catch (
       requestError
     ) {
-
       setError(
         getErrorMessage(
           requestError,
         ),
       );
-
     } finally {
-
       setWorkingFileId(
         null,
       );
@@ -1177,13 +1445,13 @@ export function CaseRadiographiesSection({
     if (
       !replacementTarget
     ) {
-      return "Seleccione la radiografía rechazada que desea reemplazar.";
+      return "Seleccione la radiografÃ­a rechazada que desea reemplazar.";
     }
 
     if (
       !replacementFile
     ) {
-      return "Seleccione la nueva radiografía.";
+      return "Seleccione la nueva radiografÃ­a.";
     }
 
     const extension =
@@ -1305,7 +1573,7 @@ async function handleReplacement() {
      * la interfaz refleje:
      *
      * - V1 como inactiva.
-     * - V2 como nueva versión activa.
+     * - V2 como nueva versiÃ³n activa.
      * - sus validaciones actualizadas.
      */
     await loadStudies();
@@ -1319,14 +1587,14 @@ async function handleReplacement() {
       "RECHAZADA"
     ) {
       setError(
-        "La nueva versión fue cargada, pero también fue rechazada durante la validación. Revise las correcciones indicadas antes de intentar otro reemplazo.",
+        "La nueva versiÃ³n fue cargada, pero tambiÃ©n fue rechazada durante la validaciÃ³n. Revise las correcciones indicadas antes de intentar otro reemplazo.",
       );
 
       return;
     }
 
     setSuccess(
-      `Radiografía reemplazada correctamente. Se registró la versión ${newestFile.version} y la versión anterior se conserva para trazabilidad.`,
+      `RadiografÃ­a reemplazada correctamente. Se registrÃ³ la versiÃ³n ${newestFile.version} y la versiÃ³n anterior se conserva para trazabilidad.`,
     );
 
     window.setTimeout(
@@ -1421,7 +1689,7 @@ async function handleReplacement() {
         />
 
         <span>
-          Cargando radiografías...
+          Cargando radiografÃ­as...
         </span>
 
       </div>
@@ -1431,7 +1699,8 @@ async function handleReplacement() {
 
   return (
 
-    <article
+    <>
+      <article
       className="case-radiographies"
     >
 
@@ -1453,13 +1722,13 @@ async function handleReplacement() {
 
           <div>
             <h2>
-              Radiografías del caso
+              RadiografÃ­as del caso
             </h2>
 
             <p>
               {
                 studies.length
-              } estudio(s) radiográfico(s)
+              } estudio(s) radiogrÃ¡fico(s)
             </p>
           </div>
 
@@ -1511,7 +1780,7 @@ async function handleReplacement() {
           {
             showForm
               ? "Cerrar formulario"
-              : "Registrar radiografía"
+              : "Registrar radiografÃ­a"
           }
 
         </button>
@@ -1571,7 +1840,7 @@ async function handleReplacement() {
 
                 <span>
                   Complete los datos obligatorios
-                  y seleccione la radiografía.
+                  y seleccione la radiografÃ­a.
                 </span>
               </div>
 
@@ -1631,7 +1900,7 @@ async function handleReplacement() {
 
 
               <label>
-                Zona anatómica *
+                Zona anatÃ³mica *
 
                 <select
                   disabled={
@@ -1771,7 +2040,7 @@ async function handleReplacement() {
                         event.target.value,
                       )
                   }
-                  placeholder="Ej.: lesión localizada en región proximal..."
+                  placeholder="Ej.: lesiÃ³n localizada en regiÃ³n proximal..."
                 />
               </label>
 
@@ -1781,7 +2050,7 @@ async function handleReplacement() {
               >
 
                 <span>
-                  Archivo radiográfico *
+                  Archivo radiogrÃ¡fico *
                 </span>
 
                 <input
@@ -1861,7 +2130,7 @@ async function handleReplacement() {
                             </strong>
 
                             <span>
-                              Tamaño máximo: 20 MB
+                              TamaÃ±o mÃ¡ximo: 20 MB
                             </span>
                           </>
                         )
@@ -1899,8 +2168,8 @@ async function handleReplacement() {
                       </strong>
 
                       <span>
-                        Revise la información antes de
-                        enviar la radiografía.
+                        Revise la informaciÃ³n antes de
+                        enviar la radiografÃ­a.
                       </span>
                     </div>
 
@@ -1921,14 +2190,14 @@ async function handleReplacement() {
                           selectedStudyType
                             ?.name
                           ??
-                          "—"
+                          "â€”"
                         }
                       </strong>
                     </div>
 
                     <div>
                       <span>
-                        Región anatómica
+                        RegiÃ³n anatÃ³mica
                       </span>
 
                       <strong>
@@ -1936,7 +2205,7 @@ async function handleReplacement() {
                           selectedRegion
                             ?.name
                           ??
-                          "—"
+                          "â€”"
                         }
                       </strong>
                     </div>
@@ -1951,7 +2220,7 @@ async function handleReplacement() {
                           selectedLaterality
                             ?.name
                           ??
-                          "—"
+                          "â€”"
                         }
                       </strong>
                     </div>
@@ -2057,7 +2326,7 @@ async function handleReplacement() {
                       />
 
                       <strong>
-                        Cargando radiografía...
+                        Cargando radiografÃ­a...
                       </strong>
                     </div>
 
@@ -2155,12 +2424,12 @@ async function handleReplacement() {
                 />
 
                 <strong>
-                  Sin radiografías registradas
+                  Sin radiografÃ­as registradas
                 </strong>
 
                 <span>
-                  Registre el primer estudio radiográfico
-                  asociado a este caso clínico.
+                  Registre el primer estudio radiogrÃ¡fico
+                  asociado a este caso clÃ­nico.
                 </span>
 
               </div>
@@ -2426,12 +2695,12 @@ async function handleReplacement() {
 
 
                                             <span>
-                                              Versión{" "}
+                                              VersiÃ³n{" "}
                                               {
                                                 file.version
                                               }
 
-                                              {" · "}
+                                              {" Â· "}
 
                                               {
                                                 file
@@ -2439,7 +2708,7 @@ async function handleReplacement() {
                                                   .code
                                               }
 
-                                              {" · "}
+                                              {" Â· "}
 
                                               {
                                                 formatBytes(
@@ -2454,11 +2723,11 @@ async function handleReplacement() {
                                                 file.height_px
                                                   ? (
                                                       <>
-                                                        {" · "}
+                                                        {" Â· "}
                                                         {
                                                           file.width_px
                                                         }
-                                                        ×
+                                                        Ã—
                                                         {
                                                           file.height_px
                                                         }
@@ -2467,7 +2736,7 @@ async function handleReplacement() {
                                                   : null
                                               }
 
-                                              {" · "}
+                                              {" Â· "}
 
                                               Cargado:{" "}
                                               {
@@ -2507,6 +2776,7 @@ async function handleReplacement() {
                                                     () =>
                                                       void handleView(
                                                         file.id_file,
+                                                        file.original_name,
                                                       )
                                                   }
                                                 >
@@ -2528,36 +2798,14 @@ async function handleReplacement() {
                                                         )
                                                   }
 
-                                                  Ver
+                                                  Ver radiografía
 
                                                 </button>
                                               )
                                             }
 
 
-                                            <button
-                                              type="button"
-                                              disabled={
-                                                workingFileId
-                                                ===
-                                                file.id_file
-                                              }
-                                              onClick={
-                                                () =>
-                                                  void handleDownload(
-                                                    file.id_file,
-                                                    file.original_name,
-                                                  )
-                                              }
-                                            >
-
-                                              <Download
-                                                size={15}
-                                              />
-
-                                              Descargar
-
-                                            </button>
+                                            
 
 
                                             {
@@ -2612,9 +2860,9 @@ async function handleReplacement() {
                                                 </strong>
 
                                                 <span>
-                                                  La radiografía superó las validaciones
-                                                  registradas y está disponible para
-                                                  continuar con el flujo de análisis.
+                                                  La radiografÃ­a superÃ³ las validaciones
+                                                  registradas y estÃ¡ disponible para
+                                                  continuar con el flujo de anÃ¡lisis.
                                                 </span>
                                               </div>
 
@@ -2646,14 +2894,14 @@ async function handleReplacement() {
 
                                                 <div>
                                                   <strong>
-                                                    Radiografía rechazada
+                                                    RadiografÃ­a rechazada
                                                   </strong>
 
                                                   <span>
-                                                    El archivo no superó la validación.
+                                                    El archivo no superÃ³ la validaciÃ³n.
                                                     Revise el motivo y realice la
-                                                    corrección indicada antes de
-                                                    continuar con el análisis.
+                                                    correcciÃ³n indicada antes de
+                                                    continuar con el anÃ¡lisis.
                                                   </span>
                                                 </div>
 
@@ -2772,7 +3020,7 @@ async function handleReplacement() {
                                                                         />
 
                                                                         <strong>
-                                                                          Corrección necesaria
+                                                                          CorrecciÃ³n necesaria
                                                                         </strong>
                                                                       </div>
 
@@ -2812,7 +3060,7 @@ async function handleReplacement() {
                                                         className="case-radiographies-validation-missing"
                                                       >
                                                         No se encontraron detalles
-                                                        adicionales de la validación.
+                                                        adicionales de la validaciÃ³n.
                                                       </div>
                                                     )
                                               }
@@ -2828,13 +3076,13 @@ async function handleReplacement() {
 
                                                 <div>
                                                   <strong>
-                                                    No disponible para análisis
+                                                    No disponible para anÃ¡lisis
                                                   </strong>
 
                                                   <span>
-                                                    Esta versión se conserva para
+                                                    Esta versiÃ³n se conserva para
                                                     trazabilidad, pero no puede
-                                                    utilizarse en el análisis mientras
+                                                    utilizarse en el anÃ¡lisis mientras
                                                     permanezca rechazada.
                                                   </span>
                                                 </div>
@@ -2863,10 +3111,10 @@ async function handleReplacement() {
 
                                                       <div>
                                                         <strong>
-                                                          Reemplazar radiografía rechazada
+                                                          Reemplazar radiografÃ­a rechazada
                                                         </strong>
                                                         <span>
-                                                          La versión {file.version} se conservará para trazabilidad.
+                                                          La versiÃ³n {file.version} se conservarÃ¡ para trazabilidad.
                                                         </span>
                                                       </div>
                                                     </div>
@@ -2876,7 +3124,7 @@ async function handleReplacement() {
                                                       className="case-radiographies-file-field case-radiographies-form-wide"
                                                     >
                                                       <span>
-                                                        Nueva radiografía *
+                                                        Nueva radiografÃ­a *
                                                       </span>
 
                                                       <input
@@ -2935,10 +3183,10 @@ async function handleReplacement() {
                                                             : (
                                                                 <>
                                                                   <strong>
-                                                                    Seleccione la radiografía corregida
+                                                                    Seleccione la radiografÃ­a corregida
                                                                   </strong>
                                                                   <span>
-                                                                    JPG, PNG o DICOM · máximo 20 MB
+                                                                    JPG, PNG o DICOM Â· mÃ¡ximo 20 MB
                                                                   </span>
                                                                 </>
                                                               )
@@ -2967,7 +3215,7 @@ async function handleReplacement() {
                                                               event.target.value,
                                                             )
                                                         }
-                                                        placeholder="Ej.: se reemplaza el archivo rechazado por la radiografía original correcta."
+                                                        placeholder="Ej.: se reemplaza el archivo rechazado por la radiografÃ­a original correcta."
                                                       />
                                                     </label>
 
@@ -2989,7 +3237,7 @@ async function handleReplacement() {
                                                                 className="case-radiographies-spin"
                                                               />
                                                               <strong>
-                                                                Reemplazando radiografía...
+                                                                Reemplazando radiografÃ­a...
                                                               </strong>
                                                             </div>
                                                             <span>
@@ -3094,6 +3342,312 @@ async function handleReplacement() {
             )
       }
 
-    </article>
+      </article>
+
+
+      {
+        viewerUrl
+        &&
+        (
+          <div
+            className="case-radiography-viewer-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Visor radiográfico"
+          >
+            <div
+              ref={
+                viewerRef
+              }
+              className="case-radiography-viewer"
+            >
+              <header
+                className="case-radiography-viewer-header"
+              >
+                <div>
+                  <strong>
+                    Visor radiográfico
+                  </strong>
+
+                  <span>
+                    {viewerFileName}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  title="Cerrar visor"
+                  onClick={
+                    closeViewer
+                  }
+                >
+                  <X
+                    size={20}
+                  />
+                </button>
+              </header>
+
+
+              <div
+                className="case-radiography-viewer-toolbar"
+              >
+                <div
+                  className="case-radiography-viewer-toolbar-group"
+                >
+                  <button
+                    type="button"
+                    title="Alejar"
+                    onClick={
+                      zoomOut
+                    }
+                  >
+                    <ZoomOut
+                      size={17}
+                    />
+                  </button>
+
+                  <span
+                    className="case-radiography-viewer-zoom"
+                  >
+                    {
+                      Math.round(
+                        viewerZoom
+                        *
+                        100,
+                      )
+                    }%
+                  </span>
+
+                  <button
+                    type="button"
+                    title="Acercar"
+                    onClick={
+                      zoomIn
+                    }
+                  >
+                    <ZoomIn
+                      size={17}
+                    />
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Rotar 90 grados"
+                    onClick={
+                      rotateViewer
+                    }
+                  >
+                    <RotateCw
+                      size={17}
+                    />
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Restablecer vista"
+                    onClick={
+                      resetViewer
+                    }
+                  >
+                    <RotateCcw
+                      size={17}
+                    />
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Pantalla completa"
+                    onClick={
+                      () =>
+                        void toggleFullscreen()
+                    }
+                  >
+                    <Maximize2
+                      size={17}
+                    />
+                  </button>
+                </div>
+
+
+                <div
+                  className="case-radiography-viewer-adjustments"
+                >
+                  <label>
+                    <span>
+                      <Sun
+                        size={15}
+                      />
+                      Brillo
+                    </span>
+
+                    <input
+                      type="range"
+                      min="40"
+                      max="200"
+                      step="5"
+                      value={
+                        viewerBrightness
+                      }
+                      onChange={
+                        (
+                          event,
+                        ) =>
+                          setViewerBrightness(
+                            Number(
+                              event.target.value,
+                            ),
+                          )
+                      }
+                    />
+
+                    <strong>
+                      {
+                        viewerBrightness
+                      }%
+                    </strong>
+                  </label>
+
+
+                  <label>
+                    <span>
+                      <Minus
+                        size={15}
+                      />
+                      Contraste
+                    </span>
+
+                    <input
+                      type="range"
+                      min="40"
+                      max="250"
+                      step="5"
+                      value={
+                        viewerContrast
+                      }
+                      onChange={
+                        (
+                          event,
+                        ) =>
+                          setViewerContrast(
+                            Number(
+                              event.target.value,
+                            ),
+                          )
+                      }
+                    />
+
+                    <strong>
+                      {
+                        viewerContrast
+                      }%
+                    </strong>
+                  </label>
+
+
+                  <button
+                    type="button"
+                    className={
+                      viewerInvert
+                        ? "case-radiography-viewer-invert case-radiography-viewer-invert--active"
+                        : "case-radiography-viewer-invert"
+                    }
+                    onClick={
+                      () =>
+                        setViewerInvert(
+                          (
+                            current,
+                          ) =>
+                            !current,
+                        )
+                    }
+                  >
+                    Invertir
+                  </button>
+                </div>
+              </div>
+
+
+              <div
+                className="case-radiography-viewer-help"
+              >
+                Use la rueda del mouse para acercar o alejar.
+                Arrastre la radiografía para desplazarse.
+                Los ajustes solo afectan la visualización.
+              </div>
+
+
+              <div
+                className={
+                  draggingRef.current
+                    ? "case-radiography-viewer-stage case-radiography-viewer-stage--dragging"
+                    : "case-radiography-viewer-stage"
+                }
+                onPointerDown={
+                  handlePointerDown
+                }
+                onPointerMove={
+                  handlePointerMove
+                }
+                onPointerUp={
+                  handlePointerEnd
+                }
+                onPointerCancel={
+                  handlePointerEnd
+                }
+                onWheel={
+                  handleViewerWheel
+                }
+              >
+                <img
+                  src={
+                    viewerUrl
+                  }
+                  alt={
+                    `Radiografía ${viewerFileName}`
+                  }
+                  draggable={
+                    false
+                  }
+                  style={{
+                    transform:
+                      `translate(${viewerPan.x}px, ${viewerPan.y}px) `
+                      +
+                      `rotate(${viewerRotation}deg) `
+                      +
+                      `scale(${viewerZoom})`,
+
+                    filter:
+                      `brightness(${viewerBrightness}%) `
+                      +
+                      `contrast(${viewerContrast}%) `
+                      +
+                      `invert(${viewerInvert ? 100 : 0}%)`,
+                  }}
+                />
+              </div>
+
+
+              <footer
+                className="case-radiography-viewer-footer"
+              >
+                <span>
+                  Imagen radiográfica privada ·
+                  visualización dentro del sistema
+                </span>
+
+                <button
+                  type="button"
+                  onClick={
+                    closeViewer
+                  }
+                >
+                  Cerrar visor
+                </button>
+              </footer>
+            </div>
+          </div>
+        )
+      }
+    </>
   );
 }

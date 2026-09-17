@@ -474,7 +474,7 @@
 
 }
 /* =========================================================
-   CONFIRMACIÓN DE CARGA
+   CONFIRMACIÃ“N DE CARGA
    ========================================================= */
 
 .case-radiographies-confirmation {
@@ -642,7 +642,7 @@
 
 
 /* =========================================================
-   RESPONSIVE CONFIRMACIÓN / PROGRESO
+   RESPONSIVE CONFIRMACIÃ“N / PROGRESO
    ========================================================= */
 
 @media (max-width: 760px) {
@@ -670,7 +670,7 @@
 }
 
 /* =========================================================
-   2.3D - ESTADO Y VALIDACIÓN DE ARCHIVOS RADIOGRÁFICOS
+   2.3D - ESTADO Y VALIDACIÃ“N DE ARCHIVOS RADIOGRÃFICOS
    ========================================================= */
 
 .case-radiographies-file-card {
@@ -757,7 +757,7 @@
 
 
 /* =========================================================
-   AVISO DE ARCHIVO VÁLIDO
+   AVISO DE ARCHIVO VÃLIDO
    ========================================================= */
 
 .case-radiographies-valid-notice {
@@ -797,7 +797,7 @@
 
 
 /* =========================================================
-   RADIOGRAFÍA RECHAZADA
+   RADIOGRAFÃA RECHAZADA
    ========================================================= */
 
 .case-radiographies-rejection {
@@ -910,7 +910,7 @@
 
 
 /* =========================================================
-   MOTIVO / CORRECCIÓN
+   MOTIVO / CORRECCIÃ“N
    ========================================================= */
 
 .case-radiographies-validation-block {
@@ -957,7 +957,7 @@
 
 
 /* =========================================================
-   SIN DETALLE DE VALIDACIÓN
+   SIN DETALLE DE VALIDACIÃ“N
    ========================================================= */
 
 .case-radiographies-validation-missing {
@@ -973,7 +973,7 @@
 
 
 /* =========================================================
-   ANÁLISIS BLOQUEADO
+   ANÃLISIS BLOQUEADO
    ========================================================= */
 
 .case-radiographies-analysis-blocked {
@@ -1038,13 +1038,13 @@
 
 }
 /* =========================================================
-   2.3D-4 - REEMPLAZO DE RADIOGRAFÍA RECHAZADA
+   2.3D-4 - REEMPLAZO DE RADIOGRAFÃA RECHAZADA
    ========================================================= */
 
 /*
  * El formulario de reemplazo reutiliza los componentes
  * visuales del formulario principal, pero se encuentra
- * dentro del panel de una radiografía rechazada.
+ * dentro del panel de una radiografÃ­a rechazada.
  */
 .case-radiographies-rejection
 .case-radiographies-form {
@@ -1176,7 +1176,7 @@ textarea:disabled {
 
 
 /* =========================================================
-   BOTÓN REEMPLAZAR EN ARCHIVO RECHAZADO
+   BOTÃ“N REEMPLAZAR EN ARCHIVO RECHAZADO
    ========================================================= */
 
 .case-radiographies-file-card--rejected
@@ -1196,7 +1196,7 @@ button:last-child:hover:not(:disabled) {
 
 
 /* =========================================================
-   TRANSICIÓN VISUAL
+   TRANSICIÃ“N VISUAL
    ========================================================= */
 
 .case-radiographies-rejection
@@ -1259,4 +1259,507 @@ button:last-child:hover:not(:disabled) {
     margin-left: 10px;
   }
 
+}
+
+
+/* ==========================================================
+   VISOR RADIOGRÁFICO
+   ========================================================== */
+
+body.case-radiographies-viewer-open {
+  overflow: hidden;
+}
+
+.case-radiography-viewer-overlay {
+  position: fixed;
+  z-index: 9999;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 18px;
+
+  background:
+    rgba(2, 6, 23, 0.82);
+
+  backdrop-filter:
+    blur(4px);
+}
+
+.case-radiography-viewer {
+  display: flex;
+
+  width: min(
+    1200px,
+    96vw
+  );
+
+  height: min(
+    850px,
+    94vh
+  );
+
+  overflow: hidden;
+
+  flex-direction: column;
+
+  border:
+    1px solid
+    rgba(
+      148,
+      163,
+      184,
+      0.24
+    );
+
+  border-radius: 15px;
+
+  background: #07111f;
+
+  box-shadow:
+    0 30px 80px
+    rgba(
+      0,
+      0,
+      0,
+      0.45
+    );
+}
+
+.case-radiography-viewer:fullscreen {
+  width: 100vw;
+  height: 100vh;
+
+  border: 0;
+  border-radius: 0;
+}
+
+.case-radiography-viewer-header {
+  display: flex;
+
+  min-height: 62px;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding:
+    10px
+    14px;
+
+  border-bottom:
+    1px solid
+    rgba(
+      148,
+      163,
+      184,
+      0.18
+    );
+
+  background:
+    #0d1b2e;
+}
+
+.case-radiography-viewer-header > div {
+  display: flex;
+  min-width: 0;
+
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.case-radiography-viewer-header strong {
+  color: #f8fafc;
+
+  font-size:
+    0.85rem;
+}
+
+.case-radiography-viewer-header span {
+  overflow: hidden;
+
+  color: #94a3b8;
+
+  font-size:
+    0.67rem;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+.case-radiography-viewer-header button,
+.case-radiography-viewer-toolbar button,
+.case-radiography-viewer-footer button {
+  display: inline-flex;
+
+  min-height: 35px;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 6px;
+
+  padding:
+    0
+    10px;
+
+  border:
+    1px solid
+    rgba(
+      148,
+      163,
+      184,
+      0.28
+    );
+
+  border-radius: 8px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.06
+    );
+
+  color: #e2e8f0;
+
+  font: inherit;
+
+  font-size:
+    0.69rem;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.case-radiography-viewer-header button:hover,
+.case-radiography-viewer-toolbar button:hover,
+.case-radiography-viewer-footer button:hover {
+  border-color:
+    rgba(
+      56,
+      189,
+      248,
+      0.6
+    );
+
+  background:
+    rgba(
+      56,
+      189,
+      248,
+      0.13
+    );
+}
+
+.case-radiography-viewer-toolbar {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  flex-wrap: wrap;
+
+  gap: 10px;
+
+  padding:
+    9px
+    13px;
+
+  border-bottom:
+    1px solid
+    rgba(
+      148,
+      163,
+      184,
+      0.15
+    );
+
+  background: #0b1727;
+}
+
+.case-radiography-viewer-toolbar-group {
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+}
+
+.case-radiography-viewer-toolbar-group button {
+  width: 35px;
+  padding: 0;
+}
+
+.case-radiography-viewer-zoom {
+  min-width: 48px;
+
+  color: #bae6fd;
+
+  font-size:
+    0.68rem;
+
+  font-weight: 800;
+
+  text-align: center;
+}
+
+.case-radiography-viewer-adjustments {
+  display: flex;
+
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 12px;
+}
+
+.case-radiography-viewer-adjustments label {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  color: #cbd5e1;
+
+  font-size:
+    0.65rem;
+
+  font-weight: 700;
+}
+
+.case-radiography-viewer-adjustments label > span {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 4px;
+}
+
+.case-radiography-viewer-adjustments input[type="range"] {
+  width: 100px;
+
+  accent-color: #38bdf8;
+
+  cursor: pointer;
+}
+
+.case-radiography-viewer-adjustments strong {
+  width: 38px;
+
+  color: #7dd3fc;
+
+  font-size:
+    0.62rem;
+
+  text-align: right;
+}
+
+.case-radiography-viewer-invert--active {
+  border-color:
+    #38bdf8
+    !important;
+
+  background:
+    rgba(
+      56,
+      189,
+      248,
+      0.2
+    )
+    !important;
+
+  color:
+    #7dd3fc
+    !important;
+}
+
+.case-radiography-viewer-help {
+  padding:
+    6px
+    13px;
+
+  border-bottom:
+    1px solid
+    rgba(
+      148,
+      163,
+      184,
+      0.1
+    );
+
+  background: #081321;
+
+  color: #64748b;
+
+  font-size:
+    0.61rem;
+
+  text-align: center;
+}
+
+.case-radiography-viewer-stage {
+  position: relative;
+
+  display: flex;
+
+  min-height: 0;
+
+  flex: 1;
+
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at center,
+      #182333 0%,
+      #080d14 60%,
+      #030609 100%
+    );
+
+  cursor: grab;
+
+  touch-action: none;
+
+  user-select: none;
+}
+
+.case-radiography-viewer-stage:active {
+  cursor: grabbing;
+}
+
+.case-radiography-viewer-stage img {
+  display: block;
+
+  max-width: 88%;
+  max-height: 88%;
+
+  object-fit: contain;
+
+  transform-origin: center center;
+
+  pointer-events: none;
+
+  user-select: none;
+
+  transition:
+    filter 0.12s ease;
+
+  will-change:
+    transform,
+    filter;
+}
+
+.case-radiography-viewer-footer {
+  display: flex;
+
+  min-height: 50px;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding:
+    8px
+    13px;
+
+  border-top:
+    1px solid
+    rgba(
+      148,
+      163,
+      184,
+      0.15
+    );
+
+  background: #0b1727;
+}
+
+.case-radiography-viewer-footer span {
+  color: #64748b;
+
+  font-size:
+    0.61rem;
+}
+
+.case-radiography-viewer-footer button {
+  border-color:
+    rgba(
+      56,
+      189,
+      248,
+      0.38
+    );
+
+  color: #7dd3fc;
+}
+
+
+/* ==========================================================
+   RESPONSIVE DEL VISOR
+   ========================================================== */
+
+@media (max-width: 800px) {
+
+  .case-radiography-viewer-overlay {
+    padding: 0;
+  }
+
+  .case-radiography-viewer {
+    width: 100vw;
+    height: 100vh;
+
+    border: 0;
+    border-radius: 0;
+  }
+
+  .case-radiography-viewer-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .case-radiography-viewer-toolbar-group {
+    justify-content: center;
+  }
+
+  .case-radiography-viewer-adjustments {
+    justify-content: center;
+  }
+
+  .case-radiography-viewer-adjustments label {
+    flex: 1;
+
+    min-width: 180px;
+  }
+
+  .case-radiography-viewer-adjustments input[type="range"] {
+    min-width: 80px;
+
+    flex: 1;
+  }
+
+  .case-radiography-viewer-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .case-radiography-viewer-footer button {
+    width: 100%;
+  }
 }
