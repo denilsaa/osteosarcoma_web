@@ -294,7 +294,9 @@ services:
         condition: service_healthy
 
     networks:
-      - osteosarcoma_network
+      osteosarcoma_network:
+        aliases:
+          - servicio-ia
 
 
   # =========================================================
@@ -359,6 +361,10 @@ services:
       JWT_SIGNING_KEY: ${USUARIOS_DJANGO_SECRET_KEY}
 
       CLINICO_SERVICE_BASE_URL: http://servicio-clinico:8000/api
+      IA_SERVICE_BASE_URL: http://servicio-ia:8000/api
+      RADIOGRAPHY_AI_GATE_ENABLED: ${RADIOGRAPHY_AI_GATE_ENABLED:-false}
+      IA_CONNECT_TIMEOUT_SECONDS: ${IA_CONNECT_TIMEOUT_SECONDS:-5}
+      IA_TIMEOUT_SECONDS: ${IA_TIMEOUT_SECONDS:-30}
 
     ports:
       - "8003:8000"
@@ -371,6 +377,9 @@ services:
         condition: service_healthy
 
       servicio_clinico:
+        condition: service_started
+
+      servicio_ia:
         condition: service_started
 
     networks:

@@ -21,6 +21,8 @@ final readonly class CreateRadiographicStudy
         private RadiographicStudyRepository $repository,
 
         private RadiographicFileValidator $fileValidator,
+
+        private RadiographyAiGate $aiGate,
     ) {
     }
 
@@ -69,6 +71,36 @@ final readonly class CreateRadiographicStudy
                     $file
                 );
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | PUERTA IA OBLIGATORIA - EFFICIENTNET
+        |--------------------------------------------------------------------------
+        |
+        | Toda imagen enviada debe pasar por EfficientNet antes de que
+        | pueda registrarse como estudio radiográfico.
+        |
+        | La validación técnica y la validación IA son responsabilidades
+        | distintas:
+        |
+        | - fileValidator determina formato, integridad, dimensiones, etc.
+        | - aiGate determina si el contenido corresponde a una radiografía.
+        |
+        | IMPORTANTE:
+        | El gate de IA NO puede depender de isValid(), porque eso permitiría
+        | que determinados archivos omitan la clasificación de EfficientNet.
+        |
+        | Si EfficientNet determina que no es una radiografía, lanza
+        | InvalidArgumentException y el proceso termina antes de guardar
+        | cualquier registro o archivo.
+        |
+        */
+
+        $this
+            ->aiGate
+            ->assertRadiography(
+                $file
+            );
 
         /*
          * Para poder almacenar el archivo necesitamos

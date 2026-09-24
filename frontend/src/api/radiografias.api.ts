@@ -46,6 +46,13 @@ interface RadiographyCatalogsResponse {
 }
 
 
+let radiographyCatalogsCache:
+  RadiographyCatalogs | null = null;
+
+let radiographyCatalogsPromise:
+  Promise<RadiographyCatalogs> | null = null;
+
+
 // ==========================================================
 // MIME
 // ==========================================================
@@ -257,16 +264,35 @@ export interface CreateRadiographyOptions {
 export async function getRadiographyCatalogs():
   Promise<RadiographyCatalogs> {
 
-  const response =
-    await apiRadiografias
+  if (radiographyCatalogsCache) {
+    return radiographyCatalogsCache;
+  }
+
+  if (radiographyCatalogsPromise) {
+    return radiographyCatalogsPromise;
+  }
+
+  radiographyCatalogsPromise =
+    apiRadiografias
       .get<RadiographyCatalogsResponse>(
         "/radiografias/catalogos",
+      )
+      .then(
+        (response) => {
+          radiographyCatalogsCache =
+            response.data.data;
+
+          return radiographyCatalogsCache;
+        },
+      )
+      .finally(
+        () => {
+          radiographyCatalogsPromise =
+            null;
+        },
       );
 
-
-  return response
-    .data
-    .data;
+  return radiographyCatalogsPromise;
 }
 
 

@@ -1,0 +1,8 @@
+torch>=2.7,<3
+torchvision>=0.22,<1
+Pillow>=10,<12
+datasets>=3,<5
+scikit-learn>=1.5,<2
+numpy>=2,<3
+onnx>=1.17,<2
+onnxruntime>=1.30,<2

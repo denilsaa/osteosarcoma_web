@@ -384,7 +384,22 @@ export function CaseRadiographiesSection({
       null,
     );
 
-  const viewerRef =
+  const inlineViewerRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    );
+
+  const modalViewerRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    );
+
+  const inlineStageRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    );
+
+  const modalStageRef =
     useRef<HTMLDivElement | null>(
       null,
     );
@@ -967,37 +982,20 @@ export function CaseRadiographiesSection({
 
   useEffect(
     () => {
-
-      studies.forEach(
-        (study) => {
-          const primaryFile =
-            getPrimaryRadiographicFile(
-              study,
-            );
-
-          if (primaryFile) {
-            void ensurePreview(
-              primaryFile,
-            );
-          }
-        },
-      );
-
-      selectedStudy
-        ?.files
-        .forEach(
-          (file) => {
-            void ensurePreview(
-              file,
-            );
-          },
+      /*
+       * Rendimiento:
+       * no descargamos todas las radiografías originales al entrar.
+       * Solo solicitamos el archivo que el usuario está visualizando.
+       */
+      if (selectedInlineFile) {
+        void ensurePreview(
+          selectedInlineFile,
         );
-
+      }
     },
     [
       ensurePreview,
-      selectedStudy,
-      studies,
+      selectedInlineFile,
     ],
   );
 
@@ -1182,64 +1180,211 @@ export function CaseRadiographiesSection({
   }
 
 
-  function zoomIn() {
-    setViewerZoom(
+  function getActiveStage():
+    HTMLDivElement | null {
+
+    return viewerUrl
+      ? modalStageRef.current
+      : inlineStageRef.current;
+  }
+
+
+  function clampViewerPan(
+    stage: HTMLDivElement,
+    nextPan: ViewerPoint,
+    zoom: number = viewerZoom,
+    rotation: number = viewerRotation,
+  ): ViewerPoint {
+
+    const image =
+      stage.querySelector<HTMLImageElement>(
+        "img",
+      );
+
+    if (
+      !image
+      ||
+      zoom <= 1
+    ) {
+      return {
+        x: 0,
+        y: 0,
+      };
+    }
+
+    const normalizedRotation =
       (
-        current,
-      ) =>
+        (rotation % 360)
+        +
+        360
+      )
+      %
+      360;
+
+    const swapsDimensions =
+      normalizedRotation === 90
+      ||
+      normalizedRotation === 270;
+
+    const baseWidth =
+      swapsDimensions
+        ? image.offsetHeight
+        : image.offsetWidth;
+
+    const baseHeight =
+      swapsDimensions
+        ? image.offsetWidth
+        : image.offsetHeight;
+
+    const scaledWidth =
+      baseWidth * zoom;
+
+    const scaledHeight =
+      baseHeight * zoom;
+
+    const maxX =
+      Math.max(
+        0,
+        (
+          scaledWidth
+          -
+          stage.clientWidth
+        )
+        /
+        2,
+      );
+
+    const maxY =
+      Math.max(
+        0,
+        (
+          scaledHeight
+          -
+          stage.clientHeight
+        )
+        /
+        2,
+      );
+
+    return {
+      x: Math.max(
+        -maxX,
         Math.min(
-          4,
+          maxX,
+          nextPan.x,
+        ),
+      ),
+
+      y: Math.max(
+        -maxY,
+        Math.min(
+          maxY,
+          nextPan.y,
+        ),
+      ),
+    };
+  }
+
+
+  function reclampViewerPan(
+    zoom: number = viewerZoom,
+    rotation: number = viewerRotation,
+  ) {
+    if (zoom <= 1) {
+      setViewerPan({
+        x: 0,
+        y: 0,
+      });
+
+      return;
+    }
+
+    window.requestAnimationFrame(
+      () => {
+        const stage =
+          getActiveStage();
+
+        if (!stage) {
+          return;
+        }
+
+        setViewerPan(
+          (current) =>
+            clampViewerPan(
+              stage,
+              current,
+              zoom,
+              rotation,
+            ),
+        );
+      },
+    );
+  }
+
+
+  function changeViewerZoom(
+    nextZoom: number,
+  ) {
+    const normalizedZoom =
+      Math.min(
+        4,
+        Math.max(
+          1,
           Number(
-            (
-              current
-              +
-              0.25
-            ).toFixed(2),
+            nextZoom.toFixed(2),
           ),
         ),
+      );
+
+    setViewerZoom(
+      normalizedZoom,
+    );
+
+    reclampViewerPan(
+      normalizedZoom,
+      viewerRotation,
+    );
+  }
+
+
+  function zoomIn() {
+    changeViewerZoom(
+      viewerZoom + 0.25,
     );
   }
 
 
   function zoomOut() {
-    setViewerZoom(
-      (
-        current,
-      ) =>
-        Math.max(
-          0.5,
-          Number(
-            (
-              current
-              -
-              0.25
-            ).toFixed(2),
-          ),
-        ),
+    changeViewerZoom(
+      viewerZoom - 0.25,
     );
   }
 
 
   function rotateViewer() {
-    setViewerRotation(
+    const nextRotation =
       (
-        current,
-      ) =>
-        (
-          current
-          +
-          90
-        )
-        %
-        360,
+        viewerRotation
+        +
+        90
+      )
+      %
+      360;
+
+    setViewerRotation(
+      nextRotation,
+    );
+
+    reclampViewerPan(
+      viewerZoom,
+      nextRotation,
     );
   }
 
 
-  async function toggleFullscreen() {
-    const element =
-      viewerRef.current;
-
+  async function toggleFullscreen(
+    element: HTMLDivElement | null,
+  ) {
     if (!element) {
       return;
     }
@@ -1268,9 +1413,19 @@ export function CaseRadiographiesSection({
       React.PointerEvent<HTMLDivElement>,
   ) {
     if (
-      !viewerUrl
-      &&
-      !inlineViewerUrl
+      (
+        !viewerUrl
+        &&
+        !inlineViewerUrl
+      )
+      ||
+      viewerZoom <= 1
+      ||
+      (
+        event.pointerType === "mouse"
+        &&
+        event.button !== 0
+      )
     ) {
       return;
     }
@@ -1300,6 +1455,8 @@ export function CaseRadiographiesSection({
   ) {
     if (
       !draggingRef.current
+      ||
+      viewerZoom <= 1
     ) {
       return;
     }
@@ -1314,7 +1471,7 @@ export function CaseRadiographiesSection({
       -
       dragStartRef.current.y;
 
-    setViewerPan({
+    const nextPan = {
       x:
         panStartRef.current.x
         +
@@ -1324,7 +1481,14 @@ export function CaseRadiographiesSection({
         panStartRef.current.y
         +
         deltaY,
-    });
+    };
+
+    setViewerPan(
+      clampViewerPan(
+        event.currentTarget,
+        nextPan,
+      ),
+    );
   }
 
 
@@ -1353,13 +1517,16 @@ export function CaseRadiographiesSection({
     event:
       React.WheelEvent<HTMLDivElement>,
   ) {
-    if (
+    event.preventDefault();
+
+    const step =
       event.deltaY < 0
-    ) {
-      zoomIn();
-    } else {
-      zoomOut();
-    }
+        ? 0.15
+        : -0.15;
+
+    changeViewerZoom(
+      viewerZoom + step,
+    );
   }
 
 
@@ -3165,7 +3332,7 @@ async function handleReplacement() {
 
                         <div
                           ref={
-                            viewerRef
+                            inlineViewerRef
                           }
                           className="case-radiographies-inline-viewer"
                         >
@@ -3260,6 +3427,9 @@ async function handleReplacement() {
 
 
                           <div
+                            ref={
+                              inlineStageRef
+                            }
                             className={
                               draggingRef.current
                                 ? "case-radiographies-inline-stage case-radiographies-inline-stage--dragging"
@@ -3404,7 +3574,9 @@ async function handleReplacement() {
                                 title="Pantalla completa"
                                 onClick={
                                   () =>
-                                    void toggleFullscreen()
+                                    void toggleFullscreen(
+                                      inlineViewerRef.current,
+                                    )
                                 }
                               >
                                 <Maximize2
@@ -3476,7 +3648,7 @@ async function handleReplacement() {
 
                               <input
                                 type="range"
-                                min="0.5"
+                                min="1"
                                 max="4"
                                 step="0.05"
                                 value={
@@ -3484,7 +3656,7 @@ async function handleReplacement() {
                                 }
                                 onChange={
                                   (event) =>
-                                    setViewerZoom(
+                                    changeViewerZoom(
                                       Number(
                                         event.target.value,
                                       ),
@@ -4171,7 +4343,7 @@ async function handleReplacement() {
           >
             <div
               ref={
-                viewerRef
+                modalViewerRef
               }
               className="case-radiography-viewer"
             >
@@ -4273,7 +4445,9 @@ async function handleReplacement() {
                     title="Pantalla completa"
                     onClick={
                       () =>
-                        void toggleFullscreen()
+                        void toggleFullscreen(
+                          modalViewerRef.current,
+                        )
                     }
                   >
                     <Maximize2
@@ -4391,6 +4565,9 @@ async function handleReplacement() {
 
 
               <div
+                ref={
+                  modalStageRef
+                }
                 className={
                   draggingRef.current
                     ? "case-radiography-viewer-stage case-radiography-viewer-stage--dragging"

@@ -1646,12 +1646,14 @@ body.case-radiographies-viewer-open {
 .case-radiography-viewer-stage img {
   display: block;
 
-  max-width: 88%;
-  max-height: 88%;
+  max-width: 96%;
+  max-height: 96%;
 
   object-fit: contain;
+  image-rendering: auto;
 
   transform-origin: center center;
+  backface-visibility: hidden;
 
   pointer-events: none;
 
@@ -3207,7 +3209,8 @@ body.case-radiographies-viewer-open {
 .case-radiographies-inline-thumb img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background: #03070b;
 }
 
 .case-radiographies-inline-thumb span {
@@ -3244,10 +3247,12 @@ body.case-radiographies-viewer-open {
 
 .case-radiographies-inline-stage > img {
   display: block;
-  max-width: 82%;
-  max-height: 90%;
+  max-width: 94%;
+  max-height: 94%;
   object-fit: contain;
+  image-rendering: auto;
   transform-origin: center center;
+  backface-visibility: hidden;
   pointer-events: none;
   user-select: none;
   will-change: transform, filter;
@@ -3656,4 +3661,35 @@ body.case-radiographies-viewer-open {
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+
+/* =========================================================
+   VISOR V3 - INTERACCIÓN Y CALIDAD DE VISUALIZACIÓN
+   Mantiene intacto el archivo radiográfico original.
+   ========================================================= */
+
+.case-radiographies-inline-stage,
+.case-radiography-viewer-stage {
+  overscroll-behavior: contain;
+}
+
+.case-radiographies-inline-toolbar button,
+.case-radiographies-inline-zoom button {
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.18);
+  transition:
+    transform 0.14s ease,
+    background-color 0.14s ease,
+    border-color 0.14s ease,
+    color 0.14s ease;
+}
+
+.case-radiographies-inline-toolbar button:active,
+.case-radiographies-inline-zoom button:active {
+  transform: scale(0.94);
+}
+
+.case-radiography-viewer-stage img,
+.case-radiographies-inline-stage > img {
+  -webkit-user-drag: none;
 }

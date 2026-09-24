@@ -120,3 +120,24 @@ weights/
 *.zip
 *.rar
 *.7z
+cat >> .gitignore <<'EOF'
+
+# ============================================================
+# ENTRENAMIENTO IA - DATOS LOCALES
+# ============================================================
+herramientas_ia_radiografia/dataset_radiografia/
+herramientas_ia_radiografia/hard_negative_test/
+herramientas_ia_radiografia/.cache_datasets/
+herramientas_ia_radiografia/_cache/
+
+# Backups temporales PHP
+*.php.backup_*
+
+# Modelos anteriores de respaldo
+servicios/servicio_ia/modelos/*_v1.pt
+servicios/servicio_ia/modelos/*_v1.onnx
+servicios/servicio_ia/modelos/*_v1.json
+servicios/servicio_ia/modelos/*_v1.metrics.json
+EOF
+# Cache local de Hugging Face / entrenamiento
+herramientas_ia_radiografia/.cache/

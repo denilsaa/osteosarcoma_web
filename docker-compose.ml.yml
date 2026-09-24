@@ -1,0 +1,21 @@
+services:
+  entrenador_ia:
+    build:
+      context: ./herramientas_ia_radiografia
+      dockerfile: Dockerfile
+
+    profiles:
+      - ml
+
+    working_dir: /workspace
+
+    environment:
+      PYTHONUNBUFFERED: "1"
+      HF_HOME: /workspace/.cache/huggingface
+
+    volumes:
+      # Scripts, dataset descargado y cache quedan en el proyecto local.
+      - ./herramientas_ia_radiografia:/workspace
+
+      # El modelo final se escribe directamente donde servicio_ia lo utilizará.
+      - ./servicios/servicio_ia/modelos:/modelos

@@ -1,0 +1,12 @@
+{
+  "architecture": "efficientnet_b0",
+  "family": "EfficientNet",
+  "classes": [
+    "no_radiografia",
+    "radiografia"
+  ],
+  "image_size": 224,
+  "threshold": 0.9,
+  "prototype": true,
+  "seed": 42
+}

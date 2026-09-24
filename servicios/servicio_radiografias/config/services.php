@@ -96,4 +96,38 @@ return [
 
     ],
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | SERVICIO IA
+    |--------------------------------------------------------------------------
+    */
+
+    'ia' => [
+
+        'base_url' => env(
+            'IA_SERVICE_BASE_URL',
+            'http://servicio-ia:8000/api'
+        ),
+
+        'radiography_gate_enabled' => filter_var(
+            env(
+                'RADIOGRAPHY_AI_GATE_ENABLED',
+                false
+            ),
+            FILTER_VALIDATE_BOOLEAN
+        ),
+
+        'connect_timeout_seconds' => (int) env(
+            'IA_CONNECT_TIMEOUT_SECONDS',
+            5
+        ),
+
+        'timeout_seconds' => (int) env(
+            'IA_TIMEOUT_SECONDS',
+            30
+        ),
+
+    ],
+
 ];

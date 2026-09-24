@@ -19,6 +19,8 @@ final readonly class ReplaceRejectedRadiographicFile
 {
     public function __construct(
         private RadiographicFileValidator $fileValidator,
+
+        private RadiographyAiGate $aiGate,
     ) {
     }
 
@@ -84,6 +86,13 @@ final readonly class ReplaceRejectedRadiographicFile
                 ->validate(
                     $file
                 );
+
+
+        $this
+            ->aiGate
+            ->assertRadiography(
+                $file
+            );
 
 
         $mime =
