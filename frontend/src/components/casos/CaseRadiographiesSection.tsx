@@ -339,6 +339,95 @@ function getPrimaryRadiographicFile(
 }
 
 
+
+const RADIOGRAPHY_FILE_EXTENSIONS =
+  [
+    "jpg",
+    "jpeg",
+    "png",
+    "dcm",
+  ] as const;
+
+
+function getLocalRadiographyExtension(
+  file?: File | null,
+): string {
+
+  if (!file) {
+    return "";
+  }
+
+  return (
+    file
+      .name
+      .split(".")
+      .pop()
+      ?.toLowerCase()
+    ??
+    ""
+  );
+}
+
+
+function isAcceptedLocalRadiographyFile(
+  file?: File | null,
+): boolean {
+
+  return RADIOGRAPHY_FILE_EXTENSIONS.includes(
+    getLocalRadiographyExtension(
+      file,
+    ) as typeof RADIOGRAPHY_FILE_EXTENSIONS[number],
+  );
+}
+
+
+function isLocalRadiographyPreviewable(
+  file?: File | null,
+): boolean {
+
+  const extension =
+    getLocalRadiographyExtension(
+      file,
+    );
+
+  return [
+    "jpg",
+    "jpeg",
+    "png",
+  ].includes(
+    extension,
+  );
+}
+
+
+function getLocalRadiographyFormatLabel(
+  file?: File | null,
+): string {
+
+  const extension =
+    getLocalRadiographyExtension(
+      file,
+    );
+
+  switch (extension) {
+    case "jpg":
+    case "jpeg":
+      return "JPEG";
+
+    case "png":
+      return "PNG";
+
+    case "dcm":
+      return "DICOM";
+
+    default:
+      return extension
+        ? extension.toUpperCase()
+        : "Archivo";
+  }
+}
+
+
 function isRadiographicFilePreviewable(
   file?: RadiographicFile | null,
 ): boolean {
@@ -527,6 +616,14 @@ export function CaseRadiographiesSection({
     );
 
   const [
+    uploadErrorModal,
+    setUploadErrorModal,
+  ] =
+    useState<string | null>(
+      null,
+    );
+
+  const [
     success,
     setSuccess,
   ] =
@@ -579,6 +676,14 @@ export function CaseRadiographiesSection({
     setSelectedFile,
   ] =
     useState<File | null>(
+      null,
+    );
+
+  const [
+    selectedFilePreviewUrl,
+    setSelectedFilePreviewUrl,
+  ] =
+    useState<string | null>(
       null,
     );
 
@@ -660,6 +765,14 @@ export function CaseRadiographiesSection({
     setReplacementFile,
   ] =
     useState<File | null>(
+      null,
+    );
+
+  const [
+    replacementFilePreviewUrl,
+    setReplacementFilePreviewUrl,
+  ] =
+    useState<string | null>(
       null,
     );
 
@@ -1020,6 +1133,80 @@ export function CaseRadiographiesSection({
 
   useEffect(
     () => {
+      if (
+        !selectedFile
+        ||
+        !isLocalRadiographyPreviewable(
+          selectedFile,
+        )
+      ) {
+        setSelectedFilePreviewUrl(
+          null,
+        );
+
+        return;
+      }
+
+      const url =
+        URL.createObjectURL(
+          selectedFile,
+        );
+
+      setSelectedFilePreviewUrl(
+        url,
+      );
+
+      return () => {
+        URL.revokeObjectURL(
+          url,
+        );
+      };
+    },
+    [
+      selectedFile,
+    ],
+  );
+
+
+  useEffect(
+    () => {
+      if (
+        !replacementFile
+        ||
+        !isLocalRadiographyPreviewable(
+          replacementFile,
+        )
+      ) {
+        setReplacementFilePreviewUrl(
+          null,
+        );
+
+        return;
+      }
+
+      const url =
+        URL.createObjectURL(
+          replacementFile,
+        );
+
+      setReplacementFilePreviewUrl(
+        url,
+      );
+
+      return () => {
+        URL.revokeObjectURL(
+          url,
+        );
+      };
+    },
+    [
+      replacementFile,
+    ],
+  );
+
+
+  useEffect(
+    () => {
       if (!viewerUrl) {
         return;
       }
@@ -1088,6 +1275,54 @@ export function CaseRadiographiesSection({
   );
 
 
+  function clearSelectedUploadFile() {
+
+    setSelectedFile(
+      null,
+    );
+
+    setUploadProgress(
+      0,
+    );
+
+    setConfirming(
+      false,
+    );
+
+    if (
+      fileInputRef.current
+    ) {
+      fileInputRef
+        .current
+        .value =
+          "";
+    }
+  }
+
+
+  function closeUploadErrorModal() {
+
+    setUploadErrorModal(
+      null,
+    );
+
+    setError(
+      null,
+    );
+
+    clearSelectedUploadFile();
+
+    window.setTimeout(
+      () => {
+        fileInputRef
+          .current
+          ?.focus();
+      },
+      0,
+    );
+  }
+
+
   function resetForm() {
 
     setStudyTypeId(
@@ -1147,6 +1382,10 @@ export function CaseRadiographiesSection({
     );
 
     setError(
+      null,
+    );
+
+    setUploadErrorModal(
       null,
     );
   }
@@ -1569,28 +1808,14 @@ export function CaseRadiographiesSection({
       );
     }
 
-    const extension =
-      selectedFile
-        .name
-        .split(".")
-        .pop()
-        ?.toLowerCase();
-
     if (
-      !extension
-      ||
-      ![
-        "jpg",
-        "jpeg",
-        "png",
-        "dcm",
-      ].includes(
-        extension,
+      !isAcceptedLocalRadiographyFile(
+        selectedFile,
       )
     ) {
 
       return (
-        "Solo se permiten archivos JPG, PNG o DICOM."
+        "Solo se permiten archivos JPG, JPEG, PNG o DICOM (.dcm)."
       );
     }
 
@@ -1678,6 +1903,10 @@ export function CaseRadiographiesSection({
     );
 
     setError(
+      null,
+    );
+
+    setUploadErrorModal(
       null,
     );
 
@@ -1811,11 +2040,48 @@ export function CaseRadiographiesSection({
         0,
       );
 
-      setError(
+      const message =
         getErrorMessage(
           requestError,
-        ),
-      );
+        );
+
+      const normalizedMessage =
+        message
+          .toLocaleLowerCase(
+            "es",
+          );
+
+      const isRadiographyRejectedByAi =
+        normalizedMessage.includes(
+          "no fue identificada como una radiografía",
+        )
+        ||
+        normalizedMessage.includes(
+          "no fue identificada como una radiografia",
+        );
+
+      if (
+        isRadiographyRejectedByAi
+      ) {
+
+        setError(
+          null,
+        );
+
+        setUploadErrorModal(
+          message,
+        );
+
+      } else {
+
+        setUploadErrorModal(
+          null,
+        );
+
+        setError(
+          message,
+        );
+      }
 
     } finally {
 
@@ -1953,26 +2219,12 @@ export function CaseRadiographiesSection({
       return "Seleccione la nueva radiografía.";
     }
 
-    const extension =
-      replacementFile
-        .name
-        .split(".")
-        .pop()
-        ?.toLowerCase();
-
     if (
-      !extension
-      ||
-      ![
-        "jpg",
-        "jpeg",
-        "png",
-        "dcm",
-      ].includes(
-        extension,
+      !isAcceptedLocalRadiographyFile(
+        replacementFile,
       )
     ) {
-      return "Solo se permiten archivos JPG, PNG o DICOM.";
+      return "Solo se permiten archivos JPG, JPEG, PNG o DICOM (.dcm).";
     }
 
     if (
@@ -2590,6 +2842,10 @@ async function handleReplacement() {
                         null,
                       );
 
+                      setUploadErrorModal(
+                        null,
+                      );
+
                       setConfirming(
                         false,
                       );
@@ -2602,42 +2858,119 @@ async function handleReplacement() {
                 />
 
                 <div
-                  className="case-radiographies-file-box"
+                  className={
+                    selectedFile
+                      ? "case-radiographies-file-box case-radiographies-file-box--selected"
+                      : "case-radiographies-file-box"
+                  }
                 >
-
-                  <FileImage
-                    size={29}
-                  />
 
                   {
                     selectedFile
                       ? (
                           <>
-                            <strong>
+                            <div
+                              className="case-radiographies-local-preview"
+                            >
                               {
-                                selectedFile
-                                  .name
-                              }
-                            </strong>
+                                selectedFilePreviewUrl
+                                  ? (
+                                      <img
+                                        src={
+                                          selectedFilePreviewUrl
+                                        }
+                                        alt="Vista previa del archivo radiográfico seleccionado"
+                                      />
+                                    )
+                                  : (
+                                      <div
+                                        className="case-radiographies-local-preview-placeholder"
+                                      >
+                                        <FileImage
+                                          size={36}
+                                        />
 
-                            <span>
-                              {
-                                formatBytes(
-                                  selectedFile
-                                    .size,
-                                )
+                                        <strong>
+                                          {
+                                            getLocalRadiographyFormatLabel(
+                                              selectedFile,
+                                            )
+                                          }
+                                        </strong>
+
+                                        <span>
+                                          {
+                                            getLocalRadiographyExtension(
+                                              selectedFile,
+                                            )
+                                            ===
+                                            "dcm"
+                                              ? "Vista previa DICOM disponible después de la carga"
+                                              : "Vista previa no disponible"
+                                          }
+                                        </span>
+                                      </div>
+                                    )
                               }
-                            </span>
+
+                              <span
+                                className="case-radiographies-local-preview-badge"
+                              >
+                                Vista previa local
+                              </span>
+                            </div>
+
+                            <div
+                              className="case-radiographies-local-preview-info"
+                            >
+                              <strong>
+                                {
+                                  selectedFile
+                                    .name
+                                }
+                              </strong>
+
+                              <span>
+                                {
+                                  getLocalRadiographyFormatLabel(
+                                    selectedFile,
+                                  )
+                                }
+                                {" · "}
+                                {
+                                  formatBytes(
+                                    selectedFile
+                                      .size,
+                                  )
+                                }
+                              </span>
+
+                              <small>
+                                {
+                                  selectedFilePreviewUrl
+                                    ? "La imagen se muestra sin subirla ni modificar el archivo original."
+                                    : "El archivo será validado antes de registrarse."
+                                }
+                              </small>
+
+                              <b>
+                                Cambiar archivo
+                              </b>
+                            </div>
                           </>
                         )
                       : (
                           <>
+                            <FileImage
+                              size={29}
+                            />
+
                             <strong>
-                              Seleccione JPG, PNG o DICOM
+                              Seleccione JPG, JPEG, PNG o DICOM
                             </strong>
 
                             <span>
-                              Tamaño máximo: 20 MB
+                              Tamaño máximo: 20 MB · DICOM (.dcm)
                             </span>
                           </>
                         )
@@ -4115,33 +4448,114 @@ async function handleReplacement() {
                                             />
 
                                             <div
-                                              className="case-radiographies-file-box case-radiographies-file-box--replacement"
+                                              className={
+                                                replacementFile
+                                                  ? "case-radiographies-file-box case-radiographies-file-box--replacement case-radiographies-file-box--selected"
+                                                  : "case-radiographies-file-box case-radiographies-file-box--replacement"
+                                              }
                                             >
-                                              <FileImage
-                                                size={29}
-                                              />
-
                                               {
                                                 replacementFile
                                                   ? (
                                                       <>
-                                                        <strong>
-                                                          {replacementFile.name}
-                                                        </strong>
+                                                        <div
+                                                          className="case-radiographies-local-preview case-radiographies-local-preview--replacement"
+                                                        >
+                                                          {
+                                                            replacementFilePreviewUrl
+                                                              ? (
+                                                                  <img
+                                                                    src={
+                                                                      replacementFilePreviewUrl
+                                                                    }
+                                                                    alt="Vista previa del archivo de reemplazo"
+                                                                  />
+                                                                )
+                                                              : (
+                                                                  <div
+                                                                    className="case-radiographies-local-preview-placeholder"
+                                                                  >
+                                                                    <FileImage
+                                                                      size={32}
+                                                                    />
 
-                                                        <span>
-                                                          {formatBytes(replacementFile.size)}
-                                                        </span>
+                                                                    <strong>
+                                                                      {
+                                                                        getLocalRadiographyFormatLabel(
+                                                                          replacementFile,
+                                                                        )
+                                                                      }
+                                                                    </strong>
+
+                                                                    <span>
+                                                                      {
+                                                                        getLocalRadiographyExtension(
+                                                                          replacementFile,
+                                                                        )
+                                                                        ===
+                                                                        "dcm"
+                                                                          ? "Vista previa DICOM disponible después de la carga"
+                                                                          : "Vista previa no disponible"
+                                                                      }
+                                                                    </span>
+                                                                  </div>
+                                                                )
+                                                          }
+
+                                                          <span
+                                                            className="case-radiographies-local-preview-badge"
+                                                          >
+                                                            Vista previa
+                                                          </span>
+                                                        </div>
+
+                                                        <div
+                                                          className="case-radiographies-local-preview-info"
+                                                        >
+                                                          <strong>
+                                                            {
+                                                              replacementFile
+                                                                .name
+                                                            }
+                                                          </strong>
+
+                                                          <span>
+                                                            {
+                                                              getLocalRadiographyFormatLabel(
+                                                                replacementFile,
+                                                              )
+                                                            }
+                                                            {" · "}
+                                                            {
+                                                              formatBytes(
+                                                                replacementFile
+                                                                  .size,
+                                                              )
+                                                            }
+                                                          </span>
+
+                                                          <small>
+                                                            El archivo original no se modifica.
+                                                          </small>
+
+                                                          <b>
+                                                            Cambiar archivo
+                                                          </b>
+                                                        </div>
                                                       </>
                                                     )
                                                   : (
                                                       <>
+                                                        <FileImage
+                                                          size={29}
+                                                        />
+
                                                         <strong>
                                                           Seleccione la radiografía corregida
                                                         </strong>
 
                                                         <span>
-                                                          JPG, PNG o DICOM · máximo 20 MB
+                                                          JPG, JPEG, PNG o DICOM (.dcm) · máximo 20 MB
                                                         </span>
                                                       </>
                                                     )
@@ -4329,6 +4743,106 @@ async function handleReplacement() {
       }
 
       </article>
+
+
+      {
+        uploadErrorModal
+        &&
+        (
+          <div
+            className="case-radiographies-upload-error-overlay"
+            role="presentation"
+          >
+            <section
+              className="case-radiographies-upload-error-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="radiography-upload-error-title"
+              aria-describedby="radiography-upload-error-description"
+            >
+              <button
+                type="button"
+                className="case-radiographies-upload-error-close"
+                aria-label="Cerrar mensaje"
+                onClick={
+                  closeUploadErrorModal
+                }
+              >
+                <X
+                  size={19}
+                />
+              </button>
+
+              <div
+                className="case-radiographies-upload-error-icon"
+                aria-hidden="true"
+              >
+                <XCircle
+                  size={31}
+                />
+              </div>
+
+              <div
+                className="case-radiographies-upload-error-content"
+              >
+                <span
+                  className="case-radiographies-upload-error-eyebrow"
+                >
+                  Archivo rechazado
+                </span>
+
+                <h3
+                  id="radiography-upload-error-title"
+                >
+                  La imagen seleccionada no es una radiografía válida
+                </h3>
+
+                <p
+                  id="radiography-upload-error-description"
+                  className="case-radiographies-upload-error-message"
+                >
+                  {
+                    uploadErrorModal
+                  }
+                </p>
+
+                <div
+                  className="case-radiographies-upload-error-guidance"
+                >
+                  <FileImage
+                    size={21}
+                  />
+
+                  <div>
+                    <strong>
+                      ¿Cómo corregirlo?
+                    </strong>
+
+                    <span>
+                      Cierre este mensaje y seleccione otra imagen
+                      JPG, JPEG, PNG o DICOM que corresponda a una
+                      radiografía.
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="case-radiographies-upload-error-action"
+                  onClick={
+                    closeUploadErrorModal
+                  }
+                >
+                  <X
+                    size={17}
+                  />
+                  Cerrar y seleccionar otra imagen
+                </button>
+              </div>
+            </section>
+          </div>
+        )
+      }
 
 
       {

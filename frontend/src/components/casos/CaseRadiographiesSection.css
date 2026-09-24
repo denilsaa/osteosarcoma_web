@@ -3693,3 +3693,432 @@ body.case-radiographies-viewer-open {
 .case-radiographies-inline-stage > img {
   -webkit-user-drag: none;
 }
+
+
+/* =========================================================
+   VISTA PREVIA LOCAL - CARGA / REEMPLAZO
+   ========================================================= */
+
+.case-radiographies-file-box--selected {
+  min-height: 210px;
+  display: grid;
+  grid-template-columns: minmax(170px, 0.72fr) minmax(0, 1.28fr);
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 14px;
+  padding: 12px;
+  border-style: solid;
+  border-color: #8ed7e8;
+  background:
+    linear-gradient(
+      135deg,
+      #f9fdff 0%,
+      #f2fbfe 100%
+    );
+}
+
+.case-radiographies-local-preview {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 184px;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d7e6ee;
+  border-radius: 11px;
+  background:
+    linear-gradient(
+      145deg,
+      #07131f 0%,
+      #0c1b2a 100%
+    );
+}
+
+.case-radiographies-local-preview img {
+  display: block;
+  width: 100%;
+  height: 184px;
+  object-fit: contain;
+  object-position: center;
+  background: #07131f;
+}
+
+.case-radiographies-local-preview-badge {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  z-index: 2;
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid rgba(125, 211, 252, 0.35);
+  border-radius: 999px;
+  background: rgba(2, 20, 32, 0.78);
+  color: #dff8ff !important;
+  font-size: 0.58rem !important;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  backdrop-filter: blur(5px);
+}
+
+.case-radiographies-local-preview-placeholder {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 7px;
+  padding: 20px;
+  text-align: center;
+}
+
+.case-radiographies-local-preview-placeholder svg {
+  width: 38px;
+  height: 38px;
+  padding: 8px;
+  border: 1px solid rgba(125, 211, 252, 0.22);
+  border-radius: 11px;
+  background: rgba(14, 165, 198, 0.12);
+  color: #7dd3fc;
+}
+
+.case-radiographies-local-preview-placeholder strong {
+  max-width: 100%;
+  color: #e7f8fd !important;
+  font-size: 0.78rem !important;
+}
+
+.case-radiographies-local-preview-placeholder span {
+  max-width: 240px;
+  color: #9fb5c5 !important;
+  font-size: 0.62rem !important;
+  line-height: 1.4;
+}
+
+.case-radiographies-local-preview-info {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px 12px 2px;
+  text-align: left;
+}
+
+.case-radiographies-local-preview-info strong {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  color: #153957 !important;
+  font-size: 0.8rem !important;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.case-radiographies-local-preview-info span {
+  color: #527087 !important;
+  font-size: 0.66rem !important;
+  font-weight: 700;
+}
+
+.case-radiographies-local-preview-info small {
+  max-width: 520px;
+  color: #7890a1;
+  font-size: 0.61rem;
+  line-height: 1.45;
+}
+
+.case-radiographies-local-preview-info b {
+  display: inline-flex;
+  min-height: 29px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 3px;
+  padding: 0 10px;
+  border: 1px solid #a6dbe7;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #087b9b;
+  font-size: 0.62rem;
+  font-weight: 850;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.035);
+}
+
+.case-radiographies-file-field:hover
+.case-radiographies-file-box--selected {
+  border-color: #29a8c4;
+  background:
+    linear-gradient(
+      135deg,
+      #f8fdff 0%,
+      #edfaff 100%
+    );
+  transform: none;
+}
+
+.case-radiographies-file-field:hover
+.case-radiographies-local-preview-info b {
+  border-color: #65c9dc;
+  background: #effbfe;
+}
+
+.case-radiographies-replacement-inline
+.case-radiographies-file-box--selected {
+  min-height: 176px;
+  grid-template-columns: minmax(145px, 0.7fr) minmax(0, 1.3fr);
+}
+
+.case-radiographies-local-preview--replacement {
+  min-height: 150px;
+}
+
+.case-radiographies-local-preview--replacement img {
+  height: 150px;
+}
+
+@media (max-width: 760px) {
+
+  .case-radiographies-file-box--selected,
+  .case-radiographies-replacement-inline
+  .case-radiographies-file-box--selected {
+    grid-template-columns: 1fr;
+  }
+
+  .case-radiographies-local-preview,
+  .case-radiographies-local-preview--replacement {
+    min-height: 200px;
+  }
+
+  .case-radiographies-local-preview img,
+  .case-radiographies-local-preview--replacement img {
+    height: 200px;
+  }
+
+  .case-radiographies-local-preview-info {
+    padding: 3px 4px 8px;
+  }
+
+}
+
+/* =========================================================
+   MODAL - ARCHIVO RECHAZADO POR EFFICIENTNET
+   ========================================================= */
+
+.case-radiographies-upload-error-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1800;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.54);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.case-radiographies-upload-error-modal {
+  position: relative;
+  width: min(520px, 100%);
+  overflow: hidden;
+  border: 1px solid #fecaca;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow:
+    0 30px 80px rgba(15, 23, 42, 0.28),
+    0 8px 24px rgba(15, 23, 42, 0.12);
+  animation:
+    case-radiographies-upload-error-enter
+    180ms ease-out;
+}
+
+.case-radiographies-upload-error-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.case-radiographies-upload-error-close:hover {
+  border-color: #fecaca;
+  background: #fff7f7;
+  color: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.case-radiographies-upload-error-icon {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+  margin: 30px auto 14px;
+  border: 1px solid #fecaca;
+  border-radius: 22px;
+  background: #fef2f2;
+  color: #dc2626;
+  box-shadow:
+    0 10px 28px rgba(220, 38, 38, 0.1);
+}
+
+.case-radiographies-upload-error-content {
+  padding: 0 28px 28px;
+  text-align: center;
+}
+
+.case-radiographies-upload-error-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 11px;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  background: #fff7f7;
+  color: #b91c1c;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.case-radiographies-upload-error-content h3 {
+  max-width: 420px;
+  margin: 13px auto 0;
+  color: #0f2742;
+  font-size: 1.03rem;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.case-radiographies-upload-error-message {
+  max-width: 440px;
+  margin: 10px auto 0;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.case-radiographies-upload-error-guidance {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-top: 20px;
+  padding: 13px 14px;
+  border: 1px solid #bae6fd;
+  border-radius: 13px;
+  background: #f0faff;
+  color: #0369a1;
+  text-align: left;
+}
+
+.case-radiographies-upload-error-guidance > svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.case-radiographies-upload-error-guidance div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.case-radiographies-upload-error-guidance strong {
+  color: #075985;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.case-radiographies-upload-error-guidance span {
+  color: #48657a;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.case-radiographies-upload-error-action {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 11px;
+  background: #0891b2;
+  color: #ffffff;
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow:
+    0 8px 20px rgba(8, 145, 178, 0.2);
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.case-radiographies-upload-error-action:hover {
+  background: #0e7490;
+  transform: translateY(-1px);
+  box-shadow:
+    0 10px 24px rgba(8, 145, 178, 0.24);
+}
+
+@keyframes case-radiographies-upload-error-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.975);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 640px) {
+  .case-radiographies-upload-error-overlay {
+    padding: 16px;
+  }
+
+  .case-radiographies-upload-error-content {
+    padding: 0 18px 20px;
+  }
+
+  .case-radiographies-upload-error-icon {
+    width: 62px;
+    height: 62px;
+    margin-top: 24px;
+    border-radius: 18px;
+  }
+
+  .case-radiographies-upload-error-content h3 {
+    font-size: 0.94rem;
+  }
+
+  .case-radiographies-upload-error-action {
+    width: 100%;
+  }
+}
+
