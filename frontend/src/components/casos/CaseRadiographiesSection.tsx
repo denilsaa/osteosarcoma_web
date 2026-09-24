@@ -2,11 +2,12 @@ import {
   AlertTriangle,
   CalendarDays,
   CheckCircle2,
-  Eye,
+  Clock3,
   FileImage,
   Image,
   Info,
   LoaderCircle,
+  MapPin,
   Maximize2,
   Minus,
   Plus,
@@ -16,6 +17,7 @@ import {
   Sun,
   ShieldAlert,
   Upload,
+  UserRound,
   X,
   XCircle,
   ZoomIn,
@@ -67,7 +69,7 @@ function formatDate(
 ): string {
 
   if (!value) {
-    return "â€”";
+    return "—";
   }
 
   const date =
@@ -107,7 +109,7 @@ function formatDateTime(
 ): string {
 
   if (!value) {
-    return "â€”";
+    return "—";
   }
 
   const date =
@@ -294,32 +296,8 @@ function getErrorMessage(
   }
 
   return (
-    "No fue posible completar la operaciÃ³n."
+    "No fue posible completar la operación."
   );
-}
-
-
-function getValidationStatusLabel(
-  file:
-    RadiographicFile,
-): string {
-
-  switch (
-    file.validation_status
-  ) {
-
-    case "VALIDA":
-      return "RadiografÃ­a vÃ¡lida";
-
-    case "RECHAZADA":
-      return "RadiografÃ­a rechazada";
-
-    case "PENDIENTE":
-      return "ValidaciÃ³n pendiente";
-
-    default:
-      return file.validation_status;
-  }
 }
 
 
@@ -340,6 +318,58 @@ function getValidationStatusClass(
 
     default:
       return "case-radiographies-status--pending";
+  }
+}
+
+
+function getPrimaryRadiographicFile(
+  study: RadiographicStudy,
+): RadiographicFile | null {
+
+  return (
+    study.files.find(
+      (file) =>
+        file.active,
+    )
+    ??
+    study.files[0]
+    ??
+    null
+  );
+}
+
+
+function isRadiographicFilePreviewable(
+  file?: RadiographicFile | null,
+): boolean {
+
+  return Boolean(
+    file
+    &&
+    file.validation_status === "VALIDA"
+    &&
+    file.mime.code !== "DICOM",
+  );
+}
+
+
+function getShortValidationLabel(
+  file?: RadiographicFile | null,
+): string {
+
+  if (!file) {
+    return "Sin archivo";
+  }
+
+  switch (file.validation_status) {
+    case "VALIDA":
+      return "Válida";
+
+    case "RECHAZADA":
+      return "Rechazada";
+
+    default:
+      return "Pendiente";
   }
 }
 
@@ -374,6 +404,16 @@ export function CaseRadiographiesSection({
       y: 0,
     });
 
+  const previewUrlsRef =
+    useRef<Record<string, string>>(
+      {},
+    );
+
+  const previewLoadingRef =
+    useRef<Set<string>>(
+      new Set(),
+    );
+
   const [
     catalogs,
     setCatalogs,
@@ -388,6 +428,31 @@ export function CaseRadiographiesSection({
   ] =
     useState<RadiographicStudy[]>(
       [],
+    );
+
+
+  const [
+    selectedStudyId,
+    setSelectedStudyId,
+  ] =
+    useState<string | null>(
+      null,
+    );
+
+  const [
+    selectedInlineFileId,
+    setSelectedInlineFileId,
+  ] =
+    useState<string | null>(
+      null,
+    );
+
+  const [
+    previewUrls,
+    setPreviewUrls,
+  ] =
+    useState<Record<string, string>>(
+      {},
     );
 
   const [
@@ -608,6 +673,50 @@ export function CaseRadiographiesSection({
     );
 
 
+  const selectedStudy =
+    studies.find(
+      (study) =>
+        study.id_study === selectedStudyId,
+    )
+    ??
+    null;
+
+  const selectedInlineFile =
+    selectedStudy
+      ?.files
+      .find(
+        (file) =>
+          file.id_file === selectedInlineFileId,
+      )
+    ??
+    (
+      selectedStudy
+        ? getPrimaryRadiographicFile(
+            selectedStudy,
+          )
+        : null
+    );
+
+  const inlineViewerUrl =
+    selectedInlineFile
+      ? previewUrls[
+          selectedInlineFile.id_file
+        ]
+        ??
+        null
+      : null;
+
+  const selectedInvalidValidations =
+    selectedInlineFile
+      ?.validations
+      .filter(
+        (validation) =>
+          validation.result_code === "INVALIDO",
+      )
+    ??
+    [];
+
+
   const loadStudies =
     useCallback(
       async () => {
@@ -688,6 +797,72 @@ export function CaseRadiographiesSection({
     );
 
 
+  const ensurePreview =
+    useCallback(
+      async (
+        file: RadiographicFile,
+      ) => {
+
+        if (
+          !isRadiographicFilePreviewable(
+            file,
+          )
+        ) {
+          return;
+        }
+
+        if (
+          previewUrlsRef.current[
+            file.id_file
+          ]
+          ||
+          previewLoadingRef.current.has(
+            file.id_file,
+          )
+        ) {
+          return;
+        }
+
+        previewLoadingRef.current.add(
+          file.id_file,
+        );
+
+        try {
+          const blob =
+            await getRadiographicFileBlob(
+              file.id_file,
+            );
+
+          const url =
+            URL.createObjectURL(
+              blob,
+            );
+
+          previewUrlsRef.current[
+            file.id_file
+          ] = url;
+
+          setPreviewUrls(
+            (current) => ({
+              ...current,
+              [file.id_file]: url,
+            }),
+          );
+
+        } catch {
+          // La ficha permanece usable aunque una miniatura
+          // no pueda descargarse temporalmente.
+
+        } finally {
+          previewLoadingRef.current.delete(
+            file.id_file,
+          );
+        }
+      },
+      [],
+    );
+
+
   useEffect(
     () => {
 
@@ -697,6 +872,151 @@ export function CaseRadiographiesSection({
     [
       loadAll,
     ],
+  );
+
+
+
+  useEffect(
+    () => {
+
+      if (
+        studies.length === 0
+      ) {
+        setSelectedStudyId(
+          null,
+        );
+
+        setSelectedInlineFileId(
+          null,
+        );
+
+        return;
+      }
+
+      const studyStillExists =
+        selectedStudyId
+        &&
+        studies.some(
+          (study) =>
+            study.id_study === selectedStudyId,
+        );
+
+      if (!studyStillExists) {
+        const firstStudy =
+          studies[0];
+
+        const firstFile =
+          getPrimaryRadiographicFile(
+            firstStudy,
+          );
+
+        setSelectedStudyId(
+          firstStudy.id_study,
+        );
+
+        setSelectedInlineFileId(
+          firstFile?.id_file
+          ??
+          null,
+        );
+      }
+
+    },
+    [
+      selectedStudyId,
+      studies,
+    ],
+  );
+
+
+  useEffect(
+    () => {
+
+      if (!selectedStudy) {
+        return;
+      }
+
+      const selectedFileStillExists =
+        selectedInlineFileId
+        &&
+        selectedStudy.files.some(
+          (file) =>
+            file.id_file === selectedInlineFileId,
+        );
+
+      if (!selectedFileStillExists) {
+        const primaryFile =
+          getPrimaryRadiographicFile(
+            selectedStudy,
+          );
+
+        setSelectedInlineFileId(
+          primaryFile?.id_file
+          ??
+          null,
+        );
+      }
+
+    },
+    [
+      selectedInlineFileId,
+      selectedStudy,
+    ],
+  );
+
+
+  useEffect(
+    () => {
+
+      studies.forEach(
+        (study) => {
+          const primaryFile =
+            getPrimaryRadiographicFile(
+              study,
+            );
+
+          if (primaryFile) {
+            void ensurePreview(
+              primaryFile,
+            );
+          }
+        },
+      );
+
+      selectedStudy
+        ?.files
+        .forEach(
+          (file) => {
+            void ensurePreview(
+              file,
+            );
+          },
+        );
+
+    },
+    [
+      ensurePreview,
+      selectedStudy,
+      studies,
+    ],
+  );
+
+
+  useEffect(
+    () => {
+      return () => {
+        Object.values(
+          previewUrlsRef.current,
+        ).forEach(
+          (url) => {
+            URL.revokeObjectURL(
+              url,
+            );
+          },
+        );
+      };
+    },
+    [],
   );
 
 
@@ -947,7 +1267,11 @@ export function CaseRadiographiesSection({
     event:
       React.PointerEvent<HTMLDivElement>,
   ) {
-    if (!viewerUrl) {
+    if (
+      !viewerUrl
+      &&
+      !inlineViewerUrl
+    ) {
       return;
     }
 
@@ -1029,8 +1353,6 @@ export function CaseRadiographiesSection({
     event:
       React.WheelEvent<HTMLDivElement>,
   ) {
-    event.preventDefault();
-
     if (
       event.deltaY < 0
     ) {
@@ -1058,7 +1380,7 @@ export function CaseRadiographiesSection({
     ) {
 
       return (
-        "Seleccione la regiÃ³n anatÃ³mica."
+        "Seleccione la región anatómica."
       );
     }
 
@@ -1076,7 +1398,7 @@ export function CaseRadiographiesSection({
     ) {
 
       return (
-        "Seleccione una radiografÃ­a."
+        "Seleccione una radiografía."
       );
     }
 
@@ -1261,6 +1583,16 @@ export function CaseRadiographiesSection({
           .data
           .files[0];
 
+      setSelectedStudyId(
+        response.data.id_study,
+      );
+
+      setSelectedInlineFileId(
+        createdFile?.id_file
+        ??
+        null,
+      );
+
       resetForm();
 
       setShowForm(
@@ -1279,7 +1611,7 @@ export function CaseRadiographiesSection({
         );
 
         setError(
-          "La radiografÃ­a fue recibida, pero fue rechazada durante la validaciÃ³n. Revise el motivo y la correcciÃ³n necesaria antes de enviarla al anÃ¡lisis.",
+          "La radiografía fue recibida, pero fue rechazada durante la validación. Revise el motivo y la corrección necesaria antes de enviarla al análisis.",
         );
 
       } else {
@@ -1289,7 +1621,7 @@ export function CaseRadiographiesSection({
         );
 
         setSuccess(
-          "RadiografÃ­a registrada y validada correctamente.",
+          "Radiografía registrada y validada correctamente.",
         );
 
         window.setTimeout(
@@ -1445,13 +1777,13 @@ export function CaseRadiographiesSection({
     if (
       !replacementTarget
     ) {
-      return "Seleccione la radiografÃ­a rechazada que desea reemplazar.";
+      return "Seleccione la radiografía rechazada que desea reemplazar.";
     }
 
     if (
       !replacementFile
     ) {
-      return "Seleccione la nueva radiografÃ­a.";
+      return "Seleccione la nueva radiografía.";
     }
 
     const extension =
@@ -1573,10 +1905,18 @@ async function handleReplacement() {
      * la interfaz refleje:
      *
      * - V1 como inactiva.
-     * - V2 como nueva versiÃ³n activa.
+     * - V2 como nueva versión activa.
      * - sus validaciones actualizadas.
      */
     await loadStudies();
+
+    setSelectedStudyId(
+      newestFile.id_study,
+    );
+
+    setSelectedInlineFileId(
+      newestFile.id_file,
+    );
 
     resetReplacementForm();
 
@@ -1587,14 +1927,14 @@ async function handleReplacement() {
       "RECHAZADA"
     ) {
       setError(
-        "La nueva versiÃ³n fue cargada, pero tambiÃ©n fue rechazada durante la validaciÃ³n. Revise las correcciones indicadas antes de intentar otro reemplazo.",
+        "La nueva versión fue cargada, pero también fue rechazada durante la validación. Revise las correcciones indicadas antes de intentar otro reemplazo.",
       );
 
       return;
     }
 
     setSuccess(
-      `RadiografÃ­a reemplazada correctamente. Se registrÃ³ la versiÃ³n ${newestFile.version} y la versiÃ³n anterior se conserva para trazabilidad.`,
+      `Radiografía reemplazada correctamente. Se registró la versión ${newestFile.version} y la versión anterior se conserva para trazabilidad.`,
     );
 
     window.setTimeout(
@@ -1689,7 +2029,7 @@ async function handleReplacement() {
         />
 
         <span>
-          Cargando radiografÃ­as...
+          Cargando radiografías...
         </span>
 
       </div>
@@ -1722,13 +2062,13 @@ async function handleReplacement() {
 
           <div>
             <h2>
-              RadiografÃ­as del caso
+              Radiografías del caso
             </h2>
 
             <p>
               {
                 studies.length
-              } estudio(s) radiogrÃ¡fico(s)
+              } estudio(s) radiográfico(s)
             </p>
           </div>
 
@@ -1780,7 +2120,7 @@ async function handleReplacement() {
           {
             showForm
               ? "Cerrar formulario"
-              : "Registrar radiografÃ­a"
+              : "Registrar radiografía"
           }
 
         </button>
@@ -1840,7 +2180,7 @@ async function handleReplacement() {
 
                 <span>
                   Complete los datos obligatorios
-                  y seleccione la radiografÃ­a.
+                  y seleccione la radiografía.
                 </span>
               </div>
 
@@ -1900,7 +2240,7 @@ async function handleReplacement() {
 
 
               <label>
-                Zona anatÃ³mica *
+                Zona anatómica *
 
                 <select
                   disabled={
@@ -2040,7 +2380,7 @@ async function handleReplacement() {
                         event.target.value,
                       )
                   }
-                  placeholder="Ej.: lesiÃ³n localizada en regiÃ³n proximal..."
+                  placeholder="Ej.: lesión localizada en región proximal..."
                 />
               </label>
 
@@ -2050,7 +2390,7 @@ async function handleReplacement() {
               >
 
                 <span>
-                  Archivo radiogrÃ¡fico *
+                  Archivo radiográfico *
                 </span>
 
                 <input
@@ -2130,7 +2470,7 @@ async function handleReplacement() {
                             </strong>
 
                             <span>
-                              TamaÃ±o mÃ¡ximo: 20 MB
+                              Tamaño máximo: 20 MB
                             </span>
                           </>
                         )
@@ -2168,8 +2508,8 @@ async function handleReplacement() {
                       </strong>
 
                       <span>
-                        Revise la informaciÃ³n antes de
-                        enviar la radiografÃ­a.
+                        Revise la información antes de
+                        enviar la radiografía.
                       </span>
                     </div>
 
@@ -2190,14 +2530,14 @@ async function handleReplacement() {
                           selectedStudyType
                             ?.name
                           ??
-                          "â€”"
+                          "—"
                         }
                       </strong>
                     </div>
 
                     <div>
                       <span>
-                        RegiÃ³n anatÃ³mica
+                        Región anatómica
                       </span>
 
                       <strong>
@@ -2205,7 +2545,7 @@ async function handleReplacement() {
                           selectedRegion
                             ?.name
                           ??
-                          "â€”"
+                          "—"
                         }
                       </strong>
                     </div>
@@ -2220,7 +2560,7 @@ async function handleReplacement() {
                           selectedLaterality
                             ?.name
                           ??
-                          "â€”"
+                          "—"
                         }
                       </strong>
                     </div>
@@ -2326,7 +2666,7 @@ async function handleReplacement() {
                       />
 
                       <strong>
-                        Cargando radiografÃ­a...
+                        Cargando radiografía...
                       </strong>
                     </div>
 
@@ -2411,933 +2751,1407 @@ async function handleReplacement() {
 
 
       {
-        studies.length ===
-        0
+        studies.length === 0
           ? (
-
               <div
-                className="case-radiographies-empty"
+                className="case-radiographies-empty case-radiographies-empty--workspace"
               >
-
                 <Image
                   size={42}
                 />
 
                 <strong>
-                  Sin radiografÃ­as registradas
+                  Sin radiografías registradas
                 </strong>
 
                 <span>
-                  Registre el primer estudio radiogrÃ¡fico
-                  asociado a este caso clÃ­nico.
+                  Registre el primer estudio radiográfico
+                  asociado a este caso clínico.
                 </span>
 
+                <button
+                  type="button"
+                  className="case-radiographies-primary"
+                  onClick={
+                    () => {
+                      setShowForm(
+                        true,
+                      );
+
+                      setError(
+                        null,
+                      );
+                    }
+                  }
+                >
+                  <Plus
+                    size={16}
+                  />
+
+                  Registrar radiografía
+                </button>
               </div>
             )
           : (
-
               <div
-                className="case-radiographies-list"
+                className="case-radiographies-workspace"
               >
+                <aside
+                  className="case-radiographies-sidebar"
+                >
+                  <header
+                    className="case-radiographies-sidebar-header"
+                  >
+                    <div>
+                      <strong>
+                        Radiografías del caso
+                      </strong>
 
-                {
-                  studies.map(
-                    (
-                      study,
-                    ) => (
+                      <span>
+                        {studies.length} estudio(s) radiográfico(s)
+                      </span>
+                    </div>
 
-                      <section
-                        key={
-                          study.id_study
+                    <button
+                      type="button"
+                      className="case-radiographies-primary"
+                      disabled={
+                        saving
+                      }
+                      onClick={
+                        () => {
+                          if (showForm) {
+                            closeForm();
+                            return;
+                          }
+
+                          setShowForm(
+                            true,
+                          );
+
+                          setConfirming(
+                            false,
+                          );
+
+                          setError(
+                            null,
+                          );
                         }
-                        className="case-radiographies-study"
-                      >
+                      }
+                    >
+                      {
+                        showForm
+                          ? (
+                              <X
+                                size={15}
+                              />
+                            )
+                          : (
+                              <Plus
+                                size={15}
+                              />
+                            )
+                      }
 
-                        <div
-                          className="case-radiographies-study-main"
+                      {
+                        showForm
+                          ? "Cerrar"
+                          : "Registrar radiografía"
+                      }
+                    </button>
+                  </header>
+
+
+                  <div
+                    className="case-radiographies-study-list"
+                  >
+                    {
+                      studies.map(
+                        (study) => {
+                          const primaryFile =
+                            getPrimaryRadiographicFile(
+                              study,
+                            );
+
+                          const previewUrl =
+                            primaryFile
+                              ? previewUrls[
+                                  primaryFile.id_file
+                                ]
+                              : undefined;
+
+                          const isActive =
+                            study.id_study === selectedStudyId;
+
+                          return (
+                            <button
+                              key={
+                                study.id_study
+                              }
+                              type="button"
+                              className={
+                                isActive
+                                  ? "case-radiographies-study-item case-radiographies-study-item--active"
+                                  : "case-radiographies-study-item"
+                              }
+                              onClick={
+                                () => {
+                                  const nextFile =
+                                    getPrimaryRadiographicFile(
+                                      study,
+                                    );
+
+                                  setSelectedStudyId(
+                                    study.id_study,
+                                  );
+
+                                  setSelectedInlineFileId(
+                                    nextFile?.id_file
+                                    ??
+                                    null,
+                                  );
+
+                                  setReplacementTarget(
+                                    null,
+                                  );
+
+                                  resetViewer();
+                                }
+                              }
+                            >
+                              <div
+                                className="case-radiographies-study-thumb"
+                              >
+                                {
+                                  previewUrl
+                                    ? (
+                                        <img
+                                          src={
+                                            previewUrl
+                                          }
+                                          alt=""
+                                          draggable={
+                                            false
+                                          }
+                                        />
+                                      )
+                                    : (
+                                        <FileImage
+                                          size={26}
+                                        />
+                                      )
+                                }
+                              </div>
+
+
+                              <div
+                                className="case-radiographies-study-item-body"
+                              >
+                                <div
+                                  className="case-radiographies-study-item-top"
+                                >
+                                  <strong>
+                                    {study.study_type.name}
+                                  </strong>
+
+                                  <span
+                                    className={
+                                      primaryFile
+                                        ? `case-radiographies-status ${getValidationStatusClass(primaryFile)}`
+                                        : "case-radiographies-status case-radiographies-status--pending"
+                                    }
+                                  >
+                                    {
+                                      primaryFile?.validation_status === "VALIDA"
+                                      &&
+                                      <CheckCircle2
+                                        size={12}
+                                      />
+                                    }
+
+                                    {
+                                      primaryFile?.validation_status === "RECHAZADA"
+                                      &&
+                                      <XCircle
+                                        size={12}
+                                      />
+                                    }
+
+                                    {getShortValidationLabel(primaryFile)}
+                                  </span>
+                                </div>
+
+
+                                <div
+                                  className="case-radiographies-study-tags"
+                                >
+                                  <span>
+                                    {study.anatomical_region.name}
+                                  </span>
+
+                                  <span>
+                                    {
+                                      study.laterality?.name
+                                      ??
+                                      "Sin lateralidad"
+                                    }
+                                  </span>
+                                </div>
+
+
+                                <div
+                                  className="case-radiographies-study-item-meta"
+                                >
+                                  <span>
+                                    <CalendarDays
+                                      size={13}
+                                    />
+
+                                    {formatDateTime(study.registered_at)}
+                                  </span>
+
+                                  <span>
+                                    <UserRound
+                                      size={13}
+                                    />
+
+                                    {
+                                      resolveAuthorName(
+                                        study.registered_by_uuid,
+                                      )
+                                    }
+                                  </span>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        },
+                      )
+                    }
+                  </div>
+                </aside>
+
+
+                <section
+                  className="case-radiographies-detail"
+                >
+                  {
+                    selectedStudy
+                    &&
+                    (
+                      <>
+                        <header
+                          className="case-radiographies-detail-header"
                         >
-
                           <div
-                            className="case-radiographies-study-icon"
+                            className="case-radiographies-detail-heading"
                           >
-                            <FileImage
-                              size={28}
-                            />
-                          </div>
-
-                          <div
-                            className="case-radiographies-study-data"
-                          >
-
                             <div
-                              className="case-radiographies-study-title"
+                              className="case-radiographies-detail-icon"
                             >
-
-                              <strong>
-                                {
-                                  study
-                                    .study_type
-                                    .name
-                                }
-                              </strong>
-
-                              <span>
-                                {
-                                  study
-                                    .anatomical_region
-                                    .name
-                                }
-                              </span>
-
+                              <Image
+                                size={20}
+                              />
                             </div>
 
-
                             <div
-                              className="case-radiographies-metadata"
+                              className="case-radiographies-detail-heading-content"
                             >
+                              <div
+                                className="case-radiographies-detail-title-row"
+                              >
+                                <h2>
+                                  {selectedStudy.study_type.name}
+                                </h2>
 
-                              <span>
-                                <CalendarDays
-                                  size={14}
-                                />
+                                <span
+                                  className="case-radiographies-detail-chip case-radiographies-detail-chip--region"
+                                >
+                                  {selectedStudy.anatomical_region.name}
+                                </span>
 
-                                Estudio:{" "}
-                                {
-                                  formatDate(
-                                    study
-                                      .study_date,
-                                  )
-                                }
-                              </span>
-
-                              <span>
-                                Lateralidad:{" "}
-                                {
-                                  study
-                                    .laterality
-                                    ?.name
-                                  ??
-                                  "No especificada"
-                                }
-                              </span>
-
-                              <span>
-                                Registrado:{" "}
-                                {
-                                  formatDateTime(
-                                    study
-                                      .registered_at,
-                                  )
-                                }
-                              </span>
-
-                              <span>
-                                Profesional:{" "}
-                                {
-                                  resolveAuthorName(
-                                    study
-                                      .registered_by_uuid,
-                                  )
-                                }
-                              </span>
-
-                            </div>
-
-
-                            {
-                              study.observation
-                              &&
-                              (
-
-                                <p
-                                  className="case-radiographies-observation"
+                                <span
+                                  className="case-radiographies-detail-chip"
                                 >
                                   {
-                                    study.observation
+                                    selectedStudy.laterality?.name
+                                    ??
+                                    "Sin lateralidad"
                                   }
-                                </p>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+
+                          <div
+                            className="case-radiographies-detail-actions"
+                          >
+                            {
+                              selectedInlineFile
+                              &&
+                              (
+                                <span
+                                  className={
+                                    `case-radiographies-status case-radiographies-detail-status ${getValidationStatusClass(selectedInlineFile)}`
+                                  }
+                                >
+                                  {
+                                    selectedInlineFile.validation_status === "VALIDA"
+                                    &&
+                                    <CheckCircle2
+                                      size={13}
+                                    />
+                                  }
+
+                                  {
+                                    selectedInlineFile.validation_status === "RECHAZADA"
+                                    &&
+                                    <XCircle
+                                      size={13}
+                                    />
+                                  }
+
+                                  {
+                                    selectedInlineFile.validation_status === "VALIDA"
+                                      ? "Archivo válido"
+                                      : getShortValidationLabel(
+                                          selectedInlineFile,
+                                        )
+                                  }
+                                </span>
                               )
                             }
 
+                            {
+                              selectedInlineFile
+                              &&
+                              isRadiographicFilePreviewable(
+                                selectedInlineFile,
+                              )
+                              &&
+                              (
+                                <button
+                                  type="button"
+                                  className="case-radiographies-detail-more"
+                                  title="Abrir visor avanzado"
+                                  disabled={
+                                    workingFileId === selectedInlineFile.id_file
+                                  }
+                                  onClick={
+                                    () =>
+                                      void handleView(
+                                        selectedInlineFile.id_file,
+                                        selectedInlineFile.original_name,
+                                      )
+                                  }
+                                >
+                                  {
+                                    workingFileId === selectedInlineFile.id_file
+                                      ? (
+                                          <LoaderCircle
+                                            size={16}
+                                            className="case-radiographies-spin"
+                                          />
+                                        )
+                                      : "⋮"
+                                  }
+                                </button>
+                              )
+                            }
+                          </div>
+                        </header>
+
+
+                        <div
+                          ref={
+                            viewerRef
+                          }
+                          className="case-radiographies-inline-viewer"
+                        >
+                          <div
+                            className="case-radiographies-inline-thumbs"
+                          >
+                            {
+                              selectedStudy.files.length > 0
+                                ? selectedStudy.files.map(
+                                    (
+                                      file,
+                                      index,
+                                    ) => {
+                                      const thumbUrl =
+                                        previewUrls[
+                                          file.id_file
+                                        ];
+
+                                      return (
+                                        <button
+                                          key={
+                                            file.id_file
+                                          }
+                                          type="button"
+                                          className={
+                                            selectedInlineFile?.id_file === file.id_file
+                                              ? "case-radiographies-inline-thumb case-radiographies-inline-thumb--active"
+                                              : "case-radiographies-inline-thumb"
+                                          }
+                                          onClick={
+                                            () => {
+                                              setSelectedInlineFileId(
+                                                file.id_file,
+                                              );
+
+                                              setReplacementTarget(
+                                                null,
+                                              );
+
+                                              resetViewer();
+
+                                              void ensurePreview(
+                                                file,
+                                              );
+                                            }
+                                          }
+                                        >
+                                          <div>
+                                            {
+                                              thumbUrl
+                                                ? (
+                                                    <img
+                                                      src={
+                                                        thumbUrl
+                                                      }
+                                                      alt=""
+                                                      draggable={
+                                                        false
+                                                      }
+                                                    />
+                                                  )
+                                                : (
+                                                    <FileImage
+                                                      size={22}
+                                                    />
+                                                  )
+                                            }
+                                          </div>
+
+                                          <span>
+                                            {
+                                              selectedStudy.files.length > 1
+                                                ? `Vista ${index + 1}`
+                                                : selectedStudy.study_type.name
+                                            }
+                                          </span>
+                                        </button>
+                                      );
+                                    },
+                                  )
+                                : (
+                                    <div
+                                      className="case-radiographies-inline-thumb-empty"
+                                    >
+                                      <FileImage
+                                        size={22}
+                                      />
+                                    </div>
+                                  )
+                            }
                           </div>
 
+
+                          <div
+                            className={
+                              draggingRef.current
+                                ? "case-radiographies-inline-stage case-radiographies-inline-stage--dragging"
+                                : "case-radiographies-inline-stage"
+                            }
+                            onPointerDown={
+                              handlePointerDown
+                            }
+                            onPointerMove={
+                              handlePointerMove
+                            }
+                            onPointerUp={
+                              handlePointerEnd
+                            }
+                            onPointerCancel={
+                              handlePointerEnd
+                            }
+                            onWheel={
+                              handleViewerWheel
+                            }
+                          >
+                            {
+                              selectedInlineFile
+                              &&
+                              isRadiographicFilePreviewable(
+                                selectedInlineFile,
+                              )
+                              &&
+                              inlineViewerUrl
+                                ? (
+                                    <img
+                                      src={
+                                        inlineViewerUrl
+                                      }
+                                      alt={
+                                        `Radiografía ${selectedInlineFile.original_name}`
+                                      }
+                                      draggable={
+                                        false
+                                      }
+                                      style={{
+                                        transform:
+                                          `translate(${viewerPan.x}px, ${viewerPan.y}px) `
+                                          +
+                                          `rotate(${viewerRotation}deg) `
+                                          +
+                                          `scale(${viewerZoom})`,
+
+                                        filter:
+                                          `brightness(${viewerBrightness}%) `
+                                          +
+                                          `contrast(${viewerContrast}%) `
+                                          +
+                                          `invert(${viewerInvert ? 100 : 0}%)`,
+                                      }}
+                                    />
+                                  )
+                                : (
+                                    <div
+                                      className="case-radiographies-inline-placeholder"
+                                    >
+                                      {
+                                        selectedInlineFile?.validation_status === "RECHAZADA"
+                                          ? (
+                                              <>
+                                                <ShieldAlert
+                                                  size={42}
+                                                />
+
+                                                <strong>
+                                                  Radiografía rechazada
+                                                </strong>
+
+                                                <span>
+                                                  Revise el motivo y la corrección necesaria antes de continuar.
+                                                </span>
+                                              </>
+                                            )
+                                          : selectedInlineFile?.mime.code === "DICOM"
+                                            ? (
+                                                <>
+                                                  <FileImage
+                                                    size={42}
+                                                  />
+
+                                                  <strong>
+                                                    Archivo DICOM registrado
+                                                  </strong>
+
+                                                  <span>
+                                                    El archivo está almacenado de forma segura. La previsualización web para DICOM aún no está habilitada.
+                                                  </span>
+                                                </>
+                                              )
+                                            : (
+                                                <>
+                                                  <LoaderCircle
+                                                    size={34}
+                                                    className="case-radiographies-spin"
+                                                  />
+
+                                                  <strong>
+                                                    Preparando vista previa...
+                                                  </strong>
+                                                </>
+                                              )
+                                      }
+                                    </div>
+                                  )
+                            }
+
+
+                            <div
+                              className="case-radiographies-inline-toolbar"
+                            >
+                              <button
+                                type="button"
+                                title="Alejar"
+                                onClick={
+                                  zoomOut
+                                }
+                              >
+                                <ZoomOut
+                                  size={17}
+                                />
+                              </button>
+
+                              <button
+                                type="button"
+                                title="Acercar"
+                                onClick={
+                                  zoomIn
+                                }
+                              >
+                                <ZoomIn
+                                  size={17}
+                                />
+                              </button>
+
+                              <button
+                                type="button"
+                                title="Pantalla completa"
+                                onClick={
+                                  () =>
+                                    void toggleFullscreen()
+                                }
+                              >
+                                <Maximize2
+                                  size={17}
+                                />
+                              </button>
+
+                              <button
+                                type="button"
+                                title="Rotar 90 grados"
+                                onClick={
+                                  rotateViewer
+                                }
+                              >
+                                <RotateCw
+                                  size={17}
+                                />
+                              </button>
+
+                              <button
+                                type="button"
+                                title="Restablecer vista"
+                                onClick={
+                                  resetViewer
+                                }
+                              >
+                                <RotateCcw
+                                  size={17}
+                                />
+                              </button>
+
+                              <button
+                                type="button"
+                                title="Invertir imagen"
+                                className={
+                                  viewerInvert
+                                    ? "case-radiographies-inline-toolbar-active"
+                                    : undefined
+                                }
+                                onClick={
+                                  () =>
+                                    setViewerInvert(
+                                      (current) =>
+                                        !current,
+                                    )
+                                }
+                              >
+                                <Sun
+                                  size={17}
+                                />
+                              </button>
+                            </div>
+
+
+                            <div
+                              className="case-radiographies-inline-zoom"
+                            >
+                              <button
+                                type="button"
+                                onClick={
+                                  zoomIn
+                                }
+                                title="Acercar"
+                              >
+                                <Plus
+                                  size={14}
+                                />
+                              </button>
+
+                              <input
+                                type="range"
+                                min="0.5"
+                                max="4"
+                                step="0.05"
+                                value={
+                                  viewerZoom
+                                }
+                                onChange={
+                                  (event) =>
+                                    setViewerZoom(
+                                      Number(
+                                        event.target.value,
+                                      ),
+                                    )
+                                }
+                                aria-label="Nivel de zoom"
+                              />
+
+                              <button
+                                type="button"
+                                onClick={
+                                  zoomOut
+                                }
+                                title="Alejar"
+                              >
+                                <Minus
+                                  size={14}
+                                />
+                              </button>
+
+                              <strong>
+                                {
+                                  Math.round(
+                                    viewerZoom * 100,
+                                  )
+                                }%
+                              </strong>
+                            </div>
+
+
+                            <div
+                              className="case-radiographies-inline-adjustments"
+                            >
+                              <label>
+                                <span>
+                                  Brillo
+                                </span>
+
+                                <input
+                                  type="range"
+                                  min="40"
+                                  max="200"
+                                  step="5"
+                                  value={
+                                    viewerBrightness
+                                  }
+                                  onChange={
+                                    (event) =>
+                                      setViewerBrightness(
+                                        Number(
+                                          event.target.value,
+                                        ),
+                                      )
+                                  }
+                                />
+                              </label>
+
+                              <label>
+                                <span>
+                                  Contraste
+                                </span>
+
+                                <input
+                                  type="range"
+                                  min="40"
+                                  max="250"
+                                  step="5"
+                                  value={
+                                    viewerContrast
+                                  }
+                                  onChange={
+                                    (event) =>
+                                      setViewerContrast(
+                                        Number(
+                                          event.target.value,
+                                        ),
+                                      )
+                                  }
+                                />
+                              </label>
+                            </div>
+                          </div>
                         </div>
 
 
                         <div
-                          className="case-radiographies-files"
+                          className="case-radiographies-detail-information"
                         >
+                          <section
+                            className="case-radiographies-study-information"
+                          >
+                            <header>
+                              <div
+                                className="case-radiographies-detail-small-icon"
+                              >
+                                <Info
+                                  size={15}
+                                />
+                              </div>
 
-                          {
-                            study.files.length ===
-                            0
-                              ? (
+                              <strong>
+                                Información del estudio
+                              </strong>
+                            </header>
 
-                                  <span
-                                    className="case-radiographies-no-files"
-                                  >
-                                    Sin archivos disponibles.
+                            <div
+                              className="case-radiographies-study-information-grid"
+                            >
+                              <div>
+                                <span>
+                                  <CalendarDays
+                                    size={14}
+                                  />
+
+                                  Fecha de estudio
+                                </span>
+
+                                <strong>
+                                  {formatDate(selectedStudy.study_date)}
+                                </strong>
+                              </div>
+
+                              <div>
+                                <span>
+                                  <FileImage
+                                    size={14}
+                                  />
+
+                                  Tipo de estudio
+                                </span>
+
+                                <strong>
+                                  {selectedStudy.study_type.name}
+                                </strong>
+                              </div>
+
+                              <div>
+                                <span>
+                                  <Clock3
+                                    size={14}
+                                  />
+
+                                  Fecha de registro
+                                </span>
+
+                                <strong>
+                                  {formatDateTime(selectedStudy.registered_at)}
+                                </strong>
+                              </div>
+
+                              <div>
+                                <span>
+                                  <MapPin
+                                    size={14}
+                                  />
+
+                                  Región anatómica
+                                </span>
+
+                                <strong>
+                                  {selectedStudy.anatomical_region.name}
+                                </strong>
+                              </div>
+
+                              <div>
+                                <span>
+                                  <UserRound
+                                    size={14}
+                                  />
+
+                                  Profesional
+                                </span>
+
+                                <strong>
+                                  {
+                                    resolveAuthorName(
+                                      selectedStudy.registered_by_uuid,
+                                    )
+                                  }
+                                </strong>
+                              </div>
+
+                              <div>
+                                <span>
+                                  <MapPin
+                                    size={14}
+                                  />
+
+                                  Lateralidad
+                                </span>
+
+                                <strong>
+                                  {
+                                    selectedStudy.laterality?.name
+                                    ??
+                                    "No especificada"
+                                  }
+                                </strong>
+                              </div>
+                            </div>
+                          </section>
+
+
+                          <section
+                            className="case-radiographies-study-observations"
+                          >
+                            <header>
+                              <div
+                                className="case-radiographies-detail-small-icon"
+                              >
+                                <FileImage
+                                  size={15}
+                                />
+                              </div>
+
+                              <strong>
+                                Observaciones
+                              </strong>
+                            </header>
+
+                            <div>
+                              {
+                                selectedStudy.observation
+                                ||
+                                "Sin observaciones registradas."
+                              }
+                            </div>
+                          </section>
+                        </div>
+
+
+                        {
+                          selectedInlineFile?.validation_status === "RECHAZADA"
+                          &&
+                          (
+                            <section
+                              className="case-radiographies-selected-rejection"
+                            >
+                              <div
+                                className="case-radiographies-rejection-header"
+                              >
+                                <div
+                                  className="case-radiographies-rejection-icon"
+                                >
+                                  <AlertTriangle
+                                    size={21}
+                                  />
+                                </div>
+
+                                <div>
+                                  <strong>
+                                    Radiografía rechazada
+                                  </strong>
+
+                                  <span>
+                                    El archivo no superó la validación. Revise el motivo y realice la corrección indicada antes de continuar con el análisis.
                                   </span>
-                                )
-                              : study.files.map(
-                                  (
-                                    file,
-                                  ) => {
+                                </div>
+                              </div>
 
-                                    const isRejected =
-                                      file
-                                        .validation_status
-                                      ===
-                                      "RECHAZADA";
 
-                                    const isValid =
-                                      file
-                                        .validation_status
-                                      ===
-                                      "VALIDA";
-
-                                    const invalidValidations =
-                                      file
-                                        .validations
-                                        .filter(
-                                          (
-                                            validation,
-                                          ) =>
-                                            validation
-                                              .result_code
-                                            ===
-                                            "INVALIDO",
-                                        );
-
-                                    return (
-
+                              {
+                                selectedInvalidValidations.length > 0
+                                  ? (
                                       <div
-                                        key={
-                                          file.id_file
-                                        }
-                                        className={
-                                          [
-                                            "case-radiographies-file-card",
-
-                                            isRejected
-                                              ? "case-radiographies-file-card--rejected"
-                                              : "",
-
-                                            isValid
-                                              ? "case-radiographies-file-card--valid"
-                                              : "",
-                                          ]
-                                            .filter(
-                                              Boolean,
-                                            )
-                                            .join(
-                                              " ",
-                                            )
-                                        }
+                                        className="case-radiographies-validation-list"
                                       >
-
-                                        <div
-                                          className="case-radiographies-file"
-                                        >
-
-                                          <div
-                                            className="case-radiographies-file-info"
-                                          >
-
-                                            <div
-                                              className="case-radiographies-file-name-row"
-                                            >
-
-                                              <strong>
-                                                {
-                                                  file
-                                                    .original_name
+                                        {
+                                          selectedInvalidValidations.map(
+                                            (
+                                              validation,
+                                              validationIndex,
+                                            ) => (
+                                              <div
+                                                key={
+                                                  `${selectedInlineFile.id_file}-${validation.type_code}-${validationIndex}`
                                                 }
-                                              </strong>
-
-                                              <span
-                                                className={
-                                                  `case-radiographies-status ${getValidationStatusClass(
-                                                    file,
-                                                  )}`
-                                                }
+                                                className="case-radiographies-validation-item"
                                               >
+                                                <div
+                                                  className="case-radiographies-validation-heading"
+                                                >
+                                                  <div>
+                                                    <XCircle
+                                                      size={16}
+                                                    />
+
+                                                    <strong>
+                                                      {validation.type_name}
+                                                    </strong>
+                                                  </div>
+
+                                                  <span>
+                                                    {validation.result_name}
+                                                  </span>
+                                                </div>
 
                                                 {
-                                                  isValid
-                                                    ? (
-                                                        <CheckCircle2
-                                                          size={13}
-                                                        />
-                                                      )
-                                                    : isRejected
-                                                      ? (
-                                                          <XCircle
-                                                            size={13}
-                                                          />
-                                                        )
-                                                      : (
-                                                          <LoaderCircle
-                                                            size={13}
-                                                          />
-                                                        )
-                                                }
-
-                                                {
-                                                  getValidationStatusLabel(
-                                                    file,
+                                                  validation.detail
+                                                  &&
+                                                  (
+                                                    <p
+                                                      className="case-radiographies-validation-detail"
+                                                    >
+                                                      {validation.detail}
+                                                    </p>
                                                   )
                                                 }
 
+                                                {
+                                                  validation.reason
+                                                  &&
+                                                  (
+                                                    <div
+                                                      className="case-radiographies-validation-block case-radiographies-validation-block--reason"
+                                                    >
+                                                      <div>
+                                                        <Info
+                                                          size={15}
+                                                        />
+
+                                                        <strong>
+                                                          Motivo
+                                                        </strong>
+                                                      </div>
+
+                                                      <p>
+                                                        {validation.reason}
+                                                      </p>
+                                                    </div>
+                                                  )
+                                                }
+
+                                                {
+                                                  validation.correction
+                                                  &&
+                                                  (
+                                                    <div
+                                                      className="case-radiographies-validation-block case-radiographies-validation-block--correction"
+                                                    >
+                                                      <div>
+                                                        <CheckCircle2
+                                                          size={15}
+                                                        />
+
+                                                        <strong>
+                                                          Corrección necesaria
+                                                        </strong>
+                                                      </div>
+
+                                                      <p>
+                                                        {validation.correction}
+                                                      </p>
+                                                    </div>
+                                                  )
+                                                }
+                                              </div>
+                                            ),
+                                          )
+                                        }
+                                      </div>
+                                    )
+                                  : (
+                                      <div
+                                        className="case-radiographies-validation-missing"
+                                      >
+                                        No se encontraron detalles adicionales de la validación.
+                                      </div>
+                                    )
+                              }
+
+
+                              <div
+                                className="case-radiographies-analysis-blocked"
+                              >
+                                <ShieldAlert
+                                  size={18}
+                                />
+
+                                <div>
+                                  <strong>
+                                    No disponible para análisis
+                                  </strong>
+
+                                  <span>
+                                    Esta versión se conserva para trazabilidad, pero no puede utilizarse en el análisis mientras permanezca rechazada.
+                                  </span>
+                                </div>
+                              </div>
+
+
+                              {
+                                selectedInlineFile.active
+                                &&
+                                (
+                                  replacementTarget?.id_file === selectedInlineFile.id_file
+                                    ? (
+                                        <div
+                                          className="case-radiographies-replacement-inline"
+                                        >
+                                          <div
+                                            className="case-radiographies-form-heading"
+                                          >
+                                            <Upload
+                                              size={20}
+                                            />
+
+                                            <div>
+                                              <strong>
+                                                Reemplazar radiografía rechazada
+                                              </strong>
+
+                                              <span>
+                                                La versión {selectedInlineFile.version} se conservará para trazabilidad.
                                               </span>
-
                                             </div>
+                                          </div>
 
 
+                                          <label
+                                            className="case-radiographies-file-field case-radiographies-form-wide"
+                                          >
                                             <span>
-                                              VersiÃ³n{" "}
-                                              {
-                                                file.version
-                                              }
-
-                                              {" Â· "}
-
-                                              {
-                                                file
-                                                  .mime
-                                                  .code
-                                              }
-
-                                              {" Â· "}
-
-                                              {
-                                                formatBytes(
-                                                  file
-                                                    .size_bytes,
-                                                )
-                                              }
-
-                                              {
-                                                file.width_px
-                                                &&
-                                                file.height_px
-                                                  ? (
-                                                      <>
-                                                        {" Â· "}
-                                                        {
-                                                          file.width_px
-                                                        }
-                                                        Ã—
-                                                        {
-                                                          file.height_px
-                                                        }
-                                                      </>
-                                                    )
-                                                  : null
-                                              }
-
-                                              {" Â· "}
-
-                                              Cargado:{" "}
-                                              {
-                                                formatDateTime(
-                                                  file
-                                                    .uploaded_at,
-                                                )
-                                              }
+                                              Nueva radiografía *
                                             </span>
 
-                                          </div>
+                                            <input
+                                              ref={
+                                                replacementFileInputRef
+                                              }
+                                              type="file"
+                                              disabled={
+                                                replacing
+                                              }
+                                              accept=".jpg,.jpeg,.png,.dcm,image/jpeg,image/png,application/dicom"
+                                              onChange={
+                                                (event) => {
+                                                  const nextFile =
+                                                    event.target.files?.[0]
+                                                    ??
+                                                    null;
+
+                                                  setReplacementFile(
+                                                    nextFile,
+                                                  );
+
+                                                  setReplacementProgress(
+                                                    0,
+                                                  );
+
+                                                  setError(
+                                                    null,
+                                                  );
+                                                }
+                                              }
+                                            />
+
+                                            <div
+                                              className="case-radiographies-file-box case-radiographies-file-box--replacement"
+                                            >
+                                              <FileImage
+                                                size={29}
+                                              />
+
+                                              {
+                                                replacementFile
+                                                  ? (
+                                                      <>
+                                                        <strong>
+                                                          {replacementFile.name}
+                                                        </strong>
+
+                                                        <span>
+                                                          {formatBytes(replacementFile.size)}
+                                                        </span>
+                                                      </>
+                                                    )
+                                                  : (
+                                                      <>
+                                                        <strong>
+                                                          Seleccione la radiografía corregida
+                                                        </strong>
+
+                                                        <span>
+                                                          JPG, PNG o DICOM · máximo 20 MB
+                                                        </span>
+                                                      </>
+                                                    )
+                                              }
+                                            </div>
+                                          </label>
+
+
+                                          <label
+                                            className="case-radiographies-replacement-reason"
+                                          >
+                                            Motivo del reemplazo *
+
+                                            <textarea
+                                              rows={3}
+                                              maxLength={1000}
+                                              disabled={
+                                                replacing
+                                              }
+                                              value={
+                                                replacementReason
+                                              }
+                                              onChange={
+                                                (event) =>
+                                                  setReplacementReason(
+                                                    event.target.value,
+                                                  )
+                                              }
+                                              placeholder="Ej.: se reemplaza el archivo rechazado por la radiografía original correcta."
+                                            />
+                                          </label>
+
+
+                                          {
+                                            replacing
+                                            &&
+                                            (
+                                              <div
+                                                className="case-radiographies-progress"
+                                              >
+                                                <div
+                                                  className="case-radiographies-progress-header"
+                                                >
+                                                  <div>
+                                                    <LoaderCircle
+                                                      size={18}
+                                                      className="case-radiographies-spin"
+                                                    />
+
+                                                    <strong>
+                                                      Reemplazando radiografía...
+                                                    </strong>
+                                                  </div>
+
+                                                  <span>
+                                                    {replacementProgress}%
+                                                  </span>
+                                                </div>
+
+                                                <div
+                                                  className="case-radiographies-progress-track"
+                                                >
+                                                  <div
+                                                    className="case-radiographies-progress-bar"
+                                                    style={{
+                                                      width:
+                                                        `${replacementProgress}%`,
+                                                    }}
+                                                  />
+                                                </div>
+                                              </div>
+                                            )
+                                          }
 
 
                                           <div
-                                            className="case-radiographies-file-actions"
+                                            className="case-radiographies-form-actions"
                                           >
-
-                                            {
-                                              isValid
-                                              &&
-                                              file
-                                                .mime
-                                                .code
-                                              !==
-                                              "DICOM"
-                                              &&
-                                              (
-
-                                                <button
-                                                  type="button"
-                                                  disabled={
-                                                    workingFileId
-                                                    ===
-                                                    file.id_file
-                                                  }
-                                                  onClick={
-                                                    () =>
-                                                      void handleView(
-                                                        file.id_file,
-                                                        file.original_name,
-                                                      )
-                                                  }
-                                                >
-
-                                                  {
-                                                    workingFileId
-                                                    ===
-                                                    file.id_file
-                                                      ? (
-                                                          <LoaderCircle
-                                                            size={15}
-                                                            className="case-radiographies-spin"
-                                                          />
-                                                        )
-                                                      : (
-                                                          <Eye
-                                                            size={15}
-                                                          />
-                                                        )
-                                                  }
-
-                                                  Ver radiografía
-
-                                                </button>
-                                              )
-                                            }
-
-
-                                            
-
-
-                                            {
-                                              isRejected
-                                              &&
-                                              file.active
-                                              &&
-                                              (
-
-                                                <button
-                                                  type="button"
-                                                  disabled={
-                                                    replacing
-                                                  }
-                                                  onClick={
-                                                    () =>
-                                                      openReplacement(
-                                                        file,
-                                                      )
-                                                  }
-                                                >
-                                                  <Upload
-                                                    size={15}
-                                                  />
-
-                                                  Reemplazar
-                                                </button>
-                                              )
-                                            }
-
-                                          </div>
-
-                                        </div>
-
-
-                                        {
-                                          isValid
-                                          &&
-                                          (
-
-                                            <div
-                                              className="case-radiographies-valid-notice"
+                                            <button
+                                              type="button"
+                                              className="case-radiographies-secondary"
+                                              disabled={
+                                                replacing
+                                              }
+                                              onClick={
+                                                resetReplacementForm
+                                              }
                                             >
+                                              Cancelar
+                                            </button>
 
-                                              <CheckCircle2
-                                                size={17}
-                                              />
-
-                                              <div>
-                                                <strong>
-                                                  Archivo validado
-                                                </strong>
-
-                                                <span>
-                                                  La radiografÃ­a superÃ³ las validaciones
-                                                  registradas y estÃ¡ disponible para
-                                                  continuar con el flujo de anÃ¡lisis.
-                                                </span>
-                                              </div>
-
-                                            </div>
-                                          )
-                                        }
-
-
-                                        {
-                                          isRejected
-                                          &&
-                                          (
-
-                                            <div
-                                              className="case-radiographies-rejection"
+                                            <button
+                                              type="button"
+                                              className="case-radiographies-primary"
+                                              disabled={
+                                                replacing
+                                              }
+                                              onClick={
+                                                () =>
+                                                  void handleReplacement()
+                                              }
                                             >
-
-                                              <div
-                                                className="case-radiographies-rejection-header"
-                                              >
-
-                                                <div
-                                                  className="case-radiographies-rejection-icon"
-                                                >
-                                                  <AlertTriangle
-                                                    size={21}
-                                                  />
-                                                </div>
-
-                                                <div>
-                                                  <strong>
-                                                    RadiografÃ­a rechazada
-                                                  </strong>
-
-                                                  <span>
-                                                    El archivo no superÃ³ la validaciÃ³n.
-                                                    Revise el motivo y realice la
-                                                    correcciÃ³n indicada antes de
-                                                    continuar con el anÃ¡lisis.
-                                                  </span>
-                                                </div>
-
-                                              </div>
-
-
                                               {
-                                                invalidValidations.length
-                                                >
-                                                0
+                                                replacing
                                                   ? (
-
-                                                      <div
-                                                        className="case-radiographies-validation-list"
-                                                      >
-
-                                                        {
-                                                          invalidValidations.map(
-                                                            (
-                                                              validation,
-                                                              validationIndex,
-                                                            ) => (
-
-                                                              <div
-                                                                key={
-                                                                  `${file.id_file}-${validation.type_code}-${validationIndex}`
-                                                                }
-                                                                className="case-radiographies-validation-item"
-                                                              >
-
-                                                                <div
-                                                                  className="case-radiographies-validation-heading"
-                                                                >
-
-                                                                  <div>
-                                                                    <XCircle
-                                                                      size={16}
-                                                                    />
-
-                                                                    <strong>
-                                                                      {
-                                                                        validation
-                                                                          .type_name
-                                                                      }
-                                                                    </strong>
-                                                                  </div>
-
-                                                                  <span>
-                                                                    {
-                                                                      validation
-                                                                        .result_name
-                                                                    }
-                                                                  </span>
-
-                                                                </div>
-
-
-                                                                {
-                                                                  validation.detail
-                                                                  &&
-                                                                  (
-
-                                                                    <p
-                                                                      className="case-radiographies-validation-detail"
-                                                                    >
-                                                                      {
-                                                                        validation.detail
-                                                                      }
-                                                                    </p>
-                                                                  )
-                                                                }
-
-
-                                                                {
-                                                                  validation.reason
-                                                                  &&
-                                                                  (
-
-                                                                    <div
-                                                                      className="case-radiographies-validation-block case-radiographies-validation-block--reason"
-                                                                    >
-
-                                                                      <div>
-                                                                        <Info
-                                                                          size={15}
-                                                                        />
-
-                                                                        <strong>
-                                                                          Motivo
-                                                                        </strong>
-                                                                      </div>
-
-                                                                      <p>
-                                                                        {
-                                                                          validation.reason
-                                                                        }
-                                                                      </p>
-
-                                                                    </div>
-                                                                  )
-                                                                }
-
-
-                                                                {
-                                                                  validation.correction
-                                                                  &&
-                                                                  (
-
-                                                                    <div
-                                                                      className="case-radiographies-validation-block case-radiographies-validation-block--correction"
-                                                                    >
-
-                                                                      <div>
-                                                                        <CheckCircle2
-                                                                          size={15}
-                                                                        />
-
-                                                                        <strong>
-                                                                          CorrecciÃ³n necesaria
-                                                                        </strong>
-                                                                      </div>
-
-                                                                      <p>
-                                                                        {
-                                                                          validation.correction
-                                                                        }
-                                                                      </p>
-
-                                                                    </div>
-                                                                  )
-                                                                }
-
-
-                                                                <span
-                                                                  className="case-radiographies-validation-date"
-                                                                >
-                                                                  Validado:{" "}
-                                                                  {
-                                                                    formatDateTime(
-                                                                      validation
-                                                                        .validated_at,
-                                                                    )
-                                                                  }
-                                                                </span>
-
-                                                              </div>
-                                                            ),
-                                                          )
-                                                        }
-
-                                                      </div>
+                                                      <LoaderCircle
+                                                        size={17}
+                                                        className="case-radiographies-spin"
+                                                      />
                                                     )
                                                   : (
-
-                                                      <div
-                                                        className="case-radiographies-validation-missing"
-                                                      >
-                                                        No se encontraron detalles
-                                                        adicionales de la validaciÃ³n.
-                                                      </div>
+                                                      <Upload
+                                                        size={17}
+                                                      />
                                                     )
                                               }
 
-
-                                              <div
-                                                className="case-radiographies-analysis-blocked"
-                                              >
-
-                                                <ShieldAlert
-                                                  size={18}
-                                                />
-
-                                                <div>
-                                                  <strong>
-                                                    No disponible para anÃ¡lisis
-                                                  </strong>
-
-                                                  <span>
-                                                    Esta versiÃ³n se conserva para
-                                                    trazabilidad, pero no puede
-                                                    utilizarse en el anÃ¡lisis mientras
-                                                    permanezca rechazada.
-                                                  </span>
-                                                </div>
-
-                                              </div>
-
-
                                               {
-                                                replacementTarget
-                                                  ?.id_file
-                                                ===
-                                                file.id_file
-                                                &&
-                                                (
-
-                                                  <div
-                                                    className="case-radiographies-form"
-                                                  >
-
-                                                    <div
-                                                      className="case-radiographies-form-heading"
-                                                    >
-                                                      <Upload
-                                                        size={20}
-                                                      />
-
-                                                      <div>
-                                                        <strong>
-                                                          Reemplazar radiografÃ­a rechazada
-                                                        </strong>
-                                                        <span>
-                                                          La versiÃ³n {file.version} se conservarÃ¡ para trazabilidad.
-                                                        </span>
-                                                      </div>
-                                                    </div>
-
-
-                                                    <label
-                                                      className="case-radiographies-file-field case-radiographies-form-wide"
-                                                    >
-                                                      <span>
-                                                        Nueva radiografÃ­a *
-                                                      </span>
-
-                                                      <input
-                                                        ref={
-                                                          replacementFileInputRef
-                                                        }
-                                                        type="file"
-                                                        disabled={
-                                                          replacing
-                                                        }
-                                                        accept=".jpg,.jpeg,.png,.dcm,image/jpeg,image/png,application/dicom"
-                                                        onChange={
-                                                          (event) => {
-                                                            const nextFile =
-                                                              event
-                                                                .target
-                                                                .files
-                                                                ?.[0]
-                                                              ??
-                                                              null;
-
-                                                            setReplacementFile(
-                                                              nextFile,
-                                                            );
-
-                                                            setReplacementProgress(
-                                                              0,
-                                                            );
-
-                                                            setError(
-                                                              null,
-                                                            );
-                                                          }
-                                                        }
-                                                      />
-
-                                                      <div
-                                                        className="case-radiographies-file-box"
-                                                      >
-                                                        <FileImage
-                                                          size={29}
-                                                        />
-
-                                                        {
-                                                          replacementFile
-                                                            ? (
-                                                                <>
-                                                                  <strong>
-                                                                    {replacementFile.name}
-                                                                  </strong>
-                                                                  <span>
-                                                                    {formatBytes(replacementFile.size)}
-                                                                  </span>
-                                                                </>
-                                                              )
-                                                            : (
-                                                                <>
-                                                                  <strong>
-                                                                    Seleccione la radiografÃ­a corregida
-                                                                  </strong>
-                                                                  <span>
-                                                                    JPG, PNG o DICOM Â· mÃ¡ximo 20 MB
-                                                                  </span>
-                                                                </>
-                                                              )
-                                                        }
-                                                      </div>
-                                                    </label>
-
-
-                                                    <label
-                                                      className="case-radiographies-form-wide"
-                                                    >
-                                                      Motivo del reemplazo *
-
-                                                      <textarea
-                                                        rows={3}
-                                                        maxLength={1000}
-                                                        disabled={
-                                                          replacing
-                                                        }
-                                                        value={
-                                                          replacementReason
-                                                        }
-                                                        onChange={
-                                                          (event) =>
-                                                            setReplacementReason(
-                                                              event.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="Ej.: se reemplaza el archivo rechazado por la radiografÃ­a original correcta."
-                                                      />
-                                                    </label>
-
-
-                                                    {
-                                                      replacing
-                                                      &&
-                                                      (
-                                                        <div
-                                                          className="case-radiographies-progress"
-                                                          aria-live="polite"
-                                                        >
-                                                          <div
-                                                            className="case-radiographies-progress-header"
-                                                          >
-                                                            <div>
-                                                              <LoaderCircle
-                                                                size={18}
-                                                                className="case-radiographies-spin"
-                                                              />
-                                                              <strong>
-                                                                Reemplazando radiografÃ­a...
-                                                              </strong>
-                                                            </div>
-                                                            <span>
-                                                              {replacementProgress}%
-                                                            </span>
-                                                          </div>
-
-                                                          <div
-                                                            className="case-radiographies-progress-track"
-                                                            role="progressbar"
-                                                            aria-valuemin={0}
-                                                            aria-valuemax={100}
-                                                            aria-valuenow={
-                                                              replacementProgress
-                                                            }
-                                                          >
-                                                            <div
-                                                              className="case-radiographies-progress-bar"
-                                                              style={{
-                                                                width:
-                                                                  `${replacementProgress}%`,
-                                                              }}
-                                                            />
-                                                          </div>
-                                                        </div>
-                                                      )
-                                                    }
-
-
-                                                    <div
-                                                      className="case-radiographies-form-actions"
-                                                    >
-                                                      <button
-                                                        type="button"
-                                                        className="case-radiographies-secondary"
-                                                        disabled={
-                                                          replacing
-                                                        }
-                                                        onClick={
-                                                          resetReplacementForm
-                                                        }
-                                                      >
-                                                        Cancelar
-                                                      </button>
-
-                                                      <button
-                                                        type="button"
-                                                        className="case-radiographies-primary"
-                                                        disabled={
-                                                          replacing
-                                                        }
-                                                        onClick={
-                                                          () =>
-                                                            void handleReplacement()
-                                                        }
-                                                      >
-                                                        {
-                                                          replacing
-                                                            ? (
-                                                                <LoaderCircle
-                                                                  size={17}
-                                                                  className="case-radiographies-spin"
-                                                                />
-                                                              )
-                                                            : (
-                                                                <Upload
-                                                                  size={17}
-                                                                />
-                                                              )
-                                                        }
-
-                                                        {
-                                                          replacing
-                                                            ? "Reemplazando..."
-                                                            : "Confirmar reemplazo"
-                                                        }
-                                                      </button>
-                                                    </div>
-
-                                                  </div>
-                                                )
+                                                replacing
+                                                  ? "Reemplazando..."
+                                                  : "Confirmar reemplazo"
                                               }
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )
+                                    : (
+                                        <button
+                                          type="button"
+                                          className="case-radiographies-replace-inline-button"
+                                          disabled={
+                                            replacing
+                                          }
+                                          onClick={
+                                            () =>
+                                              openReplacement(
+                                                selectedInlineFile,
+                                              )
+                                          }
+                                        >
+                                          <Upload
+                                            size={15}
+                                          />
 
-                                            </div>
-                                          )
-                                        }
-
-                                      </div>
-                                    );
-                                  },
+                                          Reemplazar radiografía
+                                        </button>
+                                      )
                                 )
-                          }
+                              }
+                            </section>
+                          )
+                        }
 
-                        </div>
 
-                      </section>
-                    ),
-                  )
-                }
+                        {
+                          selectedInlineFile
+                          &&
+                          (
+                            <footer
+                              className="case-radiographies-selected-file-footer"
+                            >
+                              <span>
+                                <strong>
+                                  Archivo:
+                                </strong>{" "}
+                                {selectedInlineFile.original_name}
+                              </span>
 
+                              <span>
+                                Versión {selectedInlineFile.version}
+                                {" · "}
+                                {selectedInlineFile.mime.code}
+                                {" · "}
+                                {formatBytes(selectedInlineFile.size_bytes)}
+                              </span>
+                            </footer>
+                          )
+                        }
+                      </>
+                    )
+                  }
+                </section>
               </div>
             )
       }

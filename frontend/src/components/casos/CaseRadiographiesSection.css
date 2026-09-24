@@ -474,7 +474,7 @@
 
 }
 /* =========================================================
-   CONFIRMACIÃ“N DE CARGA
+   CONFIRMACIÓN DE CARGA
    ========================================================= */
 
 .case-radiographies-confirmation {
@@ -642,7 +642,7 @@
 
 
 /* =========================================================
-   RESPONSIVE CONFIRMACIÃ“N / PROGRESO
+   RESPONSIVE CONFIRMACIÓN / PROGRESO
    ========================================================= */
 
 @media (max-width: 760px) {
@@ -670,7 +670,7 @@
 }
 
 /* =========================================================
-   2.3D - ESTADO Y VALIDACIÃ“N DE ARCHIVOS RADIOGRÃFICOS
+   2.3D - ESTADO Y VALIDACIÓN DE ARCHIVOS RADIOGRÁFICOS
    ========================================================= */
 
 .case-radiographies-file-card {
@@ -757,7 +757,7 @@
 
 
 /* =========================================================
-   AVISO DE ARCHIVO VÃLIDO
+   AVISO DE ARCHIVO VÁLIDO
    ========================================================= */
 
 .case-radiographies-valid-notice {
@@ -797,7 +797,7 @@
 
 
 /* =========================================================
-   RADIOGRAFÃA RECHAZADA
+   RADIOGRAFÍA RECHAZADA
    ========================================================= */
 
 .case-radiographies-rejection {
@@ -910,7 +910,7 @@
 
 
 /* =========================================================
-   MOTIVO / CORRECCIÃ“N
+   MOTIVO / CORRECCIÓN
    ========================================================= */
 
 .case-radiographies-validation-block {
@@ -957,7 +957,7 @@
 
 
 /* =========================================================
-   SIN DETALLE DE VALIDACIÃ“N
+   SIN DETALLE DE VALIDACIÓN
    ========================================================= */
 
 .case-radiographies-validation-missing {
@@ -973,7 +973,7 @@
 
 
 /* =========================================================
-   ANÃLISIS BLOQUEADO
+   ANÁLISIS BLOQUEADO
    ========================================================= */
 
 .case-radiographies-analysis-blocked {
@@ -1038,13 +1038,13 @@
 
 }
 /* =========================================================
-   2.3D-4 - REEMPLAZO DE RADIOGRAFÃA RECHAZADA
+   2.3D-4 - REEMPLAZO DE RADIOGRAFÍA RECHAZADA
    ========================================================= */
 
 /*
  * El formulario de reemplazo reutiliza los componentes
  * visuales del formulario principal, pero se encuentra
- * dentro del panel de una radiografÃ­a rechazada.
+ * dentro del panel de una radiografía rechazada.
  */
 .case-radiographies-rejection
 .case-radiographies-form {
@@ -1176,7 +1176,7 @@ textarea:disabled {
 
 
 /* =========================================================
-   BOTÃ“N REEMPLAZAR EN ARCHIVO RECHAZADO
+   BOTÓN REEMPLAZAR EN ARCHIVO RECHAZADO
    ========================================================= */
 
 .case-radiographies-file-card--rejected
@@ -1196,7 +1196,7 @@ button:last-child:hover:not(:disabled) {
 
 
 /* =========================================================
-   TRANSICIÃ“N VISUAL
+   TRANSICIÓN VISUAL
    ========================================================= */
 
 .case-radiographies-rejection
@@ -1761,5 +1761,1899 @@ body.case-radiographies-viewer-open {
 
   .case-radiography-viewer-footer button {
     width: 100%;
+  }
+}
+
+/* =========================================================
+   AJUSTE VISUAL DEFINITIVO
+   Mantiene toda la lógica existente y compacta la interfaz.
+   ========================================================= */
+
+.case-radiographies {
+  border: 1px solid #d9e4ec;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow:
+    0 8px 24px rgba(15, 23, 42, 0.045);
+}
+
+.case-radiographies-header {
+  min-height: 66px;
+  padding: 13px 16px;
+  border-bottom: 1px solid #e8eef4;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.case-radiographies-title {
+  gap: 11px;
+}
+
+.case-radiographies-title-icon {
+  width: 39px;
+  height: 39px;
+  border-radius: 11px;
+  background: #e9f8fc;
+  color: #0891b2;
+  box-shadow: inset 0 0 0 1px rgba(8, 145, 178, 0.08);
+}
+
+.case-radiographies-title h2 {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+.case-radiographies-title p {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.case-radiographies-primary,
+.case-radiographies-secondary,
+.case-radiographies-file-actions button {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.case-radiographies-primary {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 9px;
+  box-shadow: 0 5px 13px rgba(8, 145, 178, 0.16);
+}
+
+.case-radiographies-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 7px 16px rgba(8, 145, 178, 0.2);
+}
+
+.case-radiographies-secondary {
+  min-height: 38px;
+  border-radius: 9px;
+}
+
+.case-radiographies-message {
+  margin: 13px 14px 0;
+  padding: 11px 12px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.case-radiographies-form {
+  margin: 14px;
+  border-radius: 13px;
+  background: #ffffff;
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.035);
+}
+
+.case-radiographies-form-heading {
+  padding: 12px 14px;
+  background: #f8fbfd;
+}
+
+.case-radiographies-form-heading strong {
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.case-radiographies-form-heading span {
+  font-size: 0.67rem;
+  line-height: 1.4;
+}
+
+.case-radiographies-form-grid {
+  gap: 11px;
+  padding: 14px;
+}
+
+.case-radiographies-form-grid label {
+  gap: 6px;
+  font-size: 0.69rem;
+}
+
+.case-radiographies-form-grid input,
+.case-radiographies-form-grid select {
+  min-height: 39px;
+}
+
+.case-radiographies-form-grid input,
+.case-radiographies-form-grid select,
+.case-radiographies-form-grid textarea {
+  border-radius: 8px;
+  border-color: #d7e1ea;
+  font-size: 0.74rem;
+}
+
+.case-radiographies-form-grid textarea {
+  min-height: 78px;
+  padding: 9px 10px;
+  line-height: 1.45;
+}
+
+.case-radiographies-file-box {
+  min-height: 96px;
+  padding: 13px;
+  border-radius: 10px;
+  background: #fbfdff;
+}
+
+.case-radiographies-file-box strong {
+  white-space: normal;
+  text-align: center;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.case-radiographies-list {
+  gap: 12px;
+  padding: 13px;
+}
+
+.case-radiographies-study {
+  border-color: #dce6ee;
+  border-radius: 13px;
+  background: #ffffff;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.035);
+}
+
+.case-radiographies-study-main {
+  gap: 11px;
+  padding: 13px 14px 10px;
+}
+
+.case-radiographies-study-icon {
+  width: 44px;
+  height: 44px;
+  flex-basis: 44px;
+  border-radius: 11px;
+  background: #e8f8fc;
+}
+
+.case-radiographies-study-title {
+  gap: 7px;
+}
+
+.case-radiographies-study-title strong {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.case-radiographies-study-title span {
+  min-height: 21px;
+  padding: 0 8px;
+  border: 1px solid #d6f0f7;
+  font-size: 0.61rem;
+}
+
+.case-radiographies-metadata {
+  gap: 6px 8px;
+  margin-top: 7px;
+}
+
+.case-radiographies-metadata span {
+  padding: 5px 8px;
+  border: 1px solid #e2eaf1;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #5d6b7c;
+  font-size: 0.63rem;
+  line-height: 1.3;
+}
+
+.case-radiographies-observation {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid #e4ebf1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #526174;
+  font-size: 0.68rem;
+  line-height: 1.42;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.case-radiographies-files {
+  gap: 8px;
+  padding: 0 14px 13px;
+}
+
+.case-radiographies-file-card {
+  border-radius: 11px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.case-radiographies-file-card--valid {
+  border-color: #b9eac9;
+  background: #fcfffd;
+}
+
+.case-radiographies-file-card--rejected {
+  border-color: #f3c7c7;
+  background: #fffdfd;
+}
+
+.case-radiographies-file {
+  gap: 10px;
+  padding: 10px 11px 8px;
+  border: 0;
+  background: transparent;
+}
+
+.case-radiographies-file-info {
+  flex: 1;
+  gap: 3px;
+}
+
+.case-radiographies-file-name-row {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.case-radiographies-file-name-row > strong,
+.case-radiographies-file-info strong {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-size: 0.69rem;
+  line-height: 1.35;
+}
+
+.case-radiographies-file-info span {
+  color: #718096;
+  font-size: 0.61rem;
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.case-radiographies-status {
+  min-height: 20px;
+  gap: 4px;
+  padding: 0 7px;
+  font-size: 0.59rem;
+}
+
+.case-radiographies-file-actions {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.case-radiographies-file-actions button {
+  min-height: 30px;
+  padding: 0 9px;
+  border-radius: 8px;
+  font-size: 0.65rem;
+}
+
+.case-radiographies-valid-notice {
+  gap: 8px;
+  margin: 0 10px 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f1fcf5;
+}
+
+.case-radiographies-valid-notice strong {
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.case-radiographies-valid-notice span {
+  font-size: 0.61rem;
+  line-height: 1.4;
+}
+
+.case-radiographies-rejection {
+  margin: 0 10px 10px;
+  padding: 11px;
+  border-radius: 10px;
+}
+
+.case-radiographies-rejection-header {
+  gap: 9px;
+  margin-bottom: 9px;
+}
+
+.case-radiographies-rejection-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+}
+
+.case-radiographies-rejection-header strong {
+  font-size: 0.72rem;
+}
+
+.case-radiographies-rejection-header span {
+  font-size: 0.64rem;
+  line-height: 1.4;
+}
+
+.case-radiographies-validation-list {
+  gap: 8px;
+}
+
+.case-radiographies-validation-item {
+  padding: 9px 10px;
+  border-radius: 9px;
+}
+
+.case-radiographies-validation-heading strong,
+.case-radiographies-validation-block strong {
+  font-size: 0.65rem;
+}
+
+.case-radiographies-validation-heading > span {
+  font-size: 0.58rem;
+}
+
+.case-radiographies-validation-detail,
+.case-radiographies-validation-block p,
+.case-radiographies-validation-date,
+.case-radiographies-validation-missing {
+  font-size: 0.62rem;
+}
+
+.case-radiographies-analysis-blocked {
+  gap: 8px;
+  margin-top: 9px;
+  padding: 9px 10px;
+  border-radius: 9px;
+}
+
+.case-radiographies-analysis-blocked strong {
+  font-size: 0.66rem;
+}
+
+.case-radiographies-analysis-blocked span {
+  font-size: 0.61rem;
+  line-height: 1.4;
+}
+
+.case-radiographies-confirmation {
+  margin: 0 14px 14px;
+  border-radius: 12px;
+}
+
+.case-radiographies-confirmation-heading {
+  padding: 12px 14px;
+}
+
+.case-radiographies-confirmation-grid {
+  gap: 9px;
+  padding: 12px 14px;
+}
+
+.case-radiographies-confirmation-grid > div {
+  padding: 9px 10px;
+  border-radius: 9px;
+}
+
+.case-radiographies-confirmation-grid span {
+  font-size: 0.61rem;
+}
+
+.case-radiographies-confirmation-grid strong {
+  font-size: 0.7rem;
+}
+
+.case-radiographies-confirmation-actions {
+  padding: 0 14px 13px;
+}
+
+.case-radiographies-progress {
+  margin: 0 14px 14px;
+  padding: 11px 12px;
+  border-radius: 10px;
+}
+
+.case-radiographies-progress-track {
+  height: 8px;
+}
+
+/* VISOR */
+.case-radiography-viewer-overlay {
+  backdrop-filter: blur(4px);
+  background: rgba(2, 6, 23, 0.74);
+}
+
+.case-radiography-viewer {
+  border-radius: 16px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.4);
+}
+
+.case-radiography-viewer-header,
+.case-radiography-viewer-toolbar,
+.case-radiography-viewer-footer {
+  backdrop-filter: blur(7px);
+}
+
+.case-radiography-viewer-stage img {
+  border-radius: 8px;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.42);
+}
+
+@media (max-width: 760px) {
+  .case-radiographies-list {
+    padding: 10px;
+  }
+
+  .case-radiographies-study-main,
+  .case-radiographies-file {
+    gap: 9px;
+  }
+
+  .case-radiographies-file-actions {
+    width: 100%;
+  }
+
+  .case-radiographies-file-actions button {
+    flex: 1 1 auto;
+  }
+
+  .case-radiographies-metadata span {
+    border-radius: 8px;
+  }
+}
+
+/* =========================================================
+   REDISEÑO VISUAL V2 - RADIOGRAFÍAS
+   Cambio visual perceptible manteniendo la lógica actual.
+   ========================================================= */
+
+.case-radiographies {
+  overflow: visible;
+  border: 1px solid #d7e5ee;
+  border-radius: 18px;
+  background: #f4f8fb;
+  box-shadow:
+    0 14px 38px rgba(15, 23, 42, 0.06);
+}
+
+.case-radiographies-header {
+  position: relative;
+  overflow: hidden;
+  min-height: 72px;
+  padding: 15px 18px;
+  border: 0;
+  border-bottom: 1px solid #dfeaf1;
+  border-radius: 18px 18px 0 0;
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff 0%,
+      #f4fbfe 58%,
+      #eaf8fc 100%
+    );
+}
+
+.case-radiographies-header::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background:
+    linear-gradient(
+      180deg,
+      #06b6d4 0%,
+      #0284c7 100%
+    );
+}
+
+.case-radiographies-title-icon {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 13px;
+  background:
+    linear-gradient(
+      135deg,
+      #dff7fc 0%,
+      #c8eef8 100%
+    );
+  color: #0284a8;
+  box-shadow:
+    0 6px 16px rgba(8, 145, 178, 0.12);
+}
+
+.case-radiographies-title h2 {
+  color: #102f51;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.case-radiographies-title p {
+  color: #718096;
+  font-size: 0.72rem;
+}
+
+.case-radiographies-header > .case-radiographies-primary {
+  min-height: 41px;
+  padding-inline: 16px;
+  border: 0;
+  border-radius: 11px;
+  background:
+    linear-gradient(
+      135deg,
+      #0891b2 0%,
+      #0284c7 100%
+    );
+  box-shadow:
+    0 8px 20px rgba(2, 132, 199, 0.2);
+}
+
+.case-radiographies-header > .case-radiographies-primary:hover:not(:disabled) {
+  background:
+    linear-gradient(
+      135deg,
+      #087f9d 0%,
+      #0369a1 100%
+    );
+  transform: translateY(-1px);
+}
+
+/* =========================
+   FORMULARIO
+   ========================= */
+
+.case-radiographies-form {
+  margin: 16px;
+  overflow: hidden;
+  border: 1px solid #d6e4ec;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow:
+    0 10px 28px rgba(15, 23, 42, 0.05);
+}
+
+.case-radiographies-form-heading {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2ebf1;
+  background:
+    linear-gradient(
+      90deg,
+      #f3fbfe 0%,
+      #ffffff 70%
+    );
+}
+
+.case-radiographies-form-heading > svg {
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+  border-radius: 10px;
+  background: #daf4fb;
+  color: #0284a8;
+}
+
+.case-radiographies-form-heading strong {
+  color: #12365c;
+  font-size: 0.82rem;
+}
+
+.case-radiographies-form-heading span {
+  color: #718096;
+  font-size: 0.67rem;
+}
+
+.case-radiographies-form-grid {
+  gap: 14px;
+  padding: 16px;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #fbfdff 100%
+    );
+}
+
+.case-radiographies-form-grid label {
+  position: relative;
+  gap: 7px;
+  color: #34495e;
+  font-size: 0.69rem;
+  font-weight: 780;
+}
+
+.case-radiographies-form-grid input,
+.case-radiographies-form-grid select,
+.case-radiographies-form-grid textarea {
+  border: 1px solid #ccdbe5;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #25364a;
+  box-shadow:
+    0 2px 5px rgba(15, 23, 42, 0.025);
+}
+
+.case-radiographies-form-grid input,
+.case-radiographies-form-grid select {
+  min-height: 43px;
+  padding-inline: 12px;
+}
+
+.case-radiographies-form-grid textarea {
+  min-height: 92px;
+  padding: 11px 12px;
+}
+
+.case-radiographies-form-grid input:hover:not(:disabled),
+.case-radiographies-form-grid select:hover:not(:disabled),
+.case-radiographies-form-grid textarea:hover:not(:disabled) {
+  border-color: #a9c3d3;
+}
+
+.case-radiographies-form-grid input:focus,
+.case-radiographies-form-grid select:focus,
+.case-radiographies-form-grid textarea:focus {
+  border-color: #0ea5c6;
+  box-shadow:
+    0 0 0 3px rgba(14, 165, 198, 0.1);
+}
+
+.case-radiographies-file-field {
+  margin-top: 1px;
+}
+
+.case-radiographies-file-box {
+  min-height: 112px;
+  border: 1.5px dashed #76c7dc;
+  border-radius: 13px;
+  background:
+    linear-gradient(
+      135deg,
+      #f9fdff 0%,
+      #f0faff 100%
+    );
+  box-shadow: none;
+}
+
+.case-radiographies-file-box svg {
+  width: 31px;
+  height: 31px;
+  padding: 6px;
+  border-radius: 9px;
+  background: #dff6fc;
+  color: #0284a8;
+}
+
+.case-radiographies-file-field:hover .case-radiographies-file-box {
+  border-color: #0891b2;
+  background:
+    linear-gradient(
+      135deg,
+      #f2fbfe 0%,
+      #e8f8fd 100%
+    );
+  transform: translateY(-1px);
+}
+
+.case-radiographies-file-box strong {
+  color: #183b5e;
+  font-size: 0.73rem;
+}
+
+.case-radiographies-file-box span {
+  color: #8091a3;
+  font-size: 0.64rem;
+}
+
+.case-radiographies-form-actions {
+  padding: 13px 16px 15px;
+  border-top: 1px solid #edf2f6;
+  background: #fbfdff;
+}
+
+.case-radiographies-form-actions .case-radiographies-primary {
+  min-width: 145px;
+}
+
+.case-radiographies-form-actions .case-radiographies-secondary {
+  min-width: 84px;
+}
+
+/* =========================
+   LISTA DE ESTUDIOS
+   ========================= */
+
+.case-radiographies-list {
+  gap: 14px;
+  padding: 16px;
+  padding-top: 8px;
+}
+
+.case-radiographies-study {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #d6e3eb;
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow:
+    0 7px 20px rgba(15, 23, 42, 0.04);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.case-radiographies-study:hover {
+  border-color: #bdd5e2;
+  box-shadow:
+    0 10px 26px rgba(15, 23, 42, 0.065);
+  transform: translateY(-1px);
+}
+
+.case-radiographies-study::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background:
+    linear-gradient(
+      180deg,
+      #22b8cf 0%,
+      #0284c7 100%
+    );
+}
+
+.case-radiographies-study-main {
+  gap: 12px;
+  padding: 14px 16px 11px 18px;
+}
+
+.case-radiographies-study-icon {
+  width: 43px;
+  height: 43px;
+  flex: 0 0 43px;
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      135deg,
+      #e2f7fc 0%,
+      #d2f0f8 100%
+    );
+  color: #0284a8;
+  box-shadow:
+    inset 0 0 0 1px rgba(8, 145, 178, 0.08);
+}
+
+.case-radiographies-study-title {
+  gap: 8px;
+}
+
+.case-radiographies-study-title strong {
+  color: #102f51;
+  font-size: 0.83rem;
+  font-weight: 850;
+}
+
+.case-radiographies-study-title span {
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid #c8edf5;
+  border-radius: 999px;
+  background: #eaf9fd;
+  color: #047c99;
+  font-size: 0.59rem;
+  font-weight: 850;
+}
+
+.case-radiographies-metadata {
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.case-radiographies-metadata span {
+  min-height: 25px;
+  padding: 0 8px;
+  border: 1px solid #dfe8ee;
+  border-radius: 7px;
+  background: #f8fafc;
+  color: #617184;
+  font-size: 0.61rem;
+  box-shadow: none;
+}
+
+.case-radiographies-observation {
+  position: relative;
+  margin: 10px 0 0;
+  padding: 23px 11px 9px;
+  border: 1px solid #e3eaf0;
+  border-radius: 9px;
+  background: #f8fafc;
+  color: #526174;
+  font-size: 0.66rem;
+  line-height: 1.45;
+}
+
+.case-radiographies-observation::before {
+  content: "OBSERVACIÓN";
+  position: absolute;
+  top: 7px;
+  left: 11px;
+  color: #8a9aab;
+  font-size: 0.52rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+}
+
+/* =========================
+   ARCHIVO RADIOGRÁFICO
+   ========================= */
+
+.case-radiographies-files {
+  padding: 0 14px 14px 18px;
+}
+
+.case-radiographies-file-card {
+  border: 1px solid #dde7ed;
+  border-radius: 11px;
+  background: #fbfdfe;
+  box-shadow: none;
+}
+
+.case-radiographies-file-card--valid {
+  border-color: #aee5c1;
+  background:
+    linear-gradient(
+      90deg,
+      #fbfffc 0%,
+      #f6fff9 100%
+    );
+}
+
+.case-radiographies-file-card--rejected {
+  border-color: #f0b9b9;
+  background:
+    linear-gradient(
+      90deg,
+      #fffdfd 0%,
+      #fff7f7 100%
+    );
+}
+
+.case-radiographies-file {
+  min-height: 54px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+}
+
+.case-radiographies-file-name-row {
+  gap: 7px;
+}
+
+.case-radiographies-file-name-row > strong,
+.case-radiographies-file-info strong {
+  color: #19324b;
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.case-radiographies-file-info > span {
+  color: #748598;
+  font-size: 0.59rem;
+}
+
+.case-radiographies-status {
+  min-height: 21px;
+  padding: 0 7px;
+  border-radius: 7px;
+  font-size: 0.57rem;
+  font-weight: 850;
+}
+
+.case-radiographies-status--valid {
+  border-color: #a9dfbb;
+  background: #eafaf0;
+  color: #08783b;
+}
+
+.case-radiographies-status--rejected {
+  border-color: #f2bbbb;
+  background: #fff0f0;
+  color: #b42318;
+}
+
+.case-radiographies-file-actions button {
+  min-height: 31px;
+  padding: 0 10px;
+  border: 1px solid #cfe0e9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #047e9b;
+  font-size: 0.62rem;
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.025);
+}
+
+.case-radiographies-file-actions button:hover:not(:disabled) {
+  border-color: #8ec8d9;
+  background: #edf9fc;
+  color: #036f88;
+}
+
+/* El aviso verde pasa a ser una banda compacta */
+.case-radiographies-valid-notice {
+  min-height: 35px;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 10px;
+  border: 0;
+  border-top: 1px solid #c9ead4;
+  border-radius: 0 0 10px 10px;
+  background: #edfbf2;
+}
+
+.case-radiographies-valid-notice > svg {
+  flex: 0 0 auto;
+}
+
+.case-radiographies-valid-notice strong {
+  display: inline;
+  margin-right: 7px;
+  color: #0b6b38;
+  font-size: 0.62rem;
+}
+
+.case-radiographies-valid-notice span {
+  display: inline;
+  color: #397352;
+  font-size: 0.58rem;
+  line-height: 1.35;
+}
+
+/* =========================
+   RECHAZOS
+   ========================= */
+
+.case-radiographies-rejection {
+  margin: 0;
+  padding: 11px;
+  border: 0;
+  border-top: 1px solid #f0caca;
+  border-radius: 0 0 10px 10px;
+  background: #fff8f8;
+}
+
+.case-radiographies-rejection-header {
+  margin-bottom: 9px;
+}
+
+.case-radiographies-rejection-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.case-radiographies-validation-item {
+  border-radius: 9px;
+  background: #ffffff;
+}
+
+.case-radiographies-validation-block--reason {
+  background: #fff8ef;
+}
+
+.case-radiographies-validation-block--correction {
+  background: #f2f8ff;
+}
+
+/* =========================
+   CONFIRMACIÓN
+   ========================= */
+
+.case-radiographies-confirmation {
+  margin: 0 16px 16px;
+  border: 1px solid #bfe2ed;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow:
+    0 7px 18px rgba(15, 23, 42, 0.04);
+}
+
+.case-radiographies-confirmation-heading {
+  background:
+    linear-gradient(
+      90deg,
+      #eaf9fd 0%,
+      #ffffff 70%
+    );
+}
+
+.case-radiographies-confirmation-grid > div {
+  border-color: #dce8ef;
+  background: #f9fbfd;
+}
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+
+@media (max-width: 760px) {
+  .case-radiographies {
+    border-radius: 13px;
+  }
+
+  .case-radiographies-header {
+    border-radius: 13px 13px 0 0;
+  }
+
+  .case-radiographies-form {
+    margin: 10px;
+  }
+
+  .case-radiographies-list {
+    padding: 10px;
+  }
+
+  .case-radiographies-study-main {
+    padding-left: 15px;
+  }
+
+  .case-radiographies-files {
+    padding-left: 15px;
+  }
+
+  .case-radiographies-metadata span {
+    border-radius: 7px;
+  }
+}
+
+/* =========================================================
+   WORKSPACE RADIOGRÁFICO - REDISEÑO FINAL
+   Conserva formularios, validaciones y visor avanzado.
+   ========================================================= */
+
+.case-radiographies {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.case-radiographies > .case-radiographies-header {
+  display: none;
+}
+
+.case-radiographies-message {
+  margin: 0 0 12px;
+}
+
+.case-radiographies-form {
+  margin: 0 0 14px;
+}
+
+.case-radiographies-workspace {
+  display: grid;
+  grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.case-radiographies-sidebar,
+.case-radiographies-detail {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dce6ed;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.045);
+}
+
+.case-radiographies-sidebar {
+  display: flex;
+  max-height: 720px;
+  flex-direction: column;
+}
+
+.case-radiographies-sidebar-header {
+  display: flex;
+  min-height: 70px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 14px;
+  border-bottom: 1px solid #e7edf2;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.case-radiographies-sidebar-header > div {
+  min-width: 0;
+}
+
+.case-radiographies-sidebar-header strong {
+  display: block;
+  color: #102a4c;
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.case-radiographies-sidebar-header span {
+  display: block;
+  margin-top: 3px;
+  color: #718096;
+  font-size: 0.63rem;
+}
+
+.case-radiographies-sidebar-header .case-radiographies-primary {
+  min-height: 36px;
+  flex: 0 0 auto;
+  padding: 0 11px;
+  border-color: #0b91d0;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  box-shadow: 0 5px 14px rgba(2, 132, 199, 0.16);
+  font-size: 0.62rem;
+}
+
+.case-radiographies-study-list {
+  display: flex;
+  min-height: 0;
+  overflow-y: auto;
+  flex: 1;
+  flex-direction: column;
+  gap: 9px;
+  padding: 11px;
+  scrollbar-width: thin;
+  scrollbar-color: #c8d7e2 transparent;
+}
+
+.case-radiographies-study-item {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 10px;
+  padding: 9px;
+  border: 1px solid #dfe8ee;
+  border-radius: 11px;
+  outline: 0;
+  background: #ffffff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+
+.case-radiographies-study-item:hover {
+  border-color: #b3cfde;
+  background: #fbfdff;
+  transform: translateY(-1px);
+}
+
+.case-radiographies-study-item--active {
+  border-color: #149de2;
+  background: linear-gradient(135deg, #ffffff 0%, #f3faff 100%);
+  box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.14), 0 6px 15px rgba(2, 132, 199, 0.07);
+}
+
+.case-radiographies-study-thumb {
+  display: grid;
+  width: 84px;
+  height: 74px;
+  overflow: hidden;
+  place-items: center;
+  border: 1px solid #d8e3ea;
+  border-radius: 8px;
+  background: radial-gradient(circle at center, #1c2836 0%, #090f17 72%);
+  color: #728397;
+}
+
+.case-radiographies-study-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.case-radiographies-study-item-body {
+  min-width: 0;
+}
+
+.case-radiographies-study-item-top {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 7px;
+}
+
+.case-radiographies-study-item-top > strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #153352;
+  font-size: 0.69rem;
+  font-weight: 850;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+}
+
+.case-radiographies-study-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.case-radiographies-study-tags span,
+.case-radiographies-detail-chip {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #edf2f7;
+  color: #53657a;
+  font-size: 0.57rem;
+  font-weight: 800;
+}
+
+.case-radiographies-study-tags span:first-child,
+.case-radiographies-detail-chip--region {
+  background: #ddf5fb;
+  color: #087f9d;
+}
+
+.case-radiographies-study-item-meta {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 5px 10px;
+  margin-top: 8px;
+}
+
+.case-radiographies-study-item-meta span {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  color: #75869a;
+  font-size: 0.55rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.case-radiographies-study-item-meta svg {
+  flex: 0 0 auto;
+}
+
+.case-radiographies-study-item .case-radiographies-status {
+  min-height: 23px;
+  padding: 0 8px;
+  font-size: 0.56rem !important;
+}
+
+.case-radiographies-detail {
+  display: flex;
+  min-height: 650px;
+  flex-direction: column;
+}
+
+.case-radiographies-detail-header {
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  border-bottom: 1px solid #e7edf2;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.case-radiographies-detail-heading,
+.case-radiographies-detail-actions,
+.case-radiographies-detail-title-row {
+  display: flex;
+  align-items: center;
+}
+
+.case-radiographies-detail-heading {
+  min-width: 0;
+  gap: 9px;
+}
+
+.case-radiographies-detail-icon,
+.case-radiographies-detail-small-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  background: #e3f6fb;
+  color: #0786a7;
+}
+
+.case-radiographies-detail-icon {
+  width: 37px;
+  height: 37px;
+  border-radius: 9px;
+}
+
+.case-radiographies-detail-small-icon {
+  width: 25px;
+  height: 25px;
+  border-radius: 7px;
+}
+
+.case-radiographies-detail-heading-content {
+  min-width: 0;
+}
+
+.case-radiographies-detail-title-row {
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.case-radiographies-detail-title-row h2 {
+  margin: 0;
+  color: #122e50;
+  font-size: 0.92rem;
+  font-weight: 850;
+}
+
+.case-radiographies-detail-actions {
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.case-radiographies-detail-status {
+  min-height: 27px;
+  padding: 0 10px;
+  font-size: 0.59rem !important;
+}
+
+.case-radiographies-detail-more {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid #d8e3ea;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.case-radiographies-inline-viewer {
+  display: grid;
+  height: 405px;
+  grid-template-columns: 82px minmax(0, 1fr);
+  overflow: hidden;
+  margin: 10px 11px 0;
+  border: 1px solid #142131;
+  border-radius: 10px;
+  background: #071019;
+  box-shadow: 0 10px 28px rgba(2, 6, 23, 0.18);
+}
+
+.case-radiographies-inline-viewer:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.case-radiographies-inline-thumbs {
+  display: flex;
+  overflow-y: auto;
+  flex-direction: column;
+  gap: 9px;
+  padding: 10px 8px;
+  border-right: 1px solid rgba(148, 163, 184, 0.13);
+  background: linear-gradient(180deg, #0b1725 0%, #08121e 100%);
+}
+
+.case-radiographies-inline-thumb {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #cbd5e1;
+  font: inherit;
+  cursor: pointer;
+}
+
+.case-radiographies-inline-thumb > div,
+.case-radiographies-inline-thumb-empty {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 0.82;
+  overflow: hidden;
+  place-items: center;
+  border: 1px solid #334155;
+  border-radius: 7px;
+  background: #05090e;
+  color: #64748b;
+}
+
+.case-radiographies-inline-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.case-radiographies-inline-thumb span {
+  overflow: hidden;
+  color: #cbd5e1;
+  font-size: 0.56rem;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.case-radiographies-inline-thumb--active > div {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 1px #0ea5e9, 0 0 16px rgba(14, 165, 233, 0.16);
+}
+
+.case-radiographies-inline-stage {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #18222f 0%, #0a1119 56%, #04080c 100%);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.case-radiographies-inline-stage--dragging {
+  cursor: grabbing;
+}
+
+.case-radiographies-inline-stage > img {
+  display: block;
+  max-width: 82%;
+  max-height: 90%;
+  object-fit: contain;
+  transform-origin: center center;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform, filter;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.36);
+}
+
+.case-radiographies-inline-toolbar {
+  position: absolute;
+  z-index: 4;
+  top: 12px;
+  right: 13px;
+  display: flex;
+  gap: 6px;
+}
+
+.case-radiographies-inline-toolbar button,
+.case-radiographies-inline-zoom button {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 8px;
+  background: rgba(15, 30, 45, 0.88);
+  color: #e5edf5;
+  cursor: pointer;
+  backdrop-filter: blur(7px);
+}
+
+.case-radiographies-inline-toolbar button:hover,
+.case-radiographies-inline-zoom button:hover,
+.case-radiographies-inline-toolbar-active {
+  border-color: rgba(56, 189, 248, 0.55) !important;
+  background: rgba(22, 49, 69, 0.96) !important;
+  color: #7dd3fc !important;
+}
+
+.case-radiographies-inline-zoom {
+  position: absolute;
+  z-index: 4;
+  right: 13px;
+  bottom: 15px;
+  display: flex;
+  width: 38px;
+  align-items: center;
+  flex-direction: column;
+  gap: 5px;
+  padding: 5px 3px 6px;
+  border: 1px solid rgba(148, 163, 184, 0.13);
+  border-radius: 9px;
+  background: rgba(9, 22, 34, 0.88);
+  backdrop-filter: blur(7px);
+}
+
+.case-radiographies-inline-zoom button {
+  width: 30px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+}
+
+.case-radiographies-inline-zoom input[type="range"] {
+  width: 10px;
+  height: 102px;
+  margin: 1px 0;
+  accent-color: #0ea5e9;
+  cursor: pointer;
+  writing-mode: vertical-lr;
+  direction: rtl;
+}
+
+.case-radiographies-inline-zoom strong {
+  min-width: 34px;
+  margin-top: 2px;
+  padding: 4px 3px;
+  border-radius: 6px;
+  background: #152535;
+  color: #e2e8f0;
+  font-size: 0.55rem;
+  text-align: center;
+}
+
+.case-radiographies-inline-adjustments {
+  position: absolute;
+  z-index: 3;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  border: 1px solid rgba(148, 163, 184, 0.13);
+  border-radius: 8px;
+  background: rgba(9, 22, 34, 0.72);
+  backdrop-filter: blur(7px);
+}
+
+.case-radiographies-inline-adjustments label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.case-radiographies-inline-adjustments span {
+  color: #cbd5e1;
+  font-size: 0.54rem;
+}
+
+.case-radiographies-inline-adjustments input {
+  width: 78px;
+  accent-color: #38bdf8;
+}
+
+.case-radiographies-inline-placeholder {
+  display: flex;
+  max-width: 390px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  padding: 30px;
+  color: #64748b;
+  text-align: center;
+}
+
+.case-radiographies-inline-placeholder strong {
+  color: #cbd5e1;
+  font-size: 0.8rem;
+}
+
+.case-radiographies-inline-placeholder span {
+  color: #7d8fa2;
+  font-size: 0.65rem;
+  line-height: 1.5;
+}
+
+.case-radiographies-detail-information {
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(220px, 1fr);
+  gap: 0;
+  margin: 10px 11px 0;
+  overflow: hidden;
+  border: 1px solid #dfe8ee;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.case-radiographies-study-information,
+.case-radiographies-study-observations {
+  min-width: 0;
+  padding: 11px 13px;
+}
+
+.case-radiographies-study-information {
+  border-right: 1px solid #e7edf2;
+}
+
+.case-radiographies-study-information > header,
+.case-radiographies-study-observations > header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 9px;
+}
+
+.case-radiographies-study-information > header strong,
+.case-radiographies-study-observations > header strong {
+  color: #163453;
+  font-size: 0.67rem;
+  font-weight: 850;
+}
+
+.case-radiographies-study-information-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.case-radiographies-study-information-grid > div {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(100px, 0.9fr) minmax(0, 1.1fr);
+  gap: 9px;
+  align-items: center;
+}
+
+.case-radiographies-study-information-grid span {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  color: #718096;
+  font-size: 0.58rem;
+}
+
+.case-radiographies-study-information-grid strong {
+  min-width: 0;
+  color: #213d5a;
+  font-size: 0.6rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.case-radiographies-study-observations > div:last-child {
+  min-height: 88px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: #f5f8fb;
+  color: #56687c;
+  font-size: 0.62rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.case-radiographies-selected-file-footer {
+  display: flex;
+  min-width: 0;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 11px 10px;
+  color: #8a99aa;
+  font-size: 0.55rem;
+}
+
+.case-radiographies-selected-file-footer span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.case-radiographies-selected-file-footer strong {
+  color: #607286;
+}
+
+.case-radiographies-selected-rejection {
+  margin: 10px 11px 0;
+  overflow: hidden;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fffafa;
+}
+
+.case-radiographies-selected-rejection .case-radiographies-rejection-header {
+  margin: 0;
+}
+
+.case-radiographies-selected-rejection .case-radiographies-validation-list {
+  padding: 10px;
+}
+
+.case-radiographies-replacement-inline {
+  margin: 0 10px 10px;
+  overflow: hidden;
+  border: 1px solid #bae6fd;
+  border-radius: 9px;
+  background: #f8fdff;
+}
+
+.case-radiographies-replacement-inline .case-radiographies-form-heading {
+  margin: 0;
+}
+
+.case-radiographies-replacement-inline > label {
+  display: flex;
+  margin: 10px;
+  flex-direction: column;
+  gap: 6px;
+  color: #475569;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.case-radiographies-replacement-inline .case-radiographies-file-box--replacement {
+  min-height: 82px;
+}
+
+.case-radiographies-replacement-reason textarea {
+  width: 100%;
+  min-height: 76px;
+  padding: 9px 10px;
+  border: 1px solid #d5dee8;
+  border-radius: 8px;
+  outline: 0;
+  background: #ffffff;
+  color: #334155;
+  font: inherit;
+  font-size: 0.7rem;
+  resize: vertical;
+}
+
+.case-radiographies-replacement-inline .case-radiographies-form-actions {
+  padding: 0 10px 10px;
+}
+
+.case-radiographies-replace-inline-button {
+  display: inline-flex;
+  min-height: 35px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 10px 10px;
+  padding: 0 11px;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  background: #fff7f7;
+  color: #b91c1c;
+  font: inherit;
+  font-size: 0.64rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.case-radiographies-empty--workspace {
+  border: 1px dashed #d8e4ec;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+@media (max-width: 1180px) {
+  .case-radiographies-workspace {
+    grid-template-columns: minmax(285px, 325px) minmax(0, 1fr);
+  }
+
+  .case-radiographies-inline-viewer {
+    height: 380px;
+  }
+
+  .case-radiographies-study-information-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .case-radiographies-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .case-radiographies-sidebar {
+    max-height: none;
+  }
+
+  .case-radiographies-study-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 430px;
+  }
+
+  .case-radiographies-detail-information {
+    grid-template-columns: 1fr;
+  }
+
+  .case-radiographies-study-information {
+    border-right: 0;
+    border-bottom: 1px solid #e7edf2;
+  }
+}
+
+@media (max-width: 680px) {
+  .case-radiographies-study-list {
+    grid-template-columns: 1fr;
+  }
+
+  .case-radiographies-sidebar-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .case-radiographies-sidebar-header .case-radiographies-primary {
+    width: 100%;
+  }
+
+  .case-radiographies-inline-viewer {
+    height: 360px;
+    grid-template-columns: 62px minmax(0, 1fr);
+  }
+
+  .case-radiographies-inline-toolbar {
+    right: 8px;
+    max-width: 86px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .case-radiographies-inline-zoom {
+    right: 8px;
+  }
+
+  .case-radiographies-inline-adjustments {
+    display: none;
+  }
+
+  .case-radiographies-detail-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .case-radiographies-detail-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .case-radiographies-selected-file-footer {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
