@@ -1,0 +1,19 @@
+{
+  "architecture": "efficientnet_b0",
+  "family": "EfficientNet",
+  "version": "osteosarcoma_finetuned_v1",
+  "classes": [
+    "no_osteosarcoma",
+    "osteosarcoma"
+  ],
+  "image_size": 224,
+  "threshold": 0.060000000000000005,
+  "seed": 42,
+  "best_epoch": 4,
+  "epochs": 5,
+  "learning_rate": 0.0001,
+  "batch_size": 32,
+  "training_strategy": "finetune_last_3_blocks",
+  "balancing": "none",
+  "parent_model": "osteosarcoma_efficientnet_b0_baseline_v1.pt"
+}
