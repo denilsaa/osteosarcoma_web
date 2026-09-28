@@ -1,4 +1,4 @@
-services:
+﻿services:
 
   # =========================================================
   # BASE DE DATOS - USUARIOS
@@ -577,7 +577,7 @@ services:
     environment:
       VITE_API_USUARIOS_URL: http://localhost:8000
       VITE_API_CLINICO_URL: http://localhost:8001
-      VITE_API_IA_URL: http://localhost:8002
+      VITE_API_IA_URL: /ia-api
       VITE_API_RADIOGRAFIAS_URL: /radiografias-api
       VITE_API_AUDITORIA_URL: /auditoria-api
 

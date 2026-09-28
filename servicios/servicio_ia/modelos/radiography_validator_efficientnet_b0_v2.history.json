@@ -1,0 +1,282 @@
+[
+  {
+    "stage": "warmup",
+    "epoch": 1,
+    "train_loss": 0.09398005483928779,
+    "val_loss": 0.04026459705585625,
+    "threshold": 0.49000000000000005,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "sensitivity": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "true_negative": 750,
+    "false_positive": 0,
+    "false_negative": 0,
+    "true_positive": 105,
+    "confusion_matrix": [
+      [
+        750,
+        0
+      ],
+      [
+        0,
+        105
+      ]
+    ]
+  },
+  {
+    "stage": "warmup",
+    "epoch": 2,
+    "train_loss": 0.022392839329657997,
+    "val_loss": 0.01787085419858408,
+    "threshold": 0.4100000000000001,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "sensitivity": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "true_negative": 750,
+    "false_positive": 0,
+    "false_negative": 0,
+    "true_positive": 105,
+    "confusion_matrix": [
+      [
+        750,
+        0
+      ],
+      [
+        0,
+        105
+      ]
+    ]
+  },
+  {
+    "stage": "warmup",
+    "epoch": 3,
+    "train_loss": 0.012975954294279404,
+    "val_loss": 0.01095741604678115,
+    "threshold": 0.25000000000000006,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "sensitivity": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "true_negative": 750,
+    "false_positive": 0,
+    "false_negative": 0,
+    "true_positive": 105,
+    "confusion_matrix": [
+      [
+        750,
+        0
+      ],
+      [
+        0,
+        105
+      ]
+    ]
+  },
+  {
+    "stage": "finetune",
+    "epoch": 1,
+    "train_loss": 0.004993006370274261,
+    "val_loss": 0.0016763105735248117,
+    "threshold": 0.09000000000000001,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "sensitivity": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "true_negative": 750,
+    "false_positive": 0,
+    "false_negative": 0,
+    "true_positive": 105,
+    "confusion_matrix": [
+      [
+        750,
+        0
+      ],
+      [
+        0,
+        105
+      ]
+    ]
+  },
+  {
+    "stage": "finetune",
+    "epoch": 2,
+    "train_loss": 0.0014992050659658391,
+    "val_loss": 0.0011557276491402533,
+    "threshold": 0.12000000000000001,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "sensitivity": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "true_negative": 750,
+    "false_positive": 0,
+    "false_negative": 0,
+    "true_positive": 105,
+    "confusion_matrix": [
+      [
+        750,
+        0
+      ],
+      [
+        0,
+        105
+      ]
+    ]
+  },
+  {
+    "stage": "finetune",
+    "epoch": 3,
+    "train_loss": 0.0009382871756584554,
+    "val_loss": 0.0005204096170311129,
+    "threshold": 0.05,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "sensitivity": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "true_negative": 750,
+    "false_positive": 0,
+    "false_negative": 0,
+    "true_positive": 105,
+    "confusion_matrix": [
+      [
+        750,
+        0
+      ],
+      [
+        0,
+        105
+      ]
+    ]
+  },
+  {
+    "stage": "finetune",
+    "epoch": 4,
+    "train_loss": 0.00022981116048856592,
+    "val_loss": 0.0003358099206584936,
+    "threshold": 0.05,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "sensitivity": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "true_negative": 750,
+    "false_positive": 0,
+    "false_negative": 0,
+    "true_positive": 105,
+    "confusion_matrix": [
+      [
+        750,
+        0
+      ],
+      [
+        0,
+        105
+      ]
+    ]
+  },
+  {
+    "stage": "finetune",
+    "epoch": 5,
+    "train_loss": 0.00018565624876164908,
+    "val_loss": 5.134978495525981e-05,
+    "threshold": 0.05,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "sensitivity": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "true_negative": 750,
+    "false_positive": 0,
+    "false_negative": 0,
+    "true_positive": 105,
+    "confusion_matrix": [
+      [
+        750,
+        0
+      ],
+      [
+        0,
+        105
+      ]
+    ]
+  },
+  {
+    "stage": "finetune",
+    "epoch": 6,
+    "train_loss": 0.00027823385439352616,
+    "val_loss": 5.14077861151353e-05,
+    "threshold": 0.05,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "sensitivity": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "true_negative": 750,
+    "false_positive": 0,
+    "false_negative": 0,
+    "true_positive": 105,
+    "confusion_matrix": [
+      [
+        750,
+        0
+      ],
+      [
+        0,
+        105
+      ]
+    ]
+  },
+  {
+    "stage": "finetune",
+    "epoch": 7,
+    "train_loss": 0.0007817063115905961,
+    "val_loss": 0.00010001896411672027,
+    "threshold": 0.05,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "sensitivity": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "true_negative": 750,
+    "false_positive": 0,
+    "false_negative": 0,
+    "true_positive": 105,
+    "confusion_matrix": [
+      [
+        750,
+        0
+      ],
+      [
+        0,
+        105
+      ]
+    ]
+  }
+]

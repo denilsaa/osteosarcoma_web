@@ -1,0 +1,282 @@
+[
+  {
+    "stage": "warmup",
+    "epoch": 1,
+    "train_loss": 0.5170487513216901,
+    "validation_loss": 0.41499729622346143,
+    "threshold": 0.5699999999999997,
+    "accuracy": 0.8668941979522184,
+    "precision": 0.975609756097561,
+    "sensitivity": 0.8547008547008547,
+    "recall": 0.8547008547008547,
+    "specificity": 0.9152542372881356,
+    "f1": 0.9111617312072893,
+    "roc_auc": 0.9155077502535129,
+    "true_negative": 54,
+    "false_positive": 5,
+    "false_negative": 34,
+    "true_positive": 200,
+    "confusion_matrix": [
+      [
+        54,
+        5
+      ],
+      [
+        34,
+        200
+      ]
+    ]
+  },
+  {
+    "stage": "warmup",
+    "epoch": 2,
+    "train_loss": 0.4299773726996213,
+    "validation_loss": 0.3814373860587032,
+    "threshold": 0.44999999999999984,
+    "accuracy": 0.9146757679180887,
+    "precision": 0.9644444444444444,
+    "sensitivity": 0.9273504273504274,
+    "recall": 0.9273504273504274,
+    "specificity": 0.864406779661017,
+    "f1": 0.9455337690631809,
+    "roc_auc": 0.9228958423873679,
+    "true_negative": 51,
+    "false_positive": 8,
+    "false_negative": 17,
+    "true_positive": 217,
+    "confusion_matrix": [
+      [
+        51,
+        8
+      ],
+      [
+        17,
+        217
+      ]
+    ]
+  },
+  {
+    "stage": "warmup",
+    "epoch": 3,
+    "train_loss": 0.3877423179859001,
+    "validation_loss": 0.35597661259638164,
+    "threshold": 0.6099999999999998,
+    "accuracy": 0.8532423208191127,
+    "precision": 0.9847715736040609,
+    "sensitivity": 0.8290598290598291,
+    "recall": 0.8290598290598291,
+    "specificity": 0.9491525423728814,
+    "f1": 0.9002320185614849,
+    "roc_auc": 0.9274590757641605,
+    "true_negative": 56,
+    "false_positive": 3,
+    "false_negative": 40,
+    "true_positive": 194,
+    "confusion_matrix": [
+      [
+        56,
+        3
+      ],
+      [
+        40,
+        194
+      ]
+    ]
+  },
+  {
+    "stage": "finetune",
+    "epoch": 1,
+    "train_loss": 0.3122895148046131,
+    "validation_loss": 0.3317307855285475,
+    "threshold": 0.5299999999999998,
+    "accuracy": 0.8976109215017065,
+    "precision": 0.9766355140186916,
+    "sensitivity": 0.8931623931623932,
+    "recall": 0.8931623931623932,
+    "specificity": 0.9152542372881356,
+    "f1": 0.9330357142857143,
+    "roc_auc": 0.9349920324496596,
+    "true_negative": 54,
+    "false_positive": 5,
+    "false_negative": 25,
+    "true_positive": 209,
+    "confusion_matrix": [
+      [
+        54,
+        5
+      ],
+      [
+        25,
+        209
+      ]
+    ]
+  },
+  {
+    "stage": "finetune",
+    "epoch": 2,
+    "train_loss": 0.23290113821431063,
+    "validation_loss": 0.288748864834626,
+    "threshold": 0.5899999999999997,
+    "accuracy": 0.89419795221843,
+    "precision": 0.981042654028436,
+    "sensitivity": 0.8846153846153846,
+    "recall": 0.8846153846153846,
+    "specificity": 0.9322033898305084,
+    "f1": 0.9303370786516854,
+    "roc_auc": 0.9375271621034333,
+    "true_negative": 55,
+    "false_positive": 4,
+    "false_negative": 27,
+    "true_positive": 207,
+    "confusion_matrix": [
+      [
+        55,
+        4
+      ],
+      [
+        27,
+        207
+      ]
+    ]
+  },
+  {
+    "stage": "finetune",
+    "epoch": 3,
+    "train_loss": 0.18347896667973224,
+    "validation_loss": 0.33487810118206535,
+    "threshold": 0.6399999999999997,
+    "accuracy": 0.8668941979522184,
+    "precision": 0.9850746268656716,
+    "sensitivity": 0.8461538461538461,
+    "recall": 0.8461538461538461,
+    "specificity": 0.9491525423728814,
+    "f1": 0.9103448275862069,
+    "roc_auc": 0.9341952774156164,
+    "true_negative": 56,
+    "false_positive": 3,
+    "false_negative": 36,
+    "true_positive": 198,
+    "confusion_matrix": [
+      [
+        56,
+        3
+      ],
+      [
+        36,
+        198
+      ]
+    ]
+  },
+  {
+    "stage": "finetune",
+    "epoch": 4,
+    "train_loss": 0.1505447994641884,
+    "validation_loss": 0.2562880302451983,
+    "threshold": 0.6799999999999997,
+    "accuracy": 0.89419795221843,
+    "precision": 0.9765258215962441,
+    "sensitivity": 0.8888888888888888,
+    "recall": 0.8888888888888888,
+    "specificity": 0.9152542372881356,
+    "f1": 0.930648769574944,
+    "roc_auc": 0.9462190352020861,
+    "true_negative": 54,
+    "false_positive": 5,
+    "false_negative": 26,
+    "true_positive": 208,
+    "confusion_matrix": [
+      [
+        54,
+        5
+      ],
+      [
+        26,
+        208
+      ]
+    ]
+  },
+  {
+    "stage": "finetune",
+    "epoch": 5,
+    "train_loss": 0.1383206072670282,
+    "validation_loss": 0.27305607075577304,
+    "threshold": 0.43999999999999984,
+    "accuracy": 0.9180887372013652,
+    "precision": 0.972972972972973,
+    "sensitivity": 0.9230769230769231,
+    "recall": 0.9230769230769231,
+    "specificity": 0.8983050847457628,
+    "f1": 0.9473684210526315,
+    "roc_auc": 0.946798493408663,
+    "true_negative": 53,
+    "false_positive": 6,
+    "false_negative": 18,
+    "true_positive": 216,
+    "confusion_matrix": [
+      [
+        53,
+        6
+      ],
+      [
+        18,
+        216
+      ]
+    ]
+  },
+  {
+    "stage": "finetune",
+    "epoch": 6,
+    "train_loss": 0.09821261022191262,
+    "validation_loss": 0.27670892167823713,
+    "threshold": 0.6999999999999996,
+    "accuracy": 0.9180887372013652,
+    "precision": 0.9772727272727273,
+    "sensitivity": 0.9188034188034188,
+    "recall": 0.9188034188034188,
+    "specificity": 0.9152542372881356,
+    "f1": 0.947136563876652,
+    "roc_auc": 0.9519774011299434,
+    "true_negative": 54,
+    "false_positive": 5,
+    "false_negative": 19,
+    "true_positive": 215,
+    "confusion_matrix": [
+      [
+        54,
+        5
+      ],
+      [
+        19,
+        215
+      ]
+    ]
+  },
+  {
+    "stage": "finetune",
+    "epoch": 7,
+    "train_loss": 0.08564082129773277,
+    "validation_loss": 0.28967643831777085,
+    "threshold": 0.5799999999999997,
+    "accuracy": 0.9112627986348123,
+    "precision": 0.9770642201834863,
+    "sensitivity": 0.9102564102564102,
+    "recall": 0.9102564102564102,
+    "specificity": 0.9152542372881356,
+    "f1": 0.9424778761061947,
+    "roc_auc": 0.9541141532666956,
+    "true_negative": 54,
+    "false_positive": 5,
+    "false_negative": 21,
+    "true_positive": 213,
+    "confusion_matrix": [
+      [
+        54,
+        5
+      ],
+      [
+        21,
+        213
+      ]
+    ]
+  }
+]

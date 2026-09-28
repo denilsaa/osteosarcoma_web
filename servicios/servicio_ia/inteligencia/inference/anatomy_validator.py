@@ -18,35 +18,37 @@ IMAGENET_MEAN = np.array(
     [0.485, 0.456, 0.406],
     dtype=np.float32,
 )
+
 IMAGENET_STD = np.array(
     [0.229, 0.224, 0.225],
     dtype=np.float32,
 )
 
 
-class RadiographyModelUnavailable(RuntimeError):
+class AnatomyModelUnavailable(RuntimeError):
     pass
 
 
-class RadiographyImageError(ValueError):
+class AnatomyImageError(ValueError):
     pass
 
 
 @dataclass(frozen=True)
-class RadiographyPrediction:
-    is_radiography: bool
+class AnatomyPrediction:
+    is_admitted: bool
     confidence: float
-    radiography_probability: float
-    non_radiography_probability: float
+    admitted_probability: float
+    non_admitted_probability: float
     threshold: float
     architecture: str
+    version: str
 
 
-class RadiographyValidator:
-    _instance: "RadiographyValidator | None" = None
+class AnatomyValidator:
+    _instance: "AnatomyValidator | None" = None
     _lock = Lock()
 
-    def __new__(cls) -> "RadiographyValidator":
+    def __new__(cls) -> "AnatomyValidator":
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
@@ -61,35 +63,28 @@ class RadiographyValidator:
 
         base_dir = Path(__file__).resolve().parents[2]
 
-        # ==========================================================
-        # RADIOGRAPHY VALIDATOR V3
-        # ==========================================================
-        #
-        # Se conserva V1 fÃ­sicamente en /modelos como respaldo.
-        # El servicio utiliza V3 por defecto.
-        #
         default_model = (
             base_dir
             / "modelos"
-            / "radiography_validator_efficientnet_b0_v3.onnx"
+            / "anatomy_validator_efficientnet_b0_v1.onnx"
         )
 
         default_metadata = (
             base_dir
             / "modelos"
-            / "radiography_validator_efficientnet_b0_v3.json"
+            / "anatomy_validator_efficientnet_b0_v1.json"
         )
 
         self.model_path = Path(
             os.environ.get(
-                "RADIOGRAPHY_VALIDATOR_MODEL_PATH",
+                "ANATOMY_VALIDATOR_MODEL_PATH",
                 str(default_model),
             )
         )
 
         self.metadata_path = Path(
             os.environ.get(
-                "RADIOGRAPHY_VALIDATOR_METADATA_PATH",
+                "ANATOMY_VALIDATOR_METADATA_PATH",
                 str(default_metadata),
             )
         )
@@ -114,9 +109,9 @@ class RadiographyValidator:
             return
 
         if not self.available:
-            raise RadiographyModelUnavailable(
-                "El modelo EfficientNet V2 de validaciÃ³n "
-                "radiogrÃ¡fica no estÃ¡ disponible."
+            raise AnatomyModelUnavailable(
+                "El modelo de validación anatómica V1 "
+                "no está disponible."
             )
 
         try:
@@ -126,20 +121,20 @@ class RadiographyValidator:
                 )
             )
         except Exception as exc:
-            raise RadiographyModelUnavailable(
+            raise AnatomyModelUnavailable(
                 "No fue posible leer los metadatos "
-                "del modelo EfficientNet V2."
+                "del modelo anatómico V1."
             ) from exc
 
         classes = metadata.get("classes")
 
         if classes != [
-            "no_radiografia",
-            "radiografia",
+            "no_admitida",
+            "admitida",
         ]:
-            raise RadiographyModelUnavailable(
-                "Las clases configuradas para el modelo "
-                "EfficientNet V2 no son vÃ¡lidas."
+            raise AnatomyModelUnavailable(
+                "Las clases configuradas para el "
+                "modelo anatómico V1 no son válidas."
             )
 
         try:
@@ -150,9 +145,9 @@ class RadiographyValidator:
                 ],
             )
         except Exception as exc:
-            raise RadiographyModelUnavailable(
-                "No fue posible inicializar el modelo "
-                "EfficientNet V2."
+            raise AnatomyModelUnavailable(
+                "No fue posible inicializar el "
+                "modelo anatómico V1."
             ) from exc
 
         self._session = session
@@ -163,7 +158,9 @@ class RadiographyValidator:
         raw: bytes,
     ) -> Image.Image:
         try:
-            with Image.open(io.BytesIO(raw)) as image:
+            with Image.open(
+                io.BytesIO(raw)
+            ) as image:
                 image.load()
 
                 return (
@@ -177,7 +174,7 @@ class RadiographyValidator:
             OSError,
             ValueError,
         ) as exc:
-            raise RadiographyImageError(
+            raise AnatomyImageError(
                 "El archivo no contiene una imagen "
                 "JPG o PNG interpretable."
             ) from exc
@@ -191,9 +188,8 @@ class RadiographyValidator:
                 io.BytesIO(raw),
                 force=False,
             )
-
         except Exception as exc:
-            raise RadiographyImageError(
+            raise AnatomyImageError(
                 "El archivo DICOM no pudo ser interpretado."
             ) from exc
 
@@ -216,10 +212,9 @@ class RadiographyValidator:
             modality
             and modality not in allowed_modalities
         ):
-            raise RadiographyImageError(
+            raise AnatomyImageError(
                 f"El DICOM corresponde a la modalidad "
-                f"{modality}, no a una radiografÃ­a "
-                f"convencional."
+                f"{modality}, no a una radiografía convencional."
             )
 
         try:
@@ -228,31 +223,33 @@ class RadiographyValidator:
                 .pixel_array
                 .astype(np.float32)
             )
-
         except Exception as exc:
-            raise RadiographyImageError(
-                "El DICOM no contiene pÃ­xeles "
-                "radiogrÃ¡ficos compatibles con "
-                "el visor de validaciÃ³n."
+            raise AnatomyImageError(
+                "El DICOM no contiene píxeles "
+                "radiográficos compatibles."
             ) from exc
 
         while pixels.ndim > 2:
             pixels = pixels[0]
 
         if pixels.size == 0:
-            raise RadiographyImageError(
+            raise AnatomyImageError(
                 "El DICOM no contiene datos de imagen."
             )
 
-        finite = np.isfinite(pixels)
+        finite = np.isfinite(
+            pixels
+        )
 
         if not finite.any():
-            raise RadiographyImageError(
-                "El DICOM contiene valores de "
-                "imagen no vÃ¡lidos."
+            raise AnatomyImageError(
+                "El DICOM contiene valores "
+                "de imagen no válidos."
             )
 
-        valid_pixels = pixels[finite]
+        valid_pixels = pixels[
+            finite
+        ]
 
         low = float(
             np.percentile(
@@ -276,14 +273,15 @@ class RadiographyValidator:
             low = float(
                 valid_pixels.min()
             )
+
             high = float(
                 valid_pixels.max()
             )
 
         if high <= low:
-            raise RadiographyImageError(
+            raise AnatomyImageError(
                 "El DICOM no contiene suficiente "
-                "informaciÃ³n visual."
+                "información visual."
             )
 
         pixels = np.clip(
@@ -354,7 +352,9 @@ class RadiographyValidator:
         return np.expand_dims(
             array,
             axis=0,
-        ).astype(np.float32)
+        ).astype(
+            np.float32
+        )
 
     @staticmethod
     def _softmax(
@@ -373,7 +373,9 @@ class RadiographyValidator:
             )
         )
 
-        exp = np.exp(logits)
+        exp = np.exp(
+            logits
+        )
 
         return (
             exp
@@ -388,7 +390,7 @@ class RadiographyValidator:
         self,
         raw: bytes,
         filename: str,
-    ) -> RadiographyPrediction:
+    ) -> AnatomyPrediction:
         self._load()
 
         assert self._session is not None
@@ -405,11 +407,8 @@ class RadiographyValidator:
                 raw
             )
         else:
-            image = (
-                self
-                ._prepare_regular_image(
-                    raw
-                )
+            image = self._prepare_regular_image(
+                raw
             )
 
         image_size = int(
@@ -419,9 +418,6 @@ class RadiographyValidator:
             )
         )
 
-        # IMPORTANTE:
-        # El umbral se obtiene del metadata V3.
-        # No se fuerza manualmente 0.09 aquÃ­.
         threshold = float(
             self._metadata.get(
                 "threshold",
@@ -436,14 +432,20 @@ class RadiographyValidator:
             )
         )
 
+        version = str(
+            self._metadata.get(
+                "version",
+                "anatomy_validator_v1",
+            )
+        )
+
         tensor = self._preprocess(
             image,
             image_size,
         )
 
         input_name = (
-            self
-            ._session
+            self._session
             .get_inputs()[0]
             .name
         )
@@ -456,39 +458,41 @@ class RadiographyValidator:
         )[0]
 
         probabilities = (
-            self
-            ._softmax(output)[0]
+            self._softmax(
+                output
+            )[0]
         )
 
         if len(probabilities) != 2:
-            raise RadiographyModelUnavailable(
-                "La salida del modelo EfficientNet V2 "
+            raise AnatomyModelUnavailable(
+                "La salida del modelo anatómico "
                 "no contiene las dos clases esperadas."
             )
 
-        non_xray = float(
+        non_admitted = float(
             probabilities[0]
         )
 
-        xray = float(
+        admitted = float(
             probabilities[1]
         )
 
-        is_xray = (
-            xray >= threshold
+        is_admitted = (
+            admitted >= threshold
         )
 
         confidence = (
-            xray
-            if is_xray
-            else non_xray
+            admitted
+            if is_admitted
+            else non_admitted
         )
 
-        return RadiographyPrediction(
-            is_radiography=is_xray,
+        return AnatomyPrediction(
+            is_admitted=is_admitted,
             confidence=confidence,
-            radiography_probability=xray,
-            non_radiography_probability=non_xray,
+            admitted_probability=admitted,
+            non_admitted_probability=non_admitted,
             threshold=threshold,
             architecture=architecture,
+            version=version,
         )

@@ -1,0 +1,52 @@
+{
+  "validation": {
+    "threshold": 0.09000000000000001,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "sensitivity": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "true_negative": 801,
+    "false_positive": 0,
+    "false_negative": 0,
+    "true_positive": 105,
+    "confusion_matrix": [
+      [
+        801,
+        0
+      ],
+      [
+        0,
+        105
+      ]
+    ],
+    "loss": 0.0013507134867030263
+  },
+  "test": {
+    "threshold": 0.09000000000000001,
+    "accuracy": 0.9966887417218543,
+    "precision": 0.9722222222222222,
+    "sensitivity": 1.0,
+    "recall": 1.0,
+    "specificity": 0.9962546816479401,
+    "f1": 0.9859154929577465,
+    "roc_auc": 0.999964330301409,
+    "true_negative": 798,
+    "false_positive": 3,
+    "false_negative": 0,
+    "true_positive": 105,
+    "confusion_matrix": [
+      [
+        798,
+        3
+      ],
+      [
+        0,
+        105
+      ]
+    ],
+    "loss": 0.008234288781818628
+  }
+}

@@ -6,6 +6,9 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 from inteligencia.inference import (
+    AnatomyImageError,
+    AnatomyModelUnavailable,
+    AnatomyValidator,
     RadiographyImageError,
     RadiographyModelUnavailable,
     RadiographyValidator,
@@ -13,35 +16,59 @@ from inteligencia.inference import (
 
 
 MAX_FILE_BYTES = 20 * 1024 * 1024
-ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "dcm"}
+
+ALLOWED_EXTENSIONS = {
+    "jpg",
+    "jpeg",
+    "png",
+    "dcm",
+}
 
 
 def comprobar_postgresql():
     with connection.cursor() as cursor:
-        cursor.execute("SELECT 1;")
+        cursor.execute(
+            "SELECT 1;"
+        )
         cursor.fetchone()
 
 
 def comprobar_rabbitmq():
     credenciales = pika.PlainCredentials(
-        os.environ["RABBITMQ_USER"],
-        os.environ["RABBITMQ_PASSWORD"],
+        os.environ[
+            "RABBITMQ_USER"
+        ],
+        os.environ[
+            "RABBITMQ_PASSWORD"
+        ],
     )
 
     parametros = pika.ConnectionParameters(
-        host=os.environ["RABBITMQ_HOST"],
-        port=int(os.environ.get("RABBITMQ_PORT", "5672")),
+        host=os.environ[
+            "RABBITMQ_HOST"
+        ],
+        port=int(
+            os.environ.get(
+                "RABBITMQ_PORT",
+                "5672",
+            )
+        ),
         credentials=credenciales,
         connection_attempts=3,
         retry_delay=1,
     )
 
-    conexion = pika.BlockingConnection(parametros)
+    conexion = pika.BlockingConnection(
+        parametros
+    )
+
     canal = conexion.channel()
+
     canal.queue_declare(
         queue="analisis_radiografia",
         durable=True,
     )
+
     conexion.close()
 
 
@@ -61,64 +88,158 @@ def health_check(request):
     except Exception:
         pass
 
-    validador = RadiographyValidator()
+    radiography_validator = (
+        RadiographyValidator()
+    )
+
+    anatomy_validator = (
+        AnatomyValidator()
+    )
 
     correcto = (
         estado_bd == "conectada"
-        and estado_rabbitmq == "conectado"
+        and estado_rabbitmq
+        == "conectado"
     )
 
     return JsonResponse(
         {
-            "servicio": "servicio_ia",
-            "estado": "ok" if correcto else "error",
-            "base_datos": estado_bd,
-            "rabbitmq": estado_rabbitmq,
+            "servicio": (
+                "servicio_ia"
+            ),
+            "estado": (
+                "ok"
+                if correcto
+                else "error"
+            ),
+            "base_datos": (
+                estado_bd
+            ),
+            "rabbitmq": (
+                estado_rabbitmq
+            ),
             "validador_radiografia": {
-                "modelo": "EfficientNet",
-                "disponible": validador.available,
+                "modelo": (
+                    "EfficientNetB0"
+                ),
+                "version": (
+                    "V3"
+                ),
+                "disponible": (
+                    radiography_validator
+                    .available
+                ),
+            },
+            "validador_anatomico": {
+                "modelo": (
+                    "EfficientNetB0"
+                ),
+                "version": (
+                    "V1"
+                ),
+                "disponible": (
+                    anatomy_validator
+                    .available
+                ),
             },
         },
-        status=200 if correcto else 503,
+        status=(
+            200
+            if correcto
+            else 503
+        ),
     )
 
 
 @require_POST
 def validar_radiografia(request):
-    archivo = request.FILES.get("file")
+    archivo = request.FILES.get(
+        "file"
+    )
+
+    # ========================================================
+    # ARCHIVO REQUERIDO
+    # ========================================================
 
     if archivo is None:
         return JsonResponse(
             {
                 "error": {
-                    "code": "RADIOGRAPHY_FILE_REQUIRED",
-                    "message": "Debe adjuntar una imagen para validarla.",
+                    "code": (
+                        "RADIOGRAPHY_FILE_REQUIRED"
+                    ),
+                    "message": (
+                        "Debe adjuntar una imagen "
+                        "para validarla."
+                    ),
                 }
             },
             status=422,
         )
 
-    nombre = str(getattr(archivo, "name", "imagen"))
-    extension = nombre.rsplit(".", 1)[-1].lower() if "." in nombre else ""
+    nombre = str(
+        getattr(
+            archivo,
+            "name",
+            "imagen",
+        )
+    )
+
+    extension = (
+        nombre
+        .rsplit(
+            ".",
+            1,
+        )[-1]
+        .lower()
+        if "." in nombre
+        else ""
+    )
+
+    # ========================================================
+    # FORMATO
+    # ========================================================
 
     if extension not in ALLOWED_EXTENSIONS:
         return JsonResponse(
             {
                 "error": {
-                    "code": "RADIOGRAPHY_FILE_FORMAT",
-                    "message": "Solo se permiten archivos JPG, PNG o DICOM.",
+                    "code": (
+                        "RADIOGRAPHY_FILE_FORMAT"
+                    ),
+                    "message": (
+                        "Solo se permiten archivos "
+                        "JPG, PNG o DICOM."
+                    ),
                 }
             },
             status=422,
         )
 
-    size = int(getattr(archivo, "size", 0) or 0)
+    # ========================================================
+    # TAMAÑO
+    # ========================================================
+
+    size = int(
+        getattr(
+            archivo,
+            "size",
+            0,
+        )
+        or 0
+    )
+
     if size <= 0:
         return JsonResponse(
             {
                 "error": {
-                    "code": "RADIOGRAPHY_FILE_EMPTY",
-                    "message": "El archivo recibido está vacío.",
+                    "code": (
+                        "RADIOGRAPHY_FILE_EMPTY"
+                    ),
+                    "message": (
+                        "El archivo recibido "
+                        "está vacío."
+                    ),
                 }
             },
             status=422,
@@ -128,8 +249,13 @@ def validar_radiografia(request):
         return JsonResponse(
             {
                 "error": {
-                    "code": "RADIOGRAPHY_FILE_TOO_LARGE",
-                    "message": "La imagen no puede superar los 20 MB.",
+                    "code": (
+                        "RADIOGRAPHY_FILE_TOO_LARGE"
+                    ),
+                    "message": (
+                        "La imagen no puede "
+                        "superar los 20 MB."
+                    ),
                 }
             },
             status=422,
@@ -137,62 +263,341 @@ def validar_radiografia(request):
 
     raw = archivo.read()
 
+    # ========================================================
+    # ETAPA 1
+    # RADIOGRAFÍA / NO RADIOGRAFÍA
+    # ========================================================
+
     try:
-        prediction = RadiographyValidator().predict(raw, nombre)
+        radiography_prediction = (
+            RadiographyValidator()
+            .predict(
+                raw,
+                nombre,
+            )
+        )
+
     except RadiographyModelUnavailable as exc:
         return JsonResponse(
             {
                 "error": {
-                    "code": "RADIOGRAPHY_MODEL_UNAVAILABLE",
-                    "message": str(exc),
+                    "code": (
+                        "RADIOGRAPHY_MODEL_UNAVAILABLE"
+                    ),
+                    "message": str(
+                        exc
+                    ),
                 }
             },
             status=503,
         )
+
     except RadiographyImageError as exc:
         return JsonResponse(
             {
                 "error": {
-                    "code": "RADIOGRAPHY_IMAGE_INVALID",
-                    "message": str(exc),
+                    "code": (
+                        "RADIOGRAPHY_IMAGE_INVALID"
+                    ),
+                    "message": str(
+                        exc
+                    ),
                 }
             },
             status=422,
         )
+
     except Exception:
         return JsonResponse(
             {
                 "error": {
-                    "code": "RADIOGRAPHY_VALIDATION_ERROR",
-                    "message": "No fue posible ejecutar la validación EfficientNet.",
+                    "code": (
+                        "RADIOGRAPHY_VALIDATION_ERROR"
+                    ),
+                    "message": (
+                        "No fue posible ejecutar "
+                        "la validación radiográfica."
+                    ),
                 }
             },
             status=500,
         )
 
-    message = (
-        "La imagen fue identificada como radiografía."
-        if prediction.is_radiography
-        else "La imagen subida no fue identificada como una radiografía. Seleccione una radiografía válida para continuar."
+    # ========================================================
+    # NO ES RADIOGRAFÍA
+    # DETENER PIPELINE
+    # ========================================================
+
+    if not (
+        radiography_prediction
+        .is_radiography
+    ):
+        return JsonResponse(
+            {
+                "data": {
+                    "es_radiografia": False,
+                    "anatomia_evaluada": False,
+                    "anatomia_admitida": None,
+
+                    "confianza": round(
+                        radiography_prediction
+                        .confidence,
+                        6,
+                    ),
+
+                    "probabilidad_radiografia": round(
+                        radiography_prediction
+                        .radiography_probability,
+                        6,
+                    ),
+
+                    "probabilidad_no_radiografia": round(
+                        radiography_prediction
+                        .non_radiography_probability,
+                        6,
+                    ),
+
+                    "umbral": (
+                        radiography_prediction
+                        .threshold
+                    ),
+
+                    "arquitectura": (
+                        radiography_prediction
+                        .architecture
+                    ),
+
+                    "familia_modelo": (
+                        "EfficientNet"
+                    ),
+
+                    "puede_continuar": False,
+
+                    "etapa_rechazo": (
+                        "validacion_radiografia"
+                    ),
+
+                    "mensaje": (
+                        "La imagen subida no fue "
+                        "identificada como una "
+                        "radiografía. Seleccione "
+                        "una radiografía válida "
+                        "para continuar."
+                    ),
+                }
+            },
+            status=200,
+        )
+
+    # ========================================================
+    # ETAPA 2
+    # VALIDACIÓN ANATÓMICA
+    # ========================================================
+
+    try:
+        anatomy_prediction = (
+            AnatomyValidator()
+            .predict(
+                raw,
+                nombre,
+            )
+        )
+
+    except AnatomyModelUnavailable as exc:
+        return JsonResponse(
+            {
+                "error": {
+                    "code": (
+                        "ANATOMY_MODEL_UNAVAILABLE"
+                    ),
+                    "message": str(
+                        exc
+                    ),
+                }
+            },
+            status=503,
+        )
+
+    except AnatomyImageError as exc:
+        return JsonResponse(
+            {
+                "error": {
+                    "code": (
+                        "ANATOMY_IMAGE_INVALID"
+                    ),
+                    "message": str(
+                        exc
+                    ),
+                }
+            },
+            status=422,
+        )
+
+    except Exception:
+        return JsonResponse(
+            {
+                "error": {
+                    "code": (
+                        "ANATOMY_VALIDATION_ERROR"
+                    ),
+                    "message": (
+                        "No fue posible ejecutar "
+                        "la validación anatómica."
+                    ),
+                }
+            },
+            status=500,
+        )
+
+    # ========================================================
+    # RESULTADO FINAL DE LAS DOS BARRERAS
+    # ========================================================
+
+    puede_continuar = (
+        radiography_prediction
+        .is_radiography
+        and
+        anatomy_prediction
+        .is_admitted
     )
+
+    if anatomy_prediction.is_admitted:
+        message = (
+            "La imagen fue identificada como "
+            "radiografía y corresponde a una "
+            "región anatómica admitida. "
+            "Puede continuar con el análisis."
+        )
+
+        etapa_rechazo = None
+
+    else:
+        message = (
+            "La imagen fue identificada como "
+            "radiografía, pero la región "
+            "anatómica no corresponde al "
+            "alcance admitido para el análisis."
+        )
+
+        etapa_rechazo = (
+            "validacion_anatomica"
+        )
 
     return JsonResponse(
         {
             "data": {
-                "es_radiografia": prediction.is_radiography,
-                "confianza": round(prediction.confidence, 6),
-                "probabilidad_radiografia": round(
-                    prediction.radiography_probability,
-                    6,
+                # ============================================
+                # RESULTADO GENERAL
+                # ============================================
+
+                "es_radiografia": True,
+
+                "anatomia_evaluada": True,
+
+                "anatomia_admitida": (
+                    anatomy_prediction
+                    .is_admitted
                 ),
-                "probabilidad_no_radiografia": round(
-                    prediction.non_radiography_probability,
-                    6,
+
+                "puede_continuar": (
+                    puede_continuar
                 ),
-                "umbral": prediction.threshold,
-                "arquitectura": prediction.architecture,
-                "familia_modelo": "EfficientNet",
-                "mensaje": message,
+
+                "etapa_rechazo": (
+                    etapa_rechazo
+                ),
+
+                "mensaje": (
+                    message
+                ),
+
+                # ============================================
+                # MODELO RADIOGRÁFICO
+                # ============================================
+
+                "validacion_radiografia": {
+                    "confianza": round(
+                        radiography_prediction
+                        .confidence,
+                        6,
+                    ),
+
+                    "probabilidad_radiografia": round(
+                        radiography_prediction
+                        .radiography_probability,
+                        6,
+                    ),
+
+                    "probabilidad_no_radiografia": round(
+                        radiography_prediction
+                        .non_radiography_probability,
+                        6,
+                    ),
+
+                    "umbral": (
+                        radiography_prediction
+                        .threshold
+                    ),
+
+                    "arquitectura": (
+                        radiography_prediction
+                        .architecture
+                    ),
+
+                    "version": "V3",
+                },
+
+                # ============================================
+                # MODELO ANATÓMICO
+                # ============================================
+
+                "validacion_anatomica": {
+                    "confianza": round(
+                        anatomy_prediction
+                        .confidence,
+                        6,
+                    ),
+
+                    "probabilidad_admitida": round(
+                        anatomy_prediction
+                        .admitted_probability,
+                        6,
+                    ),
+
+                    "probabilidad_no_admitida": round(
+                        anatomy_prediction
+                        .non_admitted_probability,
+                        6,
+                    ),
+
+                    "umbral": (
+                        anatomy_prediction
+                        .threshold
+                    ),
+
+                    "arquitectura": (
+                        anatomy_prediction
+                        .architecture
+                    ),
+
+                    "version": (
+                        anatomy_prediction
+                        .version
+                    ),
+
+                    "huesos_admitidos": [
+                        "húmero",
+                        "radio",
+                        "cúbito",
+                        "fémur",
+                        "tibia",
+                        "peroné",
+                    ],
+                },
+
+                "familia_modelo": (
+                    "EfficientNet"
+                ),
             }
         },
         status=200,

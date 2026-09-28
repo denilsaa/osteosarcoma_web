@@ -1,3 +1,10 @@
+from .anatomy_validator import (
+    AnatomyImageError,
+    AnatomyModelUnavailable,
+    AnatomyPrediction,
+    AnatomyValidator,
+)
+
 from .radiography_validator import (
     RadiographyImageError,
     RadiographyModelUnavailable,
@@ -5,7 +12,12 @@ from .radiography_validator import (
     RadiographyValidator,
 )
 
+
 __all__ = [
+    "AnatomyImageError",
+    "AnatomyModelUnavailable",
+    "AnatomyPrediction",
+    "AnatomyValidator",
     "RadiographyImageError",
     "RadiographyModelUnavailable",
     "RadiographyPrediction",

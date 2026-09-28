@@ -1,0 +1,14 @@
+{
+    "architecture":  "efficientnet_b0",
+    "family":  "EfficientNet",
+    "version":  "radiography_validator_v2",
+    "classes":  [
+                    "no_radiografia",
+                    "radiografia"
+                ],
+    "image_size":  224,
+    "threshold":  0.5,
+    "prototype":  true,
+    "seed":  42,
+    "minimum_validation_sensitivity":  0.98
+}

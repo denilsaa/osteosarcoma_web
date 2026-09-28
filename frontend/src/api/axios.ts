@@ -32,6 +32,12 @@ const API_RADIOGRAFIAS_URL =
   "/radiografias-api";
 
 
+const API_IA_URL =
+  import.meta.env
+    .VITE_API_IA_URL ??
+  "/ia-api";
+
+
 const API_AUDITORIA_URL =
   import.meta.env
     .VITE_API_AUDITORIA_URL ??
@@ -52,6 +58,10 @@ const CLINICO_BASE_URL =
 
 const RADIOGRAFIAS_BASE_URL =
   `${API_RADIOGRAFIAS_URL}/api`;
+
+
+const IA_BASE_URL =
+  `${API_IA_URL}/api`;
 
 
 const AUDITORIA_BASE_URL =
@@ -413,6 +423,20 @@ export const apiRadiografias =
     axios.create({
       baseURL:
         RADIOGRAFIAS_BASE_URL,
+    }),
+  );
+
+
+// ==========================================================
+// INTELIGENCIA ARTIFICIAL
+// ==========================================================
+
+export const apiIA =
+  configurarClienteAutenticado(
+
+    axios.create({
+      baseURL:
+        IA_BASE_URL,
     }),
   );
 

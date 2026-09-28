@@ -12,10 +12,12 @@ services:
     environment:
       PYTHONUNBUFFERED: "1"
       HF_HOME: /workspace/.cache/huggingface
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+
+    gpus: all
 
     volumes:
-      # Scripts, dataset descargado y cache quedan en el proyecto local.
       - ./herramientas_ia_radiografia:/workspace
-
-      # El modelo final se escribe directamente donde servicio_ia lo utilizará.
+      - ./datos_radiografias_san_juan_de_dios:/datos_radiografias_san_juan_de_dios
       - ./servicios/servicio_ia/modelos:/modelos

@@ -73,6 +73,27 @@ export default defineConfig({
 
       },
       
+      "/ia-api": {
+
+        target:
+          "http://servicio-ia:8000",
+
+        changeOrigin:
+          true,
+
+        secure:
+          false,
+
+        rewrite:
+          (
+            path,
+          ) =>
+            path.replace(
+              /^\/ia-api/,
+              "",
+            ),
+      },
+
       "/radiografias-api": {
         target: "http://servicio_radiografias:8000",
         changeOrigin: true,
