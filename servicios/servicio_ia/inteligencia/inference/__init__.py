@@ -5,6 +5,13 @@ from .anatomy_validator import (
     AnatomyValidator,
 )
 
+from .osteosarcoma_validator import (
+    OsteosarcomaImageError,
+    OsteosarcomaModelUnavailable,
+    OsteosarcomaPrediction,
+    OsteosarcomaValidator,
+)
+
 from .radiography_validator import (
     RadiographyImageError,
     RadiographyModelUnavailable,
@@ -18,6 +25,10 @@ __all__ = [
     "AnatomyModelUnavailable",
     "AnatomyPrediction",
     "AnatomyValidator",
+    "OsteosarcomaImageError",
+    "OsteosarcomaModelUnavailable",
+    "OsteosarcomaPrediction",
+    "OsteosarcomaValidator",
     "RadiographyImageError",
     "RadiographyModelUnavailable",
     "RadiographyPrediction",

@@ -9,6 +9,9 @@ from inteligencia.inference import (
     AnatomyImageError,
     AnatomyModelUnavailable,
     AnatomyValidator,
+    OsteosarcomaImageError,
+    OsteosarcomaModelUnavailable,
+    OsteosarcomaValidator,
     RadiographyImageError,
     RadiographyModelUnavailable,
     RadiographyValidator,
@@ -27,26 +30,18 @@ ALLOWED_EXTENSIONS = {
 
 def comprobar_postgresql():
     with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT 1;"
-        )
+        cursor.execute("SELECT 1;")
         cursor.fetchone()
 
 
 def comprobar_rabbitmq():
     credenciales = pika.PlainCredentials(
-        os.environ[
-            "RABBITMQ_USER"
-        ],
-        os.environ[
-            "RABBITMQ_PASSWORD"
-        ],
+        os.environ["RABBITMQ_USER"],
+        os.environ["RABBITMQ_PASSWORD"],
     )
 
     parametros = pika.ConnectionParameters(
-        host=os.environ[
-            "RABBITMQ_HOST"
-        ],
+        host=os.environ["RABBITMQ_HOST"],
         port=int(
             os.environ.get(
                 "RABBITMQ_PORT",
@@ -96,49 +91,48 @@ def health_check(request):
         AnatomyValidator()
     )
 
+    osteosarcoma_validator = (
+        OsteosarcomaValidator()
+    )
+
     correcto = (
         estado_bd == "conectada"
-        and estado_rabbitmq
-        == "conectado"
+        and estado_rabbitmq == "conectado"
     )
 
     return JsonResponse(
         {
-            "servicio": (
-                "servicio_ia"
-            ),
+            "servicio": "servicio_ia",
             "estado": (
                 "ok"
                 if correcto
                 else "error"
             ),
-            "base_datos": (
-                estado_bd
-            ),
-            "rabbitmq": (
-                estado_rabbitmq
-            ),
+            "base_datos": estado_bd,
+            "rabbitmq": estado_rabbitmq,
             "validador_radiografia": {
-                "modelo": (
-                    "EfficientNetB0"
-                ),
-                "version": (
-                    "V3"
-                ),
+                "modelo": "EfficientNetB0",
+                "version": "V3",
                 "disponible": (
                     radiography_validator
                     .available
                 ),
             },
             "validador_anatomico": {
-                "modelo": (
-                    "EfficientNetB0"
-                ),
-                "version": (
-                    "V1"
-                ),
+                "modelo": "EfficientNetB0",
+                "version": "V1",
                 "disponible": (
                     anatomy_validator
+                    .available
+                ),
+            },
+            "analizador_osteosarcoma": {
+                "modelo": "EfficientNetB0",
+                "version": (
+                    "Fine-tuned V1"
+                ),
+                "disponible": (
+                    osteosarcoma_validator
                     .available
                 ),
             },
@@ -157,10 +151,6 @@ def validar_radiografia(request):
         "file"
     )
 
-    # ========================================================
-    # ARCHIVO REQUERIDO
-    # ========================================================
-
     if archivo is None:
         return JsonResponse(
             {
@@ -170,7 +160,7 @@ def validar_radiografia(request):
                     ),
                     "message": (
                         "Debe adjuntar una imagen "
-                        "para validarla."
+                        "para analizarla."
                     ),
                 }
             },
@@ -186,19 +176,13 @@ def validar_radiografia(request):
     )
 
     extension = (
-        nombre
-        .rsplit(
+        nombre.rsplit(
             ".",
             1,
-        )[-1]
-        .lower()
+        )[-1].lower()
         if "." in nombre
         else ""
     )
-
-    # ========================================================
-    # FORMATO
-    # ========================================================
 
     if extension not in ALLOWED_EXTENSIONS:
         return JsonResponse(
@@ -215,10 +199,6 @@ def validar_radiografia(request):
             },
             status=422,
         )
-
-    # ========================================================
-    # TAMAÑO
-    # ========================================================
 
     size = int(
         getattr(
@@ -263,10 +243,9 @@ def validar_radiografia(request):
 
     raw = archivo.read()
 
-    # ========================================================
-    # ETAPA 1
-    # RADIOGRAFÍA / NO RADIOGRAFÍA
-    # ========================================================
+    # =========================================================
+    # ETAPA 1 - RADIOGRAFÍA
+    # =========================================================
 
     try:
         radiography_prediction = (
@@ -284,9 +263,7 @@ def validar_radiografia(request):
                     "code": (
                         "RADIOGRAPHY_MODEL_UNAVAILABLE"
                     ),
-                    "message": str(
-                        exc
-                    ),
+                    "message": str(exc),
                 }
             },
             status=503,
@@ -299,9 +276,7 @@ def validar_radiografia(request):
                     "code": (
                         "RADIOGRAPHY_IMAGE_INVALID"
                     ),
-                    "message": str(
-                        exc
-                    ),
+                    "message": str(exc),
                 }
             },
             status=422,
@@ -323,10 +298,32 @@ def validar_radiografia(request):
             status=500,
         )
 
-    # ========================================================
-    # NO ES RADIOGRAFÍA
-    # DETENER PIPELINE
-    # ========================================================
+    radiography_data = {
+        "confianza": round(
+            radiography_prediction
+            .confidence,
+            6,
+        ),
+        "probabilidad_radiografia": round(
+            radiography_prediction
+            .radiography_probability,
+            6,
+        ),
+        "probabilidad_no_radiografia": round(
+            radiography_prediction
+            .non_radiography_probability,
+            6,
+        ),
+        "umbral": (
+            radiography_prediction
+            .threshold
+        ),
+        "arquitectura": (
+            radiography_prediction
+            .architecture
+        ),
+        "version": "V3",
+    }
 
     if not (
         radiography_prediction
@@ -338,61 +335,35 @@ def validar_radiografia(request):
                     "es_radiografia": False,
                     "anatomia_evaluada": False,
                     "anatomia_admitida": None,
-
-                    "confianza": round(
-                        radiography_prediction
-                        .confidence,
-                        6,
-                    ),
-
-                    "probabilidad_radiografia": round(
-                        radiography_prediction
-                        .radiography_probability,
-                        6,
-                    ),
-
-                    "probabilidad_no_radiografia": round(
-                        radiography_prediction
-                        .non_radiography_probability,
-                        6,
-                    ),
-
-                    "umbral": (
-                        radiography_prediction
-                        .threshold
-                    ),
-
-                    "arquitectura": (
-                        radiography_prediction
-                        .architecture
-                    ),
-
-                    "familia_modelo": (
-                        "EfficientNet"
-                    ),
-
+                    "analisis_osteosarcoma_evaluado": False,
+                    "osteosarcoma_sospechoso": None,
                     "puede_continuar": False,
-
                     "etapa_rechazo": (
                         "validacion_radiografia"
                     ),
-
                     "mensaje": (
-                        "La imagen subida no fue "
+                        "La imagen no fue "
                         "identificada como una "
-                        "radiografía. Seleccione "
-                        "una radiografía válida "
-                        "para continuar."
+                        "radiografía."
+                    ),
+
+                    # Compatibilidad frontend.
+                    **radiography_data,
+
+                    "validacion_radiografia": (
+                        radiography_data
+                    ),
+                    "familia_modelo": (
+                        "EfficientNet"
                     ),
                 }
             },
             status=200,
         )
 
-    # ========================================================
-    # ETAPA 2
-    # VALIDACIÓN ANATÓMICA
-    # ========================================================
+    # =========================================================
+    # ETAPA 2 - ANATOMÍA
+    # =========================================================
 
     try:
         anatomy_prediction = (
@@ -410,9 +381,7 @@ def validar_radiografia(request):
                     "code": (
                         "ANATOMY_MODEL_UNAVAILABLE"
                     ),
-                    "message": str(
-                        exc
-                    ),
+                    "message": str(exc),
                 }
             },
             status=503,
@@ -425,9 +394,7 @@ def validar_radiografia(request):
                     "code": (
                         "ANATOMY_IMAGE_INVALID"
                     ),
-                    "message": str(
-                        exc
-                    ),
+                    "message": str(exc),
                 }
             },
             status=422,
@@ -449,151 +416,220 @@ def validar_radiografia(request):
             status=500,
         )
 
-    # ========================================================
-    # RESULTADO FINAL DE LAS DOS BARRERAS
-    # ========================================================
+    anatomy_data = {
+        "confianza": round(
+            anatomy_prediction
+            .confidence,
+            6,
+        ),
+        "probabilidad_admitida": round(
+            anatomy_prediction
+            .admitted_probability,
+            6,
+        ),
+        "probabilidad_no_admitida": round(
+            anatomy_prediction
+            .non_admitted_probability,
+            6,
+        ),
+        "umbral": (
+            anatomy_prediction
+            .threshold
+        ),
+        "arquitectura": (
+            anatomy_prediction
+            .architecture
+        ),
+        "version": (
+            anatomy_prediction
+            .version
+        ),
+        "huesos_admitidos": [
+            "húmero",
+            "radio",
+            "cúbito",
+            "fémur",
+            "tibia",
+            "peroné",
+        ],
+    }
 
-    puede_continuar = (
-        radiography_prediction
-        .is_radiography
-        and
-        anatomy_prediction
-        .is_admitted
-    )
+    if not anatomy_prediction.is_admitted:
+        return JsonResponse(
+            {
+                "data": {
+                    "es_radiografia": True,
+                    "anatomia_evaluada": True,
+                    "anatomia_admitida": False,
+                    "analisis_osteosarcoma_evaluado": False,
+                    "osteosarcoma_sospechoso": None,
+                    "puede_continuar": False,
+                    "etapa_rechazo": (
+                        "validacion_anatomica"
+                    ),
+                    "mensaje": (
+                        "La imagen corresponde a "
+                        "una radiografía, pero la "
+                        "región anatómica no está "
+                        "admitida para el análisis."
+                    ),
 
-    if anatomy_prediction.is_admitted:
-        message = (
-            "La imagen fue identificada como "
-            "radiografía y corresponde a una "
-            "región anatómica admitida. "
-            "Puede continuar con el análisis."
+                    # Compatibilidad frontend.
+                    **radiography_data,
+
+                    "validacion_radiografia": (
+                        radiography_data
+                    ),
+                    "validacion_anatomica": (
+                        anatomy_data
+                    ),
+                    "familia_modelo": (
+                        "EfficientNet"
+                    ),
+                }
+            },
+            status=200,
         )
 
-        etapa_rechazo = None
+    # =========================================================
+    # ETAPA 3 - OSTEOSARCOMA
+    # =========================================================
 
+    try:
+        tumor_prediction = (
+            OsteosarcomaValidator()
+            .predict(
+                raw,
+                nombre,
+            )
+        )
+
+    except OsteosarcomaModelUnavailable as exc:
+        return JsonResponse(
+            {
+                "error": {
+                    "code": (
+                        "OSTEOSARCOMA_MODEL_UNAVAILABLE"
+                    ),
+                    "message": str(exc),
+                }
+            },
+            status=503,
+        )
+
+    except OsteosarcomaImageError as exc:
+        return JsonResponse(
+            {
+                "error": {
+                    "code": (
+                        "OSTEOSARCOMA_IMAGE_INVALID"
+                    ),
+                    "message": str(exc),
+                }
+            },
+            status=422,
+        )
+
+    except Exception:
+        return JsonResponse(
+            {
+                "error": {
+                    "code": (
+                        "OSTEOSARCOMA_ANALYSIS_ERROR"
+                    ),
+                    "message": (
+                        "No fue posible ejecutar "
+                        "el análisis de osteosarcoma."
+                    ),
+                }
+            },
+            status=500,
+        )
+
+    tumor_data = {
+        "sospechoso": (
+            tumor_prediction
+            .is_suspicious
+        ),
+        "confianza": round(
+            tumor_prediction
+            .confidence,
+            6,
+        ),
+        "probabilidad_osteosarcoma": round(
+            tumor_prediction
+            .osteosarcoma_probability,
+            6,
+        ),
+        "probabilidad_no_osteosarcoma": round(
+            tumor_prediction
+            .non_osteosarcoma_probability,
+            6,
+        ),
+        "umbral": (
+            tumor_prediction
+            .threshold
+        ),
+        "arquitectura": (
+            tumor_prediction
+            .architecture
+        ),
+        "version": (
+            tumor_prediction
+            .version
+        ),
+    }
+
+    if tumor_prediction.is_suspicious:
+        message = (
+            "El modelo identificó características "
+            "radiográficas compatibles con un "
+            "resultado sospechoso de osteosarcoma. "
+            "El resultado requiere revisión clínica."
+        )
     else:
         message = (
-            "La imagen fue identificada como "
-            "radiografía, pero la región "
-            "anatómica no corresponde al "
-            "alcance admitido para el análisis."
-        )
-
-        etapa_rechazo = (
-            "validacion_anatomica"
+            "El modelo no identificó suficientes "
+            "características radiográficas para "
+            "clasificar la imagen como sospechosa "
+            "de osteosarcoma. El resultado no "
+            "sustituye la valoración clínica."
         )
 
     return JsonResponse(
         {
             "data": {
-                # ============================================
-                # RESULTADO GENERAL
-                # ============================================
-
                 "es_radiografia": True,
-
                 "anatomia_evaluada": True,
+                "anatomia_admitida": True,
 
-                "anatomia_admitida": (
-                    anatomy_prediction
-                    .is_admitted
+                "analisis_osteosarcoma_evaluado": (
+                    True
                 ),
 
-                "puede_continuar": (
-                    puede_continuar
+                "osteosarcoma_sospechoso": (
+                    tumor_prediction
+                    .is_suspicious
                 ),
 
-                "etapa_rechazo": (
-                    etapa_rechazo
+                "puede_continuar": True,
+                "etapa_rechazo": None,
+                "mensaje": message,
+
+                # Compatibilidad con frontend actual.
+                **radiography_data,
+
+                "validacion_radiografia": (
+                    radiography_data
                 ),
 
-                "mensaje": (
-                    message
+                "validacion_anatomica": (
+                    anatomy_data
                 ),
 
-                # ============================================
-                # MODELO RADIOGRÁFICO
-                # ============================================
-
-                "validacion_radiografia": {
-                    "confianza": round(
-                        radiography_prediction
-                        .confidence,
-                        6,
-                    ),
-
-                    "probabilidad_radiografia": round(
-                        radiography_prediction
-                        .radiography_probability,
-                        6,
-                    ),
-
-                    "probabilidad_no_radiografia": round(
-                        radiography_prediction
-                        .non_radiography_probability,
-                        6,
-                    ),
-
-                    "umbral": (
-                        radiography_prediction
-                        .threshold
-                    ),
-
-                    "arquitectura": (
-                        radiography_prediction
-                        .architecture
-                    ),
-
-                    "version": "V3",
-                },
-
-                # ============================================
-                # MODELO ANATÓMICO
-                # ============================================
-
-                "validacion_anatomica": {
-                    "confianza": round(
-                        anatomy_prediction
-                        .confidence,
-                        6,
-                    ),
-
-                    "probabilidad_admitida": round(
-                        anatomy_prediction
-                        .admitted_probability,
-                        6,
-                    ),
-
-                    "probabilidad_no_admitida": round(
-                        anatomy_prediction
-                        .non_admitted_probability,
-                        6,
-                    ),
-
-                    "umbral": (
-                        anatomy_prediction
-                        .threshold
-                    ),
-
-                    "arquitectura": (
-                        anatomy_prediction
-                        .architecture
-                    ),
-
-                    "version": (
-                        anatomy_prediction
-                        .version
-                    ),
-
-                    "huesos_admitidos": [
-                        "húmero",
-                        "radio",
-                        "cúbito",
-                        "fémur",
-                        "tibia",
-                        "peroné",
-                    ],
-                },
+                "analisis_osteosarcoma": (
+                    tumor_data
+                ),
 
                 "familia_modelo": (
                     "EfficientNet"
