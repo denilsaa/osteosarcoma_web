@@ -66,13 +66,13 @@ class AnatomyValidator:
         default_model = (
             base_dir
             / "modelos"
-            / "anatomy_validator_efficientnet_b0_v1.onnx"
+            / "anatomy_validator_v2.onnx"
         )
 
         default_metadata = (
             base_dir
             / "modelos"
-            / "anatomy_validator_efficientnet_b0_v1.json"
+            / "anatomy_validator_v2.json"
         )
 
         self.model_path = Path(
@@ -110,7 +110,7 @@ class AnatomyValidator:
 
         if not self.available:
             raise AnatomyModelUnavailable(
-                "El modelo de validación anatómica V1 "
+                "El modelo de validación anatomica V1 "
                 "no está disponible."
             )
 
@@ -123,7 +123,7 @@ class AnatomyValidator:
         except Exception as exc:
             raise AnatomyModelUnavailable(
                 "No fue posible leer los metadatos "
-                "del modelo anatómico V1."
+                "del modelo anatomico V1."
             ) from exc
 
         classes = metadata.get("classes")
@@ -134,7 +134,7 @@ class AnatomyValidator:
         ]:
             raise AnatomyModelUnavailable(
                 "Las clases configuradas para el "
-                "modelo anatómico V1 no son válidas."
+                "modelo anatomico V1 no son válidas."
             )
 
         try:
@@ -147,7 +147,7 @@ class AnatomyValidator:
         except Exception as exc:
             raise AnatomyModelUnavailable(
                 "No fue posible inicializar el "
-                "modelo anatómico V1."
+                "modelo anatomico V1."
             ) from exc
 
         self._session = session

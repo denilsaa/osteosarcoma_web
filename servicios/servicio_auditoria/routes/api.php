@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -92,11 +92,11 @@ Route::get('/health', function () {
 
 /*
 |--------------------------------------------------------------------------
-| CATÃLOGOS
+| CATÁLOGOS
 |--------------------------------------------------------------------------
 |
-| Devuelve servicios, mÃ³dulos, acciones y resultados registrados.
-| Posteriormente el frontend utilizarÃ¡ estos datos para sus filtros.
+| Devuelve servicios, módulos, acciones y resultados registrados.
+| Posteriormente el frontend utilizará estos datos para sus filtros.
 |
 */
 
@@ -444,7 +444,7 @@ Route::get(
 
         /*
         |--------------------------------------------------------------------------
-        | MÃ“DULO
+        | MÓDULO
         |--------------------------------------------------------------------------
         */
 
@@ -468,7 +468,7 @@ Route::get(
 
         /*
         |--------------------------------------------------------------------------
-        | ACCIÃ“N
+        | ACCIÓN
         |--------------------------------------------------------------------------
         */
 
@@ -613,7 +613,7 @@ Route::get(
 
         /*
         |--------------------------------------------------------------------------
-        | PAGINACIÃ“N
+        | PAGINACIÓN
         |--------------------------------------------------------------------------
         */
 
@@ -667,9 +667,9 @@ Route::get(
 |
 | Este endpoint permite conocer:
 |
-| quiÃ©n
-| quÃ© hizo
-| cuÃ¡ndo
+| quién
+| qué hizo
+| cuándo
 | resultado
 | registro afectado
 | IP
@@ -746,7 +746,7 @@ Route::get(
         if (!$evento) {
             return response()->json([
                 'mensaje' =>
-                    'El evento de auditorÃ­a no existe.',
+                    'El evento de auditoría no existe.',
             ], 404);
         }
 

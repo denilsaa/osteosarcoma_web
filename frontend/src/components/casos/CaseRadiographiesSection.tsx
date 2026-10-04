@@ -1,4 +1,5 @@
 import {
+  Activity,
   AlertTriangle,
   CalendarDays,
   CheckCircle2,
@@ -42,6 +43,16 @@ import {
   type RadiographyCatalogs,
 } from "../../api/radiografias.api";
 
+import {
+  getLatestRadiographyAnalysis,
+  validateRadiography,
+  type RadiographyValidationResponse,
+} from "../../api/ia.api";
+
+import {
+  useAuth,
+} from "../../auth/AuthProvider";
+
 import "./CaseRadiographiesSection.css";
 
 
@@ -69,7 +80,7 @@ function formatDate(
 ): string {
 
   if (!value) {
-    return "—";
+    return "?";
   }
 
   const date =
@@ -109,7 +120,7 @@ function formatDateTime(
 ): string {
 
   if (!value) {
-    return "—";
+    return "?";
   }
 
   const date =
@@ -188,6 +199,27 @@ function formatBytes(
 }
 
 
+function formatPercentage(
+  value?:
+    number | null,
+): string {
+
+  if (
+    value === undefined
+    ||
+    value === null
+    ||
+    Number.isNaN(value)
+  ) {
+    return "—";
+  }
+
+  return `${(
+    value * 100
+  ).toFixed(2)} %`;
+}
+
+
 function getErrorMessage(
   error:
     unknown,
@@ -208,6 +240,9 @@ function getErrorMessage(
           response?: {
             data?: {
               message?:
+                string;
+
+              detail?:
                 string;
 
               error?:
@@ -270,6 +305,19 @@ function getErrorMessage(
       return response
         .data
         .message;
+    }
+
+    if (
+      typeof response
+        ?.data
+        ?.detail
+      ===
+      "string"
+    ) {
+
+      return response
+        .data
+        .detail;
     }
 
     const errors =
@@ -468,6 +516,10 @@ export function CaseRadiographiesSection({
   resolveAuthorName,
 }: Props) {
 
+  const {
+    usuario,
+  } = useAuth();
+
   const fileInputRef =
     useRef<HTMLInputElement | null>(
       null,
@@ -514,6 +566,11 @@ export function CaseRadiographiesSection({
     );
 
   const previewLoadingRef =
+    useRef<Set<string>>(
+      new Set(),
+    );
+
+  const analysisLoadingRef =
     useRef<Set<string>>(
       new Set(),
     );
@@ -597,6 +654,27 @@ export function CaseRadiographiesSection({
   ] =
     useState<string | null>(
       null,
+    );
+
+  const [
+    analyzingFileId,
+    setAnalyzingFileId,
+  ] =
+    useState<string | null>(
+      null,
+    );
+
+  const [
+    analysisResults,
+    setAnalysisResults,
+  ] =
+    useState<
+      Record<
+        string,
+        RadiographyValidationResponse
+      >
+    >(
+      {},
     );
 
   const [
@@ -689,7 +767,7 @@ export function CaseRadiographiesSection({
 
 
   // ==========================================================
-  // VISOR RADIOGRÁFICO
+  // VISOR RADIOGR?FICO
   // ==========================================================
 
   const [
@@ -833,6 +911,21 @@ export function CaseRadiographiesSection({
         ??
         null
       : null;
+
+  const selectedAnalysis =
+    selectedInlineFile
+      ? analysisResults[
+          selectedInlineFile.id_file
+        ]
+        ??
+        null
+      : null;
+
+  const selectedLocalization =
+    selectedAnalysis
+      ?.localizacion_osteosarcoma
+    ??
+    null;
 
   const selectedInvalidValidations =
     selectedInlineFile
@@ -1097,7 +1190,7 @@ export function CaseRadiographiesSection({
     () => {
       /*
        * Rendimiento:
-       * no descargamos todas las radiografías originales al entrar.
+       * no descargamos todas las radiografias originales al entrar.
        * Solo solicitamos el archivo que el usuario está visualizando.
        */
       if (selectedInlineFile) {
@@ -1108,6 +1201,77 @@ export function CaseRadiographiesSection({
     },
     [
       ensurePreview,
+      selectedInlineFile,
+    ],
+  );
+
+
+  useEffect(
+    () => {
+      if (
+        !selectedInlineFile
+        ||
+        selectedInlineFile.validation_status
+        !==
+        "VALIDA"
+      ) {
+        return;
+      }
+
+
+      const fileId =
+        selectedInlineFile.id_file;
+
+
+      if (
+        analysisResults[
+          fileId
+        ]
+        ||
+        analysisLoadingRef.current.has(
+          fileId,
+        )
+      ) {
+        return;
+      }
+
+
+      analysisLoadingRef.current.add(
+        fileId,
+      );
+
+
+      void (
+        async () => {
+          try {
+            const persisted =
+              await getLatestRadiographyAnalysis(
+                fileId,
+                caseId,
+              );
+
+
+            if (persisted) {
+              setAnalysisResults(
+                (current) => ({
+                  ...current,
+                  [fileId]:
+                    persisted,
+                }),
+              );
+            }
+
+          } catch {
+            analysisLoadingRef.current.delete(
+              fileId,
+            );
+          }
+        }
+      )();
+    },
+    [
+      analysisResults,
+      caseId,
       selectedInlineFile,
     ],
   );
@@ -1786,7 +1950,7 @@ export function CaseRadiographiesSection({
     ) {
 
       return (
-        "Seleccione la región anatómica."
+        "Seleccione la region anatomica."
       );
     }
 
@@ -2087,6 +2251,147 @@ export function CaseRadiographiesSection({
 
       setSaving(
         false,
+      );
+    }
+  }
+
+
+  async function handleAnalyzeWithAi(
+    file:
+      RadiographicFile,
+  ) {
+
+    if (
+      file.validation_status
+      !==
+      "VALIDA"
+    ) {
+
+      setError(
+        "Solo las radiografías validadas pueden enviarse al análisis asistido por IA.",
+      );
+
+      return;
+    }
+
+    setAnalyzingFileId(
+      file.id_file,
+    );
+
+    setError(
+      null,
+    );
+
+    setSuccess(
+      null,
+    );
+
+    try {
+
+      const blob =
+        await getRadiographicFileBlob(
+          file.id_file,
+        );
+
+      const analysisFile =
+        new File(
+          [
+            blob,
+          ],
+          file.original_name,
+          {
+            type:
+              blob.type
+              ||
+              file.mime.mime_type
+              ||
+              "application/octet-stream",
+          },
+        );
+
+      const result =
+        await validateRadiography(
+          analysisFile,
+          {
+            radiografia_uuid:
+              file.id_file,
+
+            caso_uuid:
+              caseId,
+
+            solicitado_por_uuid:
+              usuario?.id_usuario
+              ??
+              null,
+          },
+        );
+
+      setAnalysisResults(
+        (current) => ({
+          ...current,
+          [file.id_file]:
+            result,
+        }),
+      );
+
+      if (
+        !result.es_radiografia
+      ) {
+
+        setError(
+          result.mensaje
+          ||
+          "El archivo no fue reconocido como una radiografía.",
+        );
+
+        return;
+      }
+
+      if (
+        result.anatomia_evaluada
+        &&
+        result.anatomia_admitida
+        ===
+        false
+      ) {
+
+        setError(
+          result.mensaje
+          ||
+          "La región anatómica no está admitida para el análisis de osteosarcoma.",
+        );
+
+        return;
+      }
+
+      setSuccess(
+        "Análisis asistido por IA completado.",
+      );
+
+      window.setTimeout(
+        () => {
+
+          setSuccess(
+            null,
+          );
+        },
+        3200,
+      );
+
+    } catch (
+      requestError
+    ) {
+
+      setError(
+        getErrorMessage(
+          requestError,
+        ),
+      );
+
+    } finally {
+
+      setAnalyzingFileId(
+        null,
       );
     }
   }
@@ -2448,7 +2753,7 @@ async function handleReplacement() {
         />
 
         <span>
-          Cargando radiografías...
+          Cargando radiografias...
         </span>
 
       </div>
@@ -2481,7 +2786,7 @@ async function handleReplacement() {
 
           <div>
             <h2>
-              Radiografías del caso
+              radiografias del caso
             </h2>
 
             <p>
@@ -2659,7 +2964,7 @@ async function handleReplacement() {
 
 
               <label>
-                Zona anatómica *
+                Zona anatamica *
 
                 <select
                   disabled={
@@ -3030,14 +3335,14 @@ async function handleReplacement() {
                           selectedStudyType
                             ?.name
                           ??
-                          "—"
+                          "?"
                         }
                       </strong>
                     </div>
 
                     <div>
                       <span>
-                        Región anatómica
+                        Región anatomica
                       </span>
 
                       <strong>
@@ -3045,7 +3350,7 @@ async function handleReplacement() {
                           selectedRegion
                             ?.name
                           ??
-                          "—"
+                          "?"
                         }
                       </strong>
                     </div>
@@ -3060,7 +3365,7 @@ async function handleReplacement() {
                           selectedLaterality
                             ?.name
                           ??
-                          "—"
+                          "?"
                         }
                       </strong>
                     </div>
@@ -3261,7 +3566,7 @@ async function handleReplacement() {
                 />
 
                 <strong>
-                  Sin radiografías registradas
+                  Sin radiografias registradas
                 </strong>
 
                 <span>
@@ -3304,7 +3609,7 @@ async function handleReplacement() {
                   >
                     <div>
                       <strong>
-                        Radiografías del caso
+                        radiografias del caso
                       </strong>
 
                       <span>
@@ -3626,6 +3931,61 @@ async function handleReplacement() {
                             {
                               selectedInlineFile
                               &&
+                              selectedInlineFile.validation_status
+                              ===
+                              "VALIDA"
+                              &&
+                              (
+                                <button
+                                  type="button"
+                                  className="case-radiographies-ai-button"
+                                  disabled={
+                                    analyzingFileId
+                                    ===
+                                    selectedInlineFile.id_file
+                                  }
+                                  onClick={
+                                    () =>
+                                      void handleAnalyzeWithAi(
+                                        selectedInlineFile,
+                                      )
+                                  }
+                                >
+                                  {
+                                    analyzingFileId
+                                    ===
+                                    selectedInlineFile.id_file
+                                      ? (
+                                          <>
+                                            <LoaderCircle
+                                              size={15}
+                                              className="case-radiographies-spin"
+                                            />
+
+                                            Analizando...
+                                          </>
+                                        )
+                                      : (
+                                          <>
+                                            <Activity
+                                              size={15}
+                                            />
+
+                                            {
+                                              selectedAnalysis
+                                                ? "Reanalizar con IA"
+                                                : "Analizar con IA"
+                                            }
+                                          </>
+                                        )
+                                  }
+                                </button>
+                              )
+                            }
+
+                            {
+                              selectedInlineFile
+                              &&
                               isRadiographicFilePreviewable(
                                 selectedInlineFile,
                               )
@@ -3654,7 +4014,7 @@ async function handleReplacement() {
                                             className="case-radiographies-spin"
                                           />
                                         )
-                                      : "⋮"
+                                      : "â‹®"
                                   }
                                 </button>
                               )
@@ -4075,6 +4435,317 @@ async function handleReplacement() {
                         </div>
 
 
+                        {
+                          selectedInlineFile
+                          &&
+                          selectedAnalysis
+                          ?.analisis_osteosarcoma_evaluado
+                          &&
+                          selectedAnalysis
+                            .analisis_osteosarcoma
+                          &&
+                          (
+                            <section
+                              className={
+                                selectedAnalysis
+                                  .osteosarcoma_sospechoso
+                                  ? "case-radiographies-ai-result case-radiographies-ai-result--suspicious"
+                                  : "case-radiographies-ai-result case-radiographies-ai-result--negative"
+                              }
+                            >
+                              <header
+                                className="case-radiographies-ai-result-header"
+                              >
+                                <div>
+                                  {
+                                    selectedAnalysis
+                                      .osteosarcoma_sospechoso
+                                      ? (
+                                          <AlertTriangle
+                                            size={22}
+                                          />
+                                        )
+                                      : (
+                                          <CheckCircle2
+                                            size={22}
+                                          />
+                                        )
+                                  }
+
+                                  <div>
+                                    <span>
+                                      Análisis asistido por IA
+                                    </span>
+
+                                    <strong>
+                                      {
+                                        selectedAnalysis
+                                          .osteosarcoma_sospechoso
+                                          ? "Hallazgos sospechosos de osteosarcoma"
+                                          : "Sin hallazgos suficientes para clasificar como sospechoso"
+                                      }
+                                    </strong>
+                                  </div>
+                                </div>
+
+                                <span
+                                  className="case-radiographies-ai-result-badge"
+                                >
+                                  {
+                                    selectedAnalysis
+                                      .osteosarcoma_sospechoso
+                                      ? "SOSPECHOSO"
+                                      : "NO SOSPECHOSO"
+                                  }
+                                </span>
+                              </header>
+
+
+                              <div
+                                className="case-radiographies-ai-result-body"
+                              >
+                                {
+                                  inlineViewerUrl
+                                  &&
+                                  isRadiographicFilePreviewable(
+                                    selectedInlineFile,
+                                  )
+                                    ? (
+                                        <div
+                                          className="case-radiographies-ai-visual"
+                                        >
+                                          <div
+                                            className="case-radiographies-ai-image-stage"
+                                            style={
+                                              selectedInlineFile.width_px
+                                              &&
+                                              selectedInlineFile.height_px
+                                                ? {
+                                                    aspectRatio:
+                                                      `${selectedInlineFile.width_px} / ${selectedInlineFile.height_px}`,
+                                                  }
+                                                : undefined
+                                            }
+                                          >
+                                            <img
+                                              src={
+                                                inlineViewerUrl
+                                              }
+                                              alt={
+                                                `Resultado IA sobre ${selectedInlineFile.original_name}`
+                                              }
+                                              draggable={
+                                                false
+                                              }
+                                            />
+
+                                            {
+                                              selectedAnalysis
+                                                .osteosarcoma_sospechoso
+                                              &&
+                                              selectedLocalization
+                                                ?.detectada
+                                              &&
+                                              selectedLocalization
+                                                .coordenadas_normalizadas
+                                              &&
+                                              (
+                                                <div
+                                                  className="case-radiographies-ai-box"
+                                                  style={{
+                                                    left:
+                                                      `${selectedLocalization.coordenadas_normalizadas.x1 * 100}%`,
+
+                                                    top:
+                                                      `${selectedLocalization.coordenadas_normalizadas.y1 * 100}%`,
+
+                                                    width:
+                                                      `${(
+                                                        selectedLocalization.coordenadas_normalizadas.x2
+                                                        -
+                                                        selectedLocalization.coordenadas_normalizadas.x1
+                                                      ) * 100}%`,
+
+                                                    height:
+                                                      `${(
+                                                        selectedLocalization.coordenadas_normalizadas.y2
+                                                        -
+                                                        selectedLocalization.coordenadas_normalizadas.y1
+                                                      ) * 100}%`,
+                                                  }}
+                                                >
+                                                  <span>
+                                                    Región sospechosa
+                                                  </span>
+                                                </div>
+                                              )
+                                            }
+                                          </div>
+
+                                          <span
+                                            className="case-radiographies-ai-visual-caption"
+                                          >
+                                            {
+                                              selectedAnalysis
+                                                .osteosarcoma_sospechoso
+                                              &&
+                                              selectedLocalization
+                                                ?.detectada
+                                                ? "La región marcada corresponde a la localización estimada por el detector."
+                                                : "La imagen se mantiene sin marcas porque no se obtuvo una localización sospechosa que deba mostrarse."
+                                            }
+                                          </span>
+                                        </div>
+                                      )
+                                    : (
+                                        <div
+                                          className="case-radiographies-ai-visual-unavailable"
+                                        >
+                                          <FileImage
+                                            size={30}
+                                          />
+
+                                          <strong>
+                                            Resultado disponible
+                                          </strong>
+
+                                          <span>
+                                            La previsualización con región marcada no está disponible para este formato.
+                                          </span>
+                                        </div>
+                                      )
+                                }
+
+
+                                <div
+                                  className="case-radiographies-ai-summary"
+                                >
+                                  <div
+                                    className="case-radiographies-ai-probability"
+                                  >
+                                    <span>
+                                      Probabilidad estimada de osteosarcoma
+                                    </span>
+
+                                    <strong>
+                                      {
+                                        formatPercentage(
+                                          selectedAnalysis
+                                            .analisis_osteosarcoma
+                                            .probabilidad_osteosarcoma,
+                                        )
+                                      }
+                                    </strong>
+                                  </div>
+
+
+                                  <div
+                                    className="case-radiographies-ai-checks"
+                                  >
+                                    <div>
+                                      <CheckCircle2
+                                        size={15}
+                                      />
+
+                                      <span>
+                                        Radiografía validada
+                                      </span>
+                                    </div>
+
+                                    <div>
+                                      <CheckCircle2
+                                        size={15}
+                                      />
+
+                                      <span>
+                                        Hueso largo admitido
+                                      </span>
+                                    </div>
+                                  </div>
+
+
+                                  {
+                                    selectedAnalysis
+                                      .osteosarcoma_sospechoso
+                                    &&
+                                    (
+                                      <div
+                                        className="case-radiographies-ai-localization"
+                                      >
+                                        <span>
+                                          Localización de la región sospechosa
+                                        </span>
+
+                                        {
+                                          selectedLocalization
+                                            ?.detectada
+                                            ? (
+                                                <>
+                                                  <strong>
+                                                    Región localizada
+                                                  </strong>
+
+                                                  <small>
+                                                    Confianza de localización:{" "}
+                                                    {
+                                                      formatPercentage(
+                                                        selectedLocalization
+                                                          .confianza,
+                                                      )
+                                                    }
+                                                  </small>
+                                                </>
+                                              )
+                                            : (
+                                                <>
+                                                  <strong>
+                                                    Sin región mostrable
+                                                  </strong>
+
+                                                  <small>
+                                                    {
+                                                      selectedLocalization
+                                                        ?.mensaje
+                                                      ??
+                                                      "No se obtuvo una localización con suficiente confianza."
+                                                    }
+                                                  </small>
+                                                </>
+                                              )
+                                        }
+                                      </div>
+                                    )
+                                  }
+
+
+                                  <p
+                                    className="case-radiographies-ai-message"
+                                  >
+                                    {
+                                      selectedAnalysis
+                                        .mensaje
+                                    }
+                                  </p>
+                                </div>
+                              </div>
+
+
+                              <footer
+                                className="case-radiographies-ai-disclaimer"
+                              >
+                                <Info
+                                  size={15}
+                                />
+
+                                <span>
+                                  Resultado de apoyo a la evaluación médica. No constituye un diagnóstico definitivo y debe ser interpretado junto con la valoración clínica.
+                                </span>
+                              </footer>
+                            </section>
+                          )
+                        }
+
+
                         <div
                           className="case-radiographies-detail-information"
                         >
@@ -4146,7 +4817,7 @@ async function handleReplacement() {
                                     size={14}
                                   />
 
-                                  Región anatómica
+                                  Región anatomica
                                 </span>
 
                                 <strong>

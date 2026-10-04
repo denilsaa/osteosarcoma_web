@@ -922,3 +922,136 @@ class ArtefactoExplicabilidad(models.Model):
 
     def __str__(self):
         return str(self.id_artefacto)
+
+# ==========================================================
+# ANALISIS CLINICO DE RADIOGRAFIAS ASISTIDO POR IA
+# ==========================================================
+
+class AnalisisRadiografiaIA(models.Model):
+    id_analisis = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+
+    radiografia_uuid = models.UUIDField()
+
+    caso_uuid = models.UUIDField()
+
+    solicitado_por_uuid = models.UUIDField(
+        null=True,
+        blank=True,
+    )
+
+    es_radiografia = models.BooleanField(default=False)
+
+    anatomia_evaluada = models.BooleanField(default=False)
+
+    anatomia_admitida = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    analisis_osteosarcoma_evaluado = models.BooleanField(
+        default=False,
+    )
+
+    osteosarcoma_sospechoso = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    probabilidad_osteosarcoma = models.DecimalField(
+        max_digits=10,
+        decimal_places=9,
+        null=True,
+        blank=True,
+    )
+
+    probabilidad_no_osteosarcoma = models.DecimalField(
+        max_digits=10,
+        decimal_places=9,
+        null=True,
+        blank=True,
+    )
+
+    localizacion_evaluada = models.BooleanField(default=False)
+
+    localizacion_detectada = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    confianza_localizacion = models.DecimalField(
+        max_digits=10,
+        decimal_places=9,
+        null=True,
+        blank=True,
+    )
+
+    umbral_localizacion = models.DecimalField(
+        max_digits=10,
+        decimal_places=9,
+        null=True,
+        blank=True,
+    )
+
+    x1 = models.DecimalField(
+        max_digits=10,
+        decimal_places=9,
+        null=True,
+        blank=True,
+    )
+
+    y1 = models.DecimalField(
+        max_digits=10,
+        decimal_places=9,
+        null=True,
+        blank=True,
+    )
+
+    x2 = models.DecimalField(
+        max_digits=10,
+        decimal_places=9,
+        null=True,
+        blank=True,
+    )
+
+    y2 = models.DecimalField(
+        max_digits=10,
+        decimal_places=9,
+        null=True,
+        blank=True,
+    )
+
+    etapa_rechazo = models.CharField(
+        max_length=80,
+        null=True,
+        blank=True,
+    )
+
+    mensaje = models.TextField(
+        null=True,
+        blank=True,
+    )
+
+    resultado_json = models.JSONField()
+
+    fecha_analisis = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "analisis_radiografia_ia"
+
+        indexes = [
+            models.Index(
+                fields=["radiografia_uuid", "fecha_analisis"],
+                name="idx_ia_rad_fecha",
+            ),
+            models.Index(
+                fields=["caso_uuid", "fecha_analisis"],
+                name="idx_ia_caso_fecha",
+            ),
+        ]
+
+    def __str__(self):
+        return str(self.id_analisis)

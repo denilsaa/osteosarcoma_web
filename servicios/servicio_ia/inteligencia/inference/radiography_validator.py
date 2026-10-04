@@ -65,7 +65,7 @@ class RadiographyValidator:
         # RADIOGRAPHY VALIDATOR V3
         # ==========================================================
         #
-        # Se conserva V1 fÃ­sicamente en /modelos como respaldo.
+        # Se conserva V1 físicamente en /modelos como respaldo.
         # El servicio utiliza V3 por defecto.
         #
         default_model = (
@@ -115,8 +115,8 @@ class RadiographyValidator:
 
         if not self.available:
             raise RadiographyModelUnavailable(
-                "El modelo EfficientNet V2 de validaciÃ³n "
-                "radiogrÃ¡fica no estÃ¡ disponible."
+                "El modelo EfficientNet V2 de validación "
+                "radiográfica no está disponible."
             )
 
         try:
@@ -139,7 +139,7 @@ class RadiographyValidator:
         ]:
             raise RadiographyModelUnavailable(
                 "Las clases configuradas para el modelo "
-                "EfficientNet V2 no son vÃ¡lidas."
+                "EfficientNet V2 no son válidas."
             )
 
         try:
@@ -218,7 +218,7 @@ class RadiographyValidator:
         ):
             raise RadiographyImageError(
                 f"El DICOM corresponde a la modalidad "
-                f"{modality}, no a una radiografÃ­a "
+                f"{modality}, no a una radiografía "
                 f"convencional."
             )
 
@@ -231,9 +231,9 @@ class RadiographyValidator:
 
         except Exception as exc:
             raise RadiographyImageError(
-                "El DICOM no contiene pÃ­xeles "
-                "radiogrÃ¡ficos compatibles con "
-                "el visor de validaciÃ³n."
+                "El DICOM no contiene píxeles "
+                "radiográficos compatibles con "
+                "el visor de validación."
             ) from exc
 
         while pixels.ndim > 2:
@@ -249,7 +249,7 @@ class RadiographyValidator:
         if not finite.any():
             raise RadiographyImageError(
                 "El DICOM contiene valores de "
-                "imagen no vÃ¡lidos."
+                "imagen no válidos."
             )
 
         valid_pixels = pixels[finite]
@@ -283,7 +283,7 @@ class RadiographyValidator:
         if high <= low:
             raise RadiographyImageError(
                 "El DICOM no contiene suficiente "
-                "informaciÃ³n visual."
+                "información visual."
             )
 
         pixels = np.clip(
@@ -421,7 +421,7 @@ class RadiographyValidator:
 
         # IMPORTANTE:
         # El umbral se obtiene del metadata V3.
-        # No se fuerza manualmente 0.09 aquÃ­.
+        # No se fuerza manualmente 0.09 aquí.
         threshold = float(
             self._metadata.get(
                 "threshold",
