@@ -1,0 +1,30 @@
+.patient-assignment-card{border:1px solid #dfe8f1;border-radius:13px;background:#fff;padding:20px;margin:22px 0;box-shadow:0 3px 12px rgb(30 55 85 / 3%)}
+.patient-assignment-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.patient-assignment-header h2{margin:0;font-size:1rem;color:#153556}
+.patient-assignment-header span{font-size:.73rem;color:#137b91;background:#eaf7fb;padding:5px 10px;border-radius:20px}
+.patient-assignment-card>p{color:#667c91;font-size:.82rem}
+.patient-assignment-form{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;margin:18px 0}
+.patient-assignment-form label{display:flex;flex-direction:column;gap:7px;font-size:.8rem;font-weight:600}
+.patient-assignment-form input,.patient-assignment-form select{min-width:0;width:100%;padding:10px;border:1px solid #d5e0ea;border-radius:8px;background:white;color:#172f46}
+.patient-assignment-form button{padding:10px 14px;border:0;border-radius:8px;color:#fff;background:#068bbb;font-weight:600;cursor:pointer}
+.patient-assignment-form button:disabled,.patient-assignment-list button:disabled{opacity:.45;cursor:not-allowed}
+.patient-assignment-card h3{font-size:.84rem;margin:18px 0 9px}
+.patient-assignment-list{padding:0;margin:0;list-style:none}
+.patient-assignment-list li{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid #edf1f5;gap:15px}
+.patient-assignment-list li div{display:flex;flex-direction:column;gap:4px}
+.patient-assignment-list small{color:#72869b}
+.patient-assignment-list button{border:1px solid #eab2b2;border-radius:8px;color:#b53a3a;background:#fff;padding:8px 12px;cursor:pointer}
+.patient-assignment-error,.patient-assignment-success{padding:10px;border-radius:8px}
+.patient-assignment-error{background:#fff1f2;color:#aa2535!important}
+.patient-assignment-success{background:#eefaf4;color:#086949!important}
+@media(max-width:900px){.patient-assignment-form{grid-template-columns:1fr}}
+
+.patient-assignment-revoke{border:1px solid #f0c3c3;background:#fffafa;border-radius:10px;padding:14px;margin-top:15px}
+.patient-assignment-revoke>strong{font-size:.84rem;color:#972b36}
+.patient-assignment-revoke>p{font-size:.8rem;color:#6d7584}
+.patient-assignment-revoke label{display:flex;flex-direction:column;gap:6px;font-size:.8rem}
+.patient-assignment-revoke input{padding:10px;border:1px solid #d6e2ea;border-radius:8px}
+.patient-assignment-revoke>div{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.patient-assignment-revoke button{padding:9px 12px;border:1px solid #dadfe5;border-radius:7px;background:white;cursor:pointer}
+.patient-assignment-revoke button:last-child{color:#fff;background:#ae3b45;border-color:#ae3b45}
+.patient-assignment-revoke button:disabled{opacity:.4;cursor:not-allowed}

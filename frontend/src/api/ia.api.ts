@@ -424,3 +424,79 @@ export function getTrainingEvidenceUrl(
 
   return `${base}/${relative}`;
 }
+
+// ==========================================================
+// SOLICITUD ASINCRONA DE ANALISIS (RABBITMQ)
+// ==========================================================
+export type EstadoSolicitudIA = "PENDIENTE" | "PROCESANDO" | "COMPLETADO" | "FALLIDO";
+
+export interface SolicitudIA {
+  id_solicitud: string;
+  caso_uuid: string;
+  radiografia_uuid: string;
+  estado: EstadoSolicitudIA;
+  intentos: number;
+  max_intentos: number;
+  fecha_solicitud: string;
+  fecha_inicio: string | null;
+  fecha_fin: string | null;
+  duracion_segundos: number | null;
+  version_modelo: string;
+  error_codigo: string | null;
+  grad_cam_estado: "DISPONIBLE" | "NO_DISPONIBLE" | "NO_APLICA" | "PENDIENTE";
+  grad_cam_revision?: {
+    version: number;
+    region_referencia: string;
+    coincidencia_exploratoria: "REVISAR_DISCREPANCIA" | "SIN_DISCREPANCIA_GROSERA" | "NO_EVALUABLE";
+    fraccion_activacion_bordes?: number;
+    fraccion_activacion_en_region?: number;
+    fraccion_area_region?: number;
+    densidad_relativa_en_region?: number;
+    maximo_en_region?: boolean;
+  };
+  historial: Array<{ estado: string; fecha: string; intento?: number; detalle: string }>;
+  resultado?: RadiographyValidationResponse;
+}
+
+export async function crearSolicitudIA(
+  file: File,
+  casoUuid: string,
+  radiografiaUuid: string,
+  motivoReproceso = "",
+): Promise<SolicitudIA> {
+  const form = new FormData();
+  form.append("file", file, file.name);
+  form.append("caso_uuid", casoUuid);
+  form.append("radiografia_uuid", radiografiaUuid);
+  if (motivoReproceso) form.append("motivo_reproceso", motivoReproceso);
+  const { data } = await apiIA.post<{ data: SolicitudIA }>("/analisis/solicitudes/", form);
+  return data.data;
+}
+
+export async function obtenerSolicitudIA(
+  idSolicitud: string,
+): Promise<SolicitudIA> {
+  const { data } = await apiIA.get<{ data: SolicitudIA }>(`/analisis/solicitudes/${idSolicitud}/`);
+  return data.data;
+}
+
+export async function obtenerUltimaSolicitudIA(
+  casoUuid: string,
+  radiografiaUuid: string,
+): Promise<SolicitudIA | null> {
+  const { data } = await apiIA.get<{ data: SolicitudIA | null }>(
+    `/analisis/radiografia/${radiografiaUuid}/solicitud-actual/`,
+    { params: { caso_uuid: casoUuid } },
+  );
+  return data.data;
+}
+
+
+/** Imagen PNG autenticada. No usar un <img src> directo: necesita JWT. */
+export async function obtenerGradCamIA(idSolicitud: string): Promise<Blob> {
+  const { data } = await apiIA.get<Blob>(
+    `/analisis/solicitudes/${idSolicitud}/gradcam/`,
+    { responseType: "blob" },
+  );
+  return data;
+}

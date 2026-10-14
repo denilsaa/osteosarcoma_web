@@ -1,0 +1,40 @@
+.offline-panel {
+  margin-bottom: 18px;
+  padding: 17px 19px;
+  border: 1px solid #d4e9ee;
+  border-radius: 16px;
+  background: linear-gradient(125deg, #f4fcfd 0%, #ffffff 75%);
+  box-shadow: 0 4px 17px rgba(17, 69, 81, 0.035);
+}
+.offline-panel__top {display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.offline-panel__icon {display:grid;place-items:center;width:42px;height:42px;flex:0 0 42px;border-radius:12px;background:#e1f4f6;color:#087c8a}
+.offline-panel__heading {flex:1;min-width:220px}
+.offline-panel__heading h2 {margin:0;color:#163440;font-size:.94rem}
+.offline-panel__heading p {margin:4px 0 0;color:#64808a;font-size:.72rem}
+.offline-panel__server {display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;background:#edf4f5;color:#526d76;font-size:.7rem;font-weight:700}
+.offline-panel__server--connected {background:#e5f6ed;color:#18754c}
+.offline-panel__server--disconnected {background:#fff0eb;color:#ba492e}
+.offline-panel__bar-head {display:flex;justify-content:space-between;align-items:center;margin-top:19px;margin-bottom:8px;color:#284754;font-size:.77rem}
+.offline-panel__bar-head span {font-size:.8rem;font-variant-numeric:tabular-nums}
+.offline-panel__progress {height:9px;border-radius:99px;background:#deebee;overflow:hidden}
+.offline-panel__progress>div {height:100%;border-radius:99px;background:linear-gradient(90deg,#12a4ae,#137c98);transition:width .2s ease}
+.offline-panel__message {display:flex;align-items:center;gap:8px;min-height:36px;margin:6px 0 10px;color:#577680;font-size:.73rem}
+.offline-panel__message svg {flex-shrink:0}
+.offline-panel__spin {animation:offline-spin 1.2s linear infinite}
+@keyframes offline-spin {to{transform:rotate(360deg)}}
+.offline-panel__capabilities {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.offline-panel__capability {display:flex;align-items:center;gap:9px;padding:10px 11px;border:1px solid #edf0f3;border-radius:9px;background:white;color:#435962;font-size:.73rem}
+.offline-panel__capability svg {flex:0 0 17px;color:#6c919c}
+.offline-panel__capability span {min-width:0;flex:1}
+.offline-panel__capability strong {font-size:.65rem;text-align:right;white-space:normal}
+.offline-panel__ok {color:#188258}
+.offline-panel__pending {color:#aa792d}
+.offline-panel__notice {margin:14px 0 0;padding-top:10px;border-top:1px solid #e8eff1;color:#637e87;font-size:.7rem;line-height:1.55}
+@media(max-width:850px){.offline-panel__capabilities {grid-template-columns:1fr}.offline-panel__top{align-items:flex-start}}
+
+.offline-panel__retry {display:inline-flex;align-items:center;gap:7px;padding:8px 12px;margin-top:12px;border:1px solid #96cbd2;border-radius:8px;color:#087587;background:white;cursor:pointer;font-weight:700;font-size:.73rem}
+.offline-panel__retry:hover {background:#eaf7f9}
+
+/* Presentación compacta: no modifica el progreso ni las funciones de la PWA. */
+.offline-panel__capabilities { margin-top: 16px; }
+.offline-panel__status-compact { margin-top: 8px; color: #986118; font-size: .72rem; line-height: 1.4; }

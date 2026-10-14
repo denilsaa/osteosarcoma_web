@@ -22,7 +22,7 @@ DEBUG = os.environ.get(
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
-    "servicio_usuarios",
+    "servicio-usuarios",
 ]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",

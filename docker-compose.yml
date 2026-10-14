@@ -1,4 +1,4 @@
-﻿services:
+services:
 
   # =========================================================
   # BASE DE DATOS - USUARIOS
@@ -126,7 +126,9 @@
         condition: service_healthy
 
     networks:
-      - osteosarcoma_network
+      osteosarcoma_network:
+        aliases:
+          - servicio-usuarios
 
 
   # =========================================================
@@ -268,6 +270,10 @@
     environment:
       DJANGO_SECRET_KEY: ${IA_DJANGO_SECRET_KEY}
       DJANGO_DEBUG: ${IA_DJANGO_DEBUG}
+      JWT_SIGNING_KEY: ${USUARIOS_DJANGO_SECRET_KEY}
+      CLINICO_SERVICE_BASE_URL: http://servicio-clinico:8000/api
+      RADIOGRAFIAS_SERVICE_BASE_URL: http://servicio_radiografias:8000/api
+      IA_PRIVATE_UPLOAD_ROOT: /app/.private_ai_uploads
 
       DB_NAME: ${POSTGRES_IA_DB}
       DB_USER: ${POSTGRES_IA_APP_USER}
@@ -279,12 +285,14 @@
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_VHOST: /
 
     ports:
-      - "8002:8000"
+      - "127.0.0.1:8002:8000"
 
     volumes:
       - ./servicios/servicio_ia:/app
+      - ia_private_uploads:/app/.private_ai_uploads
 
     depends_on:
       postgres_ia:
@@ -298,6 +306,119 @@
         aliases:
           - servicio-ia
 
+
+  # =========================================================
+  # WORKER INDEPENDIENTE - ANALISIS IA
+  # =========================================================
+  servicio_ia_worker:
+    build:
+      context: ./servicios/servicio_ia
+      dockerfile: Dockerfile
+
+    container_name: osteosarcoma_servicio_ia_worker
+    restart: unless-stopped
+    entrypoint: ["python", "manage.py", "worker_analisis"]
+    command: []
+
+    environment:
+      DJANGO_SECRET_KEY: ${IA_DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: ${IA_DJANGO_DEBUG}
+      JWT_SIGNING_KEY: ${USUARIOS_DJANGO_SECRET_KEY}
+      CLINICO_SERVICE_BASE_URL: http://servicio-clinico:8000/api
+      RADIOGRAFIAS_SERVICE_BASE_URL: http://servicio_radiografias:8000/api
+      IA_PRIVATE_UPLOAD_ROOT: /app/.private_ai_uploads
+
+      DB_NAME: ${POSTGRES_IA_DB}
+      DB_USER: ${POSTGRES_IA_APP_USER}
+      DB_PASSWORD: ${POSTGRES_IA_APP_PASSWORD}
+      DB_HOST: postgres_ia
+      DB_PORT: 5432
+
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_VHOST: /
+
+    volumes:
+      - ./servicios/servicio_ia:/app
+      - ia_private_uploads:/app/.private_ai_uploads
+
+    depends_on:
+      postgres_ia:
+        condition: service_healthy
+
+      rabbitmq:
+        condition: service_healthy
+
+    networks:
+      osteosarcoma_network:
+        aliases:
+          - servicio-ia
+
+
+  # =========================================================
+  # EVENTOS IA: OUTBOX Y CONSUMIDOR CLINICO
+  # =========================================================
+  servicio_ia_eventos:
+    build:
+      context: ./servicios/servicio_ia
+      dockerfile: Dockerfile
+    container_name: osteosarcoma_servicio_ia_eventos
+    restart: unless-stopped
+    entrypoint: ["python", "manage.py", "publicar_eventos_ia"]
+    command: []
+    environment:
+      DJANGO_SECRET_KEY: ${IA_DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: ${IA_DJANGO_DEBUG}
+      DB_NAME: ${POSTGRES_IA_DB}
+      DB_USER: ${POSTGRES_IA_APP_USER}
+      DB_PASSWORD: ${POSTGRES_IA_APP_PASSWORD}
+      DB_HOST: postgres_ia
+      DB_PORT: 5432
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - ./servicios/servicio_ia:/app
+    depends_on:
+      postgres_ia:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - osteosarcoma_network
+
+  servicio_clinico_notificaciones_worker:
+    build:
+      context: ./servicios/servicio_clinico
+      dockerfile: Dockerfile
+    container_name: osteosarcoma_servicio_clinico_notificaciones_worker
+    restart: unless-stopped
+    entrypoint: ["python", "manage.py", "worker_notificaciones_ia"]
+    command: []
+    environment:
+      DJANGO_SECRET_KEY: ${CLINICO_DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: ${CLINICO_DJANGO_DEBUG}
+      DB_NAME: ${POSTGRES_CLINICO_DB}
+      DB_USER: ${POSTGRES_CLINICO_APP_USER}
+      DB_PASSWORD: ${POSTGRES_CLINICO_APP_PASSWORD}
+      DB_HOST: postgres_clinico
+      DB_PORT: 5432
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - ./servicios/servicio_clinico:/app
+    depends_on:
+      postgres_clinico:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - osteosarcoma_network
 
   # =========================================================
   # BASE DE DATOS - RADIOGRAFIAS
@@ -610,6 +731,8 @@ volumes:
   rabbitmq_data:
 
   frontend_node_modules:
+
+  ia_private_uploads:
 
 
 # =========================================================

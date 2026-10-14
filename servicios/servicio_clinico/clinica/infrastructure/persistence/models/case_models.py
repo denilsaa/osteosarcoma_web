@@ -481,3 +481,25 @@ class ValoracionEspecialista(
         return str(
             self.id_valoracion
         )
+
+class HistorialGestionCaso(models.Model):
+    """Registro persistente de cambios administrativos del caso."""
+    id_gestion = models.BigAutoField(primary_key=True)
+    caso = models.ForeignKey(
+        CasoClinico, on_delete=models.CASCADE,
+        related_name="historial_gestion", db_column="id_caso",
+    )
+    tipo_cambio = models.CharField(max_length=20)
+    valor_anterior = models.CharField(max_length=80, null=True, blank=True)
+    valor_nuevo = models.CharField(max_length=80)
+    actor_uuid = models.UUIDField()
+    motivo = models.TextField()
+    fecha_cambio = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "historial_gestion_caso"
+        app_label = "clinica"
+        indexes = [models.Index(
+            fields=["caso", "fecha_cambio"],
+            name="idx_gestion_caso_fecha",
+        )]

@@ -34,8 +34,14 @@ import {
 
 import {
   getPatient,
-  type PatientDetail,
 } from "../../api/pacientes.api";
+
+import { tokenStorage } from "../../auth/tokenStorage";
+import {
+  cacheAuthorizedCasePatient, enqueueClinicalCase, getCachedCasePatient,
+  getLocalPendingPatient, isLocalPatientReference,
+  subscribeClinicalQueue, type CachedAuthorizedPatient, type QueueStats,
+} from "../../offline/clinicalQueue";
 
 import "./NuevoCasoPage.css";
 
@@ -175,6 +181,7 @@ export function NuevoCasoPage() {
     )
     ??
     "";
+  const temporaryPatient = isLocalPatientReference(patientId);
 
   // ========================================================
   // DATOS
@@ -185,7 +192,7 @@ export function NuevoCasoPage() {
     setPatient,
   ] =
     useState<
-      PatientDetail | null
+      CachedAuthorizedPatient | null
     >(
       null,
     );
@@ -266,174 +273,70 @@ export function NuevoCasoPage() {
     );
 
 
+  const [queueState, setQueueState] = useState<QueueStats>({
+    ready: false, pending: 0, patientPending: 0, casePending: 0,
+    review: 0, syncing: false, lastError: null,
+  });
+  const [offlineQueued, setOfflineQueued] = useState(false);
+  const [localPatientVerified, setLocalPatientVerified] = useState(false);
+
+  useEffect(() => subscribeClinicalQueue(setQueueState), []);
+
   // ========================================================
   // CARGA INICIAL
   // ========================================================
 
-  useEffect(
-    () => {
-
-      if (
-        !patientId
-      ) {
-
-        setError(
-          "Debe registrar el caso desde la ficha de un paciente.",
-        );
-
-
-        setLoading(
-          false,
-        );
-
-
-        return;
+  useEffect(() => {
+    if (!patientId) {
+      setError("Debe registrar el caso desde la ficha de un paciente.");
+      setLoading(false);
+      return;
+    }
+    let mounted = true;
+    async function load() {
+      setLoading(true);
+      setError(null);
+      // Solamente la jefatura consulta el directorio de oncólogos.
+      const isHead = tokenStorage.obtenerUsuario()?.roles.some(r => r.toUpperCase() === "JEFE_ONCOLOGIA") ?? false;
+      try {
+        const patientPromise = temporaryPatient ? getLocalPendingPatient(patientId).then(p => {
+          if (!p) throw new Error("No existe un paciente pendiente accesible para esta cuenta y bandeja. Desbloquea la bandeja desde Inicio.");
+          return { data: p, stored: true };
+        }) : getPatient(patientId).then(async (p) => {
+          // Una autorización obtenida del servidor puede guardarse cifrada
+          // para contingencia, si la bandeja está desbloqueada.
+          let stored = false;
+          try { await cacheAuthorizedCasePatient(p); stored = true; } catch { /* bandeja cerrada */ }
+          return { data: p as CachedAuthorizedPatient, stored };
+        }).catch(async (err: unknown) => {
+          if (typeof err === "object" && err !== null && "response" in err && (err as { response?: unknown }).response) throw err;
+          const local = await getCachedCasePatient(patientId);
+          if (!local) throw new Error("No hay una ficha previamente autorizada y cifrada para este paciente. Conecta el servidor y abre este formulario con la bandeja desbloqueada.");
+          return { data: local, stored: true };
+        });
+        const catalogPromise = getClinicalCaseCatalogs();
+        const directoryPromise = isHead
+          && !temporaryPatient ? listarOncologos("", "ACTIVO", "").catch(() => null)
+          : Promise.resolve(null);
+        const [patientResult, catalogData, oncologistData] = await Promise.all([
+          patientPromise, catalogPromise, directoryPromise,
+        ]);
+        if (!mounted) return;
+        setPatient(patientResult.data);
+        setLocalPatientVerified(patientResult.stored);
+        setCatalogs(catalogData);
+        setOncologists(oncologistData?.resultados || []);
+        const priority = catalogData.priorities.find(x => x.code === "MEDIA") || catalogData.priorities[0];
+        setForm(current => ({ ...current, priority_id: priority ? String(priority.id) : "" }));
+      } catch (err: unknown) {
+        if (mounted) setError(err instanceof Error ? err.message : extractErrorMessage(err));
+      } finally {
+        if (mounted) setLoading(false);
       }
-
-
-      let mounted =
-        true;
-
-
-      async function load() {
-
-        setLoading(
-          true,
-        );
-
-
-        setError(
-          null,
-        );
-
-
-        try {
-
-          const [
-            patientData,
-            catalogData,
-            oncologistData,
-          ] =
-            await Promise.all(
-              [
-                getPatient(
-                  patientId,
-                ),
-
-                getClinicalCaseCatalogs(),
-
-                listarOncologos(
-                  "",
-                  "ACTIVO",
-                  "",
-                ),
-              ],
-            );
-
-
-          if (
-            !mounted
-          ) {
-
-            return;
-          }
-
-
-          setPatient(
-            patientData,
-          );
-
-
-          setCatalogs(
-            catalogData,
-          );
-
-
-          setOncologists(
-            oncologistData
-              .resultados,
-          );
-
-
-          const defaultPriority =
-            catalogData
-              .priorities
-              .find(
-                (
-                  item,
-                ) =>
-                  item.code ===
-                  "MEDIA",
-              )
-            ??
-            catalogData
-              .priorities[0];
-
-
-          setForm(
-            (
-              current,
-            ) => ({
-              ...current,
-
-              priority_id:
-                defaultPriority
-                  ? String(
-                      defaultPriority.id,
-                    )
-                  : "",
-            }),
-          );
-
-        } catch (
-          requestError
-        ) {
-
-          if (
-            mounted
-          ) {
-
-            setError(
-              extractErrorMessage(
-                requestError,
-              ),
-            );
-
-          }
-
-        } finally {
-
-          if (
-            mounted
-          ) {
-
-            setLoading(
-              false,
-            );
-
-          }
-
-        }
-
-      }
-
-
-      void load();
-
-
-      return () => {
-
-        mounted =
-          false;
-
-      };
-
-    },
-    [
-      patientId,
-    ],
-  );
-
+    }
+    void load();
+    return () => { mounted = false; };
+  }, [patientId, temporaryPatient]);
 
   // ========================================================
   // VALIDACIÓN
@@ -497,6 +400,26 @@ export function NuevoCasoPage() {
   }
 
 
+  async function handleSaveOffline() {
+    if (!formValid || offlineQueued || !queueState.ready || !localPatientVerified) {
+      setError("Prepara y desbloquea la bandeja desde Inicio; consulta antes la ficha autorizada del paciente.");
+      return;
+    }
+    setSaving(true); setError(null); setSuccess(null);
+    try {
+      await enqueueClinicalCase(patientId, {
+        priority_id: Number(form.priority_id),
+        responsible_oncologist_uuid: form.responsible_oncologist_uuid || null,
+        consultation_reason: normalizeText(form.consultation_reason),
+        general_observation: normalizeText(form.general_observation) || null,
+      });
+      setOfflineQueued(true);
+      setSuccess("Caso guardado cifrado en este equipo como PENDIENTE. No existe aún en el servidor. Se sincronizará al recuperar la conexión y validar permisos.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "No fue posible guardar el caso pendiente.");
+    } finally { setSaving(false); }
+  }
+
   // ========================================================
   // GUARDAR
   // ========================================================
@@ -508,6 +431,14 @@ export function NuevoCasoPage() {
 
     event.preventDefault();
 
+    if (offlineQueued) {
+      setError("Este caso ya está pendiente en la bandeja local. Evita duplicarlo.");
+      return;
+    }
+    if (temporaryPatient) {
+      setError("El paciente todavía utiliza una referencia temporal. Guarda el caso como pendiente offline; el servidor recibirá primero el paciente y después el caso.");
+      return;
+    }
 
     if (
       !patientId
@@ -749,7 +680,7 @@ export function NuevoCasoPage() {
             onClick={
               () =>
                 navigate(
-                  `/pacientes/${patient.id_patient}`,
+                  temporaryPatient ? "/dashboard" : `/pacientes/${patient.id_patient}`,
                 )
             }
           >
@@ -840,6 +771,22 @@ export function NuevoCasoPage() {
       }
 
 
+      {!localPatientVerified && (
+        <div className="new-case-message new-case-message--warning" role="status">
+          <CircleAlert size={19}/>
+          Para crear casos sin conexión, desbloquea la bandeja cifrada desde Inicio y prepara la
+          referencia del paciente mientras el servidor esté disponible.
+        </div>
+      )}
+
+      {temporaryPatient && (
+        <div className="new-case-message new-case-message--warning" role="status">
+          <CircleAlert size={19}/>
+          Paciente creado en este equipo, todavía pendiente. Este caso se guardará vinculado a
+          su referencia temporal. Al sincronizar, el servidor registrará primero el paciente
+          y luego el caso. No utilices el botón de registro central.
+        </div>
+      )}
       <form
         className="new-case-form"
         onSubmit={
@@ -917,11 +864,7 @@ export function NuevoCasoPage() {
                 }
                 {": "}
                 {
-                  patient
-                    .documents[0]
-                    ?.document_number
-                  ??
-                  "Sin registro"
+                  temporaryPatient ? "Alta local pendiente" : "Consulta autorizada"
                 }
               </span>
 
@@ -1226,7 +1169,7 @@ export function NuevoCasoPage() {
             onClick={
               () =>
                 navigate(
-                  `/pacientes/${patient.id_patient}`,
+                  temporaryPatient ? "/dashboard" : `/pacientes/${patient.id_patient}`,
                 )
             }
           >
@@ -1241,12 +1184,27 @@ export function NuevoCasoPage() {
 
 
           <button
+            type="button"
+            className="new-case-offline"
+            disabled={saving || !formValid || !queueState.ready || !localPatientVerified || offlineQueued}
+            onClick={() => void handleSaveOffline()}
+            title="Guarda una operación cifrada pendiente; el servidor validará permisos al sincronizar"
+          >
+            <Save size={17} />
+            {offlineQueued ? "Pendiente guardado" : "Guardar pendiente offline"}
+          </button>
+
+          <button
             type="submit"
             className="new-case-save"
             disabled={
               saving
               ||
               !formValid
+              ||
+              offlineQueued
+              ||
+              temporaryPatient
             }
           >
 

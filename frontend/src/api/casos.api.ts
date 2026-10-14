@@ -478,14 +478,20 @@ export interface CreateClinicalCaseResponse {
 export async function getClinicalCaseCatalogs():
   Promise<ClinicalCaseCatalogs> {
 
-  const response =
-    await apiClinico
-      .get<ClinicalCaseCatalogsResponse>(
-        "/casos/catalogos/",
-      );
-
-
-  return response.data.data;
+  const cacheKey = "osteo-public-case-catalogs-v1";
+  try {
+    const response = await apiClinico.get<ClinicalCaseCatalogsResponse>("/casos/catalogos/");
+    try { localStorage.setItem(cacheKey, JSON.stringify({ at: Date.now(), data: response.data.data })); } catch { /* cuota */ }
+    return response.data.data;
+  } catch (err: unknown) {
+    // No usar caché para denegaciones explícitas de acceso.
+    if (typeof err === "object" && err !== null && "response" in err && (err as { response?: unknown }).response) throw err;
+    try {
+      const entry = JSON.parse(localStorage.getItem(cacheKey) || "null") as { at: number; data: ClinicalCaseCatalogs } | null;
+      if (entry && Date.now() - entry.at < 8 * 60 * 60 * 1000) return entry.data;
+    } catch { /* corrupto */ }
+    throw err;
+  }
 }
 
 
@@ -885,5 +891,88 @@ export async function createClinicalObservation(
       );
 
 
+  return response.data.data;
+}
+
+// ==========================================================
+// VALORACIONES PROFESIONALES (DÍA 2)
+// ==========================================================
+
+export interface ClinicalValuationCriterion {
+  id: number;
+  code: string;
+  name: string;
+  description: string | null;
+}
+
+export interface ClinicalValuation {
+  id_valuation: string;
+  criterion: { id: number; code: string; name: string };
+  oncologist_uuid: string;
+  observation: string | null;
+  ai_result_uuid: string | null;
+  created_at: string;
+}
+
+export async function getClinicalValuationCriteria(): Promise<ClinicalValuationCriterion[]> {
+  const response = await apiClinico.get<{ data: ClinicalValuationCriterion[] }>(
+    "/casos/valoraciones/criterios/",
+  );
+  return response.data.data;
+}
+
+export async function getClinicalValuations(caseId: string): Promise<ClinicalValuation[]> {
+  const response = await apiClinico.get<{ data: ClinicalValuation[]; total: number }>(
+    `/casos/${caseId}/valoraciones/`,
+  );
+  return response.data.data;
+}
+
+export async function createClinicalValuation(
+  caseId: string,
+  data: { criterion_id: number; observation: string },
+): Promise<ClinicalValuation> {
+  const response = await apiClinico.post<{ data: ClinicalValuation }>(
+    `/casos/${caseId}/valoraciones/`, data,
+  );
+  return response.data.data;
+}
+
+
+// ==========================================================
+// GESTIÓN Y SUPERVISIÓN DE JEFATURA
+// ==========================================================
+export interface ClinicalCaseManagementEntry {
+  id: number;
+  type: "RESPONSABLE" | "PRIORIDAD";
+  previous: string | null;
+  current: string;
+  actor_uuid: string;
+  reason: string;
+  changed_at: string;
+}
+
+export interface ClinicalCaseSupervision {
+  total: number;
+  unassigned: number;
+  by_status: Array<{ estado_caso__codigo: string; estado_caso__nombre: string; total: number }>;
+  by_priority: Array<{ prioridad__codigo: string; prioridad__nombre: string; total: number }>;
+}
+
+export async function getClinicalCaseSupervision(): Promise<ClinicalCaseSupervision> {
+  const response = await apiClinico.get<{ data: ClinicalCaseSupervision }>("/casos/supervision/resumen/");
+  return response.data.data;
+}
+
+export async function getClinicalCaseManagementHistory(caseId: string): Promise<ClinicalCaseManagementEntry[]> {
+  const response = await apiClinico.get<{ data: ClinicalCaseManagementEntry[] }>(`/casos/${caseId}/gestion/`);
+  return response.data.data;
+}
+
+export async function updateClinicalCaseManagement(
+  caseId: string,
+  change: { responsible_oncologist_uuid?: string; priority_id?: number; reason: string },
+): Promise<ClinicalCase> {
+  const response = await apiClinico.patch<{ data: ClinicalCase }>(`/casos/${caseId}/gestion/`, change);
   return response.data.data;
 }

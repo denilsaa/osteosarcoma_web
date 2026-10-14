@@ -24,8 +24,15 @@ from .case_models import (
     CasoSigno,
     CasoSintoma,
     HistorialEstadoCaso,
+    HistorialGestionCaso,
     ValoracionEspecialista,
 )
+
+
+from .notification_models import NotificacionClinica
+from .patient_assignments import AsignacionPaciente
+from .offline_operation import AltaPacienteOffline
+from .offline_case_operation import AltaCasoOffline
 
 
 __all__ = [
@@ -44,6 +51,11 @@ __all__ = [
     "ContactoPaciente",
     "CasoClinico",
     "HistorialEstadoCaso",
+    "HistorialGestionCaso",
+    "NotificacionClinica",
+    "AsignacionPaciente",
+    "AltaPacienteOffline",
+    "AltaCasoOffline",
     "AntecedenteClinico",
     "CasoSintoma",
     "CasoSigno",

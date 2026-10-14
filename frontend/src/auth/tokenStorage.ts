@@ -589,6 +589,9 @@ export const tokenStorage = {
       LAST_RENEWAL_KEY,
     );
 
+    // Invalida de inmediato claves efímeras de bandejas offline.
+    window.dispatchEvent(new Event("osteo:auth-cleared"));
+
   },
 
 };

@@ -29,6 +29,8 @@ import {
   useAuth,
 } from "../auth/AuthProvider";
 
+import { NotificacionesClinicas } from "../components/notificaciones/NotificacionesClinicas";
+
 import "./MainLayout.css";
 
 
@@ -270,10 +272,7 @@ export function MainLayout() {
   } = useAuth();
 
 
-  const pageTitle =
-    getPageTitle(
-      location.pathname,
-    );
+  const pageTitleBase = getPageTitle(location.pathname);
 
 
   const nombreUsuario =
@@ -288,6 +287,12 @@ export function MainLayout() {
     tieneRol(
       "JEFE_ONCOLOGIA",
     );
+
+  const pageTitle = !esJefeOncologia && pageTitleBase === "Pacientes"
+    ? "Mis pacientes"
+    : !esJefeOncologia && pageTitleBase === "Casos clínicos"
+      ? "Mis casos clínicos"
+      : pageTitleBase;
 
 
   const rolVisible =
@@ -445,7 +450,11 @@ export function MainLayout() {
 
                         <span>
                           {
-                            item.label
+                            !esJefeOncologia && item.path === "/pacientes"
+                              ? "Mis pacientes"
+                              : !esJefeOncologia && item.path === "/casos"
+                                ? "Mis casos clínicos"
+                                : item.label
                           }
                         </span>
 
@@ -689,6 +698,8 @@ export function MainLayout() {
           <div
             className="clinical-topbar__right"
           >
+
+            <NotificacionesClinicas />
 
             <div
               className="clinical-topbar__system-status"

@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -66,11 +68,19 @@ import {
   type PatientDetail,
 } from "../../api/pacientes.api";
 
-import {
-  CaseRadiographiesSection,
-} from "../../components/casos/CaseRadiographiesSection";
+
+import { CaseClinicalReviewPanel } from "../../components/casos/CaseClinicalReviewPanel";
+import { CaseManagementPanel } from "../../components/casos/CaseManagementPanel";
 
 import "./CasoDetallePage.css";
+
+// Carga el visor radiográfico solo cuando se abre su pestaña.
+const CaseRadiographiesSection = lazy(() =>
+  import("../../components/casos/CaseRadiographiesSection").then(
+    ({ CaseRadiographiesSection: Component }) => ({ default: Component }),
+  ),
+);
+
 
 
 // ==========================================================
@@ -3802,14 +3812,22 @@ export function CasoDetallePage() {
         &&
         (
 
-          <CaseRadiographiesSection
-            caseId={
-              clinicalCase.id_case
+          <Suspense
+            fallback={
+              <div role="status" aria-live="polite" className="case-detail-section">
+                Cargando radiografías...
+              </div>
             }
-            resolveAuthorName={
-              getAuthorName
-            }
-          />
+          >
+            <CaseRadiographiesSection
+              caseId={
+                clinicalCase.id_case
+              }
+              resolveAuthorName={
+                getAuthorName
+              }
+            />
+          </Suspense>
 
         )
       }
@@ -3824,6 +3842,22 @@ export function CasoDetallePage() {
           <div
             className="case-detail-followup"
           >
+
+            {catalogs && (
+              <CaseManagementPanel
+                clinicalCase={clinicalCase}
+                catalogs={catalogs}
+                oncologists={oncologists}
+                onChanged={setClinicalCase}
+              />
+            )}
+
+            <CaseClinicalReviewPanel
+              caseId={clinicalCase.id_case}
+              caseStatus={clinicalCase.status.code}
+              responsibleOncologistUuid={clinicalCase.responsible_oncologist_uuid}
+            />
+
 
             <article
               className="case-detail-section"

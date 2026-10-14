@@ -36,6 +36,7 @@ import {
 } from "../../api/pacientes.api";
 
 import "./NuevoPacientePage.css";
+import { enqueuePatient, localPatientReference, synchronizeClinicalQueue } from "../../offline/clinicalQueue";
 
 
 // ==========================================================
@@ -399,6 +400,8 @@ export function NuevoPacientePage() {
   const navigate =
     useNavigate();
 
+
+  const [savedOfflinePatient, setSavedOfflinePatient] = useState<string | null>(null);
 
   // ========================================================
   // CATÁLOGOS
@@ -1850,13 +1853,151 @@ export function NuevoPacientePage() {
   // GUARDAR
   // ========================================================
 
+  function buildPatientPayload(): CreatePatientRequest {
+    return {
+
+      first_names:
+        normalizeText(
+          form.first_names,
+        ),
+
+      paternal_surname:
+        normalizeText(
+          form.paternal_surname,
+        ),
+
+      maternal_surname:
+        normalizeText(
+          form.maternal_surname,
+        )
+        ||
+        null,
+
+      birth_date:
+        form.birth_date,
+
+      sex_id:
+        Number(
+          form.sex_id,
+        ),
+
+      document_type_id:
+        Number(
+          form.document_type_id,
+        ),
+
+      document_number:
+        normalizeText(
+          form.document_number,
+        ),
+
+      complement:
+        normalizeText(
+          form.complement,
+        )
+        ||
+        null,
+
+      issued_in:
+        form.issued_in,
+
+      contacts:
+        contacts
+          .filter(
+            (
+              item,
+            ) =>
+              item.value.trim(),
+          )
+          .map(
+            (
+              item,
+            ) => ({
+
+              contact_type_id:
+                item.contact_type_id,
+
+              value:
+                item.value.trim(),
+
+              primary:
+                item.primary,
+
+            }),
+          ),
+
+      emergency_contacts:
+        emergencyContacts.map(
+          (
+            item,
+          ) => ({
+
+            full_name:
+              normalizeText(
+                item.full_name,
+              ),
+
+            relationship:
+              item.relationship,
+
+            phone:
+              item.phone,
+
+            email:
+              normalizeText(
+                item.email
+                ??
+                "",
+              )
+                .toLowerCase()
+              ||
+              null,
+
+            primary:
+              item.primary,
+
+          }),
+        ),
+
+    };
+
+  }
+
+  async function saveOfflinePending() {
+    setError(null); setSuccess(null);
+    const errs = validateForm();
+    if (Object.keys(errs).length > 0 || !dynamicValid) {
+      setFormErrors(errs);
+      setError("Revisa los campos y contactos antes de guardar el registro pendiente.");
+      return;
+    }
+    if (duplicates.length > 0) {
+      setError("Existen posibles duplicados identificados. No se permite guardar este registro sin revisión.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const operationId = await enqueuePatient(buildPatientPayload());
+      setSavedOfflinePatient(localPatientReference(operationId));
+      setSuccess("Paciente guardado cifrado como PENDIENTE. Puedes crear ahora su caso clínico pendiente sin esperar al servidor.");
+      void synchronizeClinicalQueue();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar el registro offline.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleSubmit(
     event:
       React.FormEvent,
   ) {
 
     event.preventDefault();
-
+    if (savedOfflinePatient) {
+      setError("Esta alta ya se guardó offline. No registres otra vez el mismo paciente; espera la sincronización.");
+      return;
+    }
 
     setError(
       null,
@@ -1983,113 +2124,7 @@ export function NuevoPacientePage() {
     }
 
 
-    const payload:
-      CreatePatientRequest = {
-
-      first_names:
-        normalizeText(
-          form.first_names,
-        ),
-
-      paternal_surname:
-        normalizeText(
-          form.paternal_surname,
-        ),
-
-      maternal_surname:
-        normalizeText(
-          form.maternal_surname,
-        )
-        ||
-        null,
-
-      birth_date:
-        form.birth_date,
-
-      sex_id:
-        Number(
-          form.sex_id,
-        ),
-
-      document_type_id:
-        Number(
-          form.document_type_id,
-        ),
-
-      document_number:
-        normalizeText(
-          form.document_number,
-        ),
-
-      complement:
-        normalizeText(
-          form.complement,
-        )
-        ||
-        null,
-
-      issued_in:
-        form.issued_in,
-
-      contacts:
-        contacts
-          .filter(
-            (
-              item,
-            ) =>
-              item.value.trim(),
-          )
-          .map(
-            (
-              item,
-            ) => ({
-
-              contact_type_id:
-                item.contact_type_id,
-
-              value:
-                item.value.trim(),
-
-              primary:
-                item.primary,
-
-            }),
-          ),
-
-      emergency_contacts:
-        emergencyContacts.map(
-          (
-            item,
-          ) => ({
-
-            full_name:
-              normalizeText(
-                item.full_name,
-              ),
-
-            relationship:
-              item.relationship,
-
-            phone:
-              item.phone,
-
-            email:
-              normalizeText(
-                item.email
-                ??
-                "",
-              )
-                .toLowerCase()
-              ||
-              null,
-
-            primary:
-              item.primary,
-
-          }),
-        ),
-
-    };
+    const payload = buildPatientPayload();
 
 
     setSaving(
@@ -2242,6 +2277,12 @@ export function NuevoPacientePage() {
             <span>
               {success}
             </span>
+            {savedOfflinePatient && (
+              <button type="button" className="new-patient-offline-next"
+                onClick={() => navigate(`/casos/nuevo?paciente=${encodeURIComponent(savedOfflinePatient)}`)}>
+                Crear caso clínico pendiente
+              </button>
+            )}
           </div>
         )
       }
@@ -3348,10 +3389,23 @@ export function NuevoPacientePage() {
 
 
                   <button
+                    type="button"
+                    className="new-patient-cancel"
+                    disabled={saving || Boolean(savedOfflinePatient) || !formValid || duplicates.length > 0}
+                    onClick={() => void saveOfflinePending()}
+                    title="Guarda un registro pendiente cifrado, sin confirmarlo en el servidor"
+                  >
+                    <Save size={16}/>
+                    Guardar pendiente offline
+                  </button>
+
+                  <button
                     type="submit"
                     className="new-patient-save"
                     disabled={
                       saving
+                      ||
+                      Boolean(savedOfflinePatient)
                       ||
                       !formValid
                       ||

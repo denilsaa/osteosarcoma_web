@@ -13,7 +13,18 @@ from inteligencia.views import (
 )
 
 
+from inteligencia.analisis_async import (
+    crear_solicitud_analisis,
+    consultar_solicitud_analisis,
+    ultima_solicitud_radiografia,
+    obtener_gradcam_solicitud,
+)
+
 urlpatterns = [
+    path("api/analisis/solicitudes/", crear_solicitud_analisis),
+    path("api/analisis/solicitudes/<uuid:task_id>/gradcam/", obtener_gradcam_solicitud),
+    path("api/analisis/solicitudes/<uuid:task_id>/", consultar_solicitud_analisis),
+    path("api/analisis/radiografia/<uuid:radiography_uuid>/solicitud-actual/", ultima_solicitud_radiografia),
     path(
         "api/health/",
         health_check,

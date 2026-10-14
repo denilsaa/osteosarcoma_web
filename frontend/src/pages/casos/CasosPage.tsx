@@ -35,6 +35,8 @@ import {
   type OncologoResumen,
 } from "../../api/oncologos.api";
 
+import { CaseSupervisionSummary } from "../../components/casos/CaseSupervisionSummary";
+import { useAuth } from "../../auth/AuthProvider";
 import "./CasosPage.css";
 
 
@@ -218,6 +220,9 @@ function statusClass(
 // ==========================================================
 
 export function CasosPage() {
+
+  const { tieneRol } = useAuth();
+  const esJefe = tieneRol("JEFE_ONCOLOGIA");
 
   const navigate =
     useNavigate();
@@ -412,39 +417,20 @@ export function CasosPage() {
 
         try {
 
-          const [
-            catalogResponse,
-            oncologistResponse,
-          ] =
-            await Promise.all(
-              [
-                getClinicalCaseCatalogs(),
+          const catalogResponse = await getClinicalCaseCatalogs();
+          if (!mounted) return;
+          setCatalogs(catalogResponse);
 
-                listarOncologos(
-                  "",
-                  "ACTIVO",
-                  "",
-                ),
-              ],
-            );
-
-
-          if (!mounted) {
-
-            return;
-
+          // Solo jefatura puede consultar el directorio administrativo.
+          if (esJefe) {
+            try {
+              const oncologistResponse = await listarOncologos("", "ACTIVO", "");
+              if (mounted) setOncologists(oncologistResponse.resultados);
+            } catch {
+              // La ausencia del directorio no invalida los catálogos de casos.
+              if (mounted) setOncologists([]);
+            }
           }
-
-
-          setCatalogs(
-            catalogResponse,
-          );
-
-
-          setOncologists(
-            oncologistResponse
-              .resultados,
-          );
 
         } catch {
 
@@ -474,7 +460,7 @@ export function CasosPage() {
       };
 
     },
-    [],
+    [esJefe],
   );
 
 
@@ -734,19 +720,22 @@ export function CasosPage() {
 
 
           <h1>
-            Casos clínicos
+            {esJefe ? "Casos clínicos" : "Mis casos clínicos"}
           </h1>
 
 
           <p>
-            Consulta y seguimiento de casos registrados
-            para pacientes de Oncología.
+            {esJefe
+              ? "Consulta y supervisión de casos de Oncología."
+              : "Consulta y seguimiento de los casos bajo tu responsabilidad."}
           </p>
 
         </div>
 
       </header>
 
+
+      <CaseSupervisionSummary />
 
       {/* ==================================================
           RESUMEN
@@ -1028,6 +1017,7 @@ export function CasosPage() {
           </label>
 
 
+          {esJefe && (
           <label>
 
             <span>
@@ -1091,6 +1081,7 @@ export function CasosPage() {
             </select>
 
           </label>
+          )}
 
 
           <label>

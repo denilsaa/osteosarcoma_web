@@ -35,3 +35,15 @@ createRoot(
   </StrictMode>,
 
 );
+
+// Preparación no bloqueante de recursos PÚBLICOS para uso sin conexión.
+import { startOfflinePreparation } from "./offline/offlinePreparation";
+if (document.readyState === "complete") {
+  void startOfflinePreparation();
+} else {
+  window.addEventListener("load", () => { void startOfflinePreparation(); }, { once: true });
+}
+
+// Cola privada de altas pendientes: envío solo con sesión activa y clave desbloqueada.
+import { startClinicalQueueSync } from "./offline/clinicalQueue";
+startClinicalQueueSync();

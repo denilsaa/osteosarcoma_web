@@ -1,3 +1,8 @@
+import hashlib
+import json
+from django.db import transaction, connection
+from clinica.infrastructure.persistence.models import AltaCasoOffline
+
 from datetime import (
     date,
 )
@@ -31,6 +36,8 @@ from clinica.application.dto import (
 from clinica.bootstrap.container import (
     get_container,
 )
+
+from clinica.infrastructure.security.patient_access import PatientAccess
 
 from clinica.infrastructure.security import (
     ClinicalAuthenticationError,
@@ -171,6 +178,9 @@ def patient_cases_view(
             request
         )
 
+        # El acceso se evalúa ANTES de listar casos o crear uno nuevo.
+        PatientAccess.require(actor, patient_id)
+
         if request.method == "GET":
 
             cases = (
@@ -242,15 +252,43 @@ def patient_cases_view(
                 or None,
         )
 
-        case = (
-            container
-            .create_clinical_case
-            .execute(
-                dto,
-                actor_uuid=
-                    actor_uuid,
-            )
-        )
+        # Los reintentos posteriores a un timeout comparten UUID. La creación
+        # del caso, su historial y el recibo se confirman en UNA transacción.
+        op_raw = request.headers.get("X-Osteo-Operation-Id", "").strip()
+        op_uuid = None
+        payload_hash = ""
+        if op_raw:
+            try:
+                op_uuid = UUID(op_raw)
+                if str(op_uuid) != op_raw.lower():
+                    raise ValueError("UUID no canónico")
+            except (ValueError, AttributeError):
+                return Response({"detail": "Identificador de operación inválido."}, status=400)
+            payload_hash = hashlib.sha256(json.dumps({
+                "patient_id": str(patient_id), "data": request.data,
+            }, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")).hexdigest()
+
+        with transaction.atomic():
+            if op_uuid is not None:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT pg_advisory_xact_lock(%s)", [op_uuid.int % (2 ** 63)])
+                previo = AltaCasoOffline.objects.select_for_update().filter(operacion_uuid=op_uuid).first()
+                if previo is not None:
+                    if str(previo.actor_uuid) != str(actor_uuid) or previo.payload_sha256 != payload_hash:
+                        return Response({"detail": "Identificador de operación reutilizado."}, status=409)
+                    case = container.get_clinical_case.execute(previo.caso_id)
+                    ClinicalCaseAccess.assert_case_access(actor, case)
+                    return Response({
+                        "message": "Caso registrado previamente; reintento reconocido.",
+                        "data": ClinicalCasePresenter.detail(case),
+                    }, status=200)
+
+            case = container.create_clinical_case.execute(dto, actor_uuid=actor_uuid)
+            if op_uuid is not None:
+                AltaCasoOffline.objects.create(
+                    operacion_uuid=op_uuid, actor_uuid=actor_uuid,
+                    payload_sha256=payload_hash, caso_id=case.id_case,
+                )
 
         return Response(
             {

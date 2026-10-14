@@ -41,6 +41,9 @@ import {
   useAuth,
 } from "../../auth/AuthProvider";
 
+import { OfflineAvailabilityPanel } from "../../components/offline/OfflineAvailabilityPanel";
+import { subscribeOffline, type Connectivity } from "../../offline/offlinePreparation";
+
 import "./DashboardPage.css";
 
 
@@ -130,6 +133,9 @@ export function DashboardPage() {
 
   const navigate =
     useNavigate();
+
+  const [webConnectivity, setWebConnectivity] = useState<Connectivity>("checking");
+  useEffect(() => subscribeOffline((state) => setWebConnectivity(state.connectivity)), []);
 
 
   const {
@@ -428,16 +434,14 @@ export function DashboardPage() {
 
 
         <div
-          className="dashboard-hero__status"
+          className={`dashboard-hero__status ${webConnectivity === "disconnected" ? "dashboard-hero__status--disconnected" : ""}`}
         >
 
           <div
             className="dashboard-hero__status-icon"
           >
 
-            <CheckCircle2
-              size={22}
-            />
+            {webConnectivity === "connected" ? <CheckCircle2 size={22} /> : <Activity size={22} />}
 
           </div>
 
@@ -445,11 +449,11 @@ export function DashboardPage() {
           <div>
 
             <span>
-              Estado del sistema
+              Servidor web
             </span>
 
             <strong>
-              Operativo
+              {webConnectivity === "connected" ? "Disponible" : webConnectivity === "disconnected" ? "Sin respuesta" : "Verificando..."}
             </strong>
 
           </div>
@@ -457,6 +461,9 @@ export function DashboardPage() {
         </div>
 
       </header>
+
+
+      <OfflineAvailabilityPanel />
 
 
       {/* ==================================================

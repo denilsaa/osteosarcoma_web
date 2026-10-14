@@ -380,3 +380,8 @@
     width: 100%;
   }
 }
+/* Fase 3B.2: diferenciación explícita del registro diferido */
+.new-case-offline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 43px; padding: 10px 16px; border: 1px solid #0891b2; border-radius: 10px; background: #ecfeff; color: #155e75; font-weight: 700; cursor: pointer; }
+.new-case-offline:hover:not(:disabled) { background: #cffafe; }
+.new-case-offline:disabled { opacity: .52; cursor: not-allowed; }
+.new-case-message--warning { border: 1px solid #fcd34d; background: #fffbeb; color: #92400e; }

@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   FileImage,
   Image,
@@ -45,13 +46,32 @@ import {
 
 import {
   getLatestRadiographyAnalysis,
-  validateRadiography,
+  crearSolicitudIA,
+  obtenerUltimaSolicitudIA,
+  type SolicitudIA,
   type RadiographyValidationResponse,
 } from "../../api/ia.api";
 
 import {
-  useAuth,
-} from "../../auth/AuthProvider";
+  formatDate,
+  formatDateTime,
+  formatBytes,
+  formatPercentage,
+  getErrorMessage,
+  getValidationStatusClass,
+  getPrimaryRadiographicFile,
+  getLocalRadiographyExtension,
+  isAcceptedLocalRadiographyFile,
+  isLocalRadiographyPreviewable,
+  getLocalRadiographyFormatLabel,
+  isRadiographicFilePreviewable,
+  getShortValidationLabel,
+} from "./radiographyHelpers";
+
+import {
+  RadiographyReprocessDialog,
+  RadiographyUploadErrorDialog,
+} from "./RadiographyDialogs";
 
 import "./CaseRadiographiesSection.css";
 
@@ -74,451 +94,10 @@ type ViewerPoint = {
 };
 
 
-function formatDate(
-  value?:
-    string | null,
-): string {
-
-  if (!value) {
-    return "?";
-  }
-
-  const date =
-    new Date(
-      `${value.substring(0, 10)}T00:00:00`,
-    );
-
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat(
-    "es-BO",
-    {
-      day:
-        "2-digit",
-
-      month:
-        "2-digit",
-
-      year:
-        "numeric",
-    },
-  ).format(
-    date,
-  );
-}
-
-
-function formatDateTime(
-  value?:
-    string | null,
-): string {
-
-  if (!value) {
-    return "?";
-  }
-
-  const date =
-    new Date(
-      value,
-    );
-
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat(
-    "es-BO",
-    {
-      day:
-        "2-digit",
-
-      month:
-        "2-digit",
-
-      year:
-        "numeric",
-
-      hour:
-        "2-digit",
-
-      minute:
-        "2-digit",
-    },
-  ).format(
-    date,
-  );
-}
-
-
-function formatBytes(
-  value:
-    number,
-): string {
-
-  if (
-    value < 1024
-  ) {
-    return `${value} B`;
-  }
-
-  if (
-    value
-    <
-    1024 * 1024
-  ) {
-    return (
-      `${(
-        value
-        /
-        1024
-      ).toFixed(1)} KB`
-    );
-  }
-
-  return (
-    `${(
-      value
-      /
-      (
-        1024
-        *
-        1024
-      )
-    ).toFixed(2)} MB`
-  );
-}
-
-
-function formatPercentage(
-  value?:
-    number | null,
-): string {
-
-  if (
-    value === undefined
-    ||
-    value === null
-    ||
-    Number.isNaN(value)
-  ) {
-    return "—";
-  }
-
-  return `${(
-    value * 100
-  ).toFixed(2)} %`;
-}
-
-
-function getErrorMessage(
-  error:
-    unknown,
-): string {
-
-  if (
-    typeof error ===
-    "object"
-    &&
-    error !== null
-    &&
-    "response" in error
-  ) {
-
-    const response =
-      (
-        error as {
-          response?: {
-            data?: {
-              message?:
-                string;
-
-              detail?:
-                string;
-
-              error?:
-                string
-                |
-                {
-                  message?:
-                    string;
-                };
-
-              errors?:
-                Record<
-                  string,
-                  string[]
-                >;
-            };
-          };
-        }
-      )
-        .response;
-
-    if (
-      typeof response
-        ?.data
-        ?.error
-      ===
-      "object"
-      &&
-      response
-        ?.data
-        ?.error
-        ?.message
-    ) {
-
-      return response
-        .data
-        .error
-        .message;
-    }
-
-    if (
-      typeof response
-        ?.data
-        ?.error
-      ===
-      "string"
-    ) {
-
-      return response
-        .data
-        .error;
-    }
-
-    if (
-      response
-        ?.data
-        ?.message
-    ) {
-
-      return response
-        .data
-        .message;
-    }
-
-    if (
-      typeof response
-        ?.data
-        ?.detail
-      ===
-      "string"
-    ) {
-
-      return response
-        .data
-        .detail;
-    }
-
-    const errors =
-      response
-        ?.data
-        ?.errors;
-
-    if (errors) {
-
-      const first =
-        Object
-          .values(
-            errors,
-          )
-          .flat()
-          .find(
-            Boolean,
-          );
-
-      if (first) {
-        return first;
-      }
-    }
-  }
-
-  return (
-    "No fue posible completar la operación."
-  );
-}
-
-
-function getValidationStatusClass(
-  file:
-    RadiographicFile,
-): string {
-
-  switch (
-    file.validation_status
-  ) {
-
-    case "VALIDA":
-      return "case-radiographies-status--valid";
-
-    case "RECHAZADA":
-      return "case-radiographies-status--rejected";
-
-    default:
-      return "case-radiographies-status--pending";
-  }
-}
-
-
-function getPrimaryRadiographicFile(
-  study: RadiographicStudy,
-): RadiographicFile | null {
-
-  return (
-    study.files.find(
-      (file) =>
-        file.active,
-    )
-    ??
-    study.files[0]
-    ??
-    null
-  );
-}
-
-
-
-const RADIOGRAPHY_FILE_EXTENSIONS =
-  [
-    "jpg",
-    "jpeg",
-    "png",
-    "dcm",
-  ] as const;
-
-
-function getLocalRadiographyExtension(
-  file?: File | null,
-): string {
-
-  if (!file) {
-    return "";
-  }
-
-  return (
-    file
-      .name
-      .split(".")
-      .pop()
-      ?.toLowerCase()
-    ??
-    ""
-  );
-}
-
-
-function isAcceptedLocalRadiographyFile(
-  file?: File | null,
-): boolean {
-
-  return RADIOGRAPHY_FILE_EXTENSIONS.includes(
-    getLocalRadiographyExtension(
-      file,
-    ) as typeof RADIOGRAPHY_FILE_EXTENSIONS[number],
-  );
-}
-
-
-function isLocalRadiographyPreviewable(
-  file?: File | null,
-): boolean {
-
-  const extension =
-    getLocalRadiographyExtension(
-      file,
-    );
-
-  return [
-    "jpg",
-    "jpeg",
-    "png",
-  ].includes(
-    extension,
-  );
-}
-
-
-function getLocalRadiographyFormatLabel(
-  file?: File | null,
-): string {
-
-  const extension =
-    getLocalRadiographyExtension(
-      file,
-    );
-
-  switch (extension) {
-    case "jpg":
-    case "jpeg":
-      return "JPEG";
-
-    case "png":
-      return "PNG";
-
-    case "dcm":
-      return "DICOM";
-
-    default:
-      return extension
-        ? extension.toUpperCase()
-        : "Archivo";
-  }
-}
-
-
-function isRadiographicFilePreviewable(
-  file?: RadiographicFile | null,
-): boolean {
-
-  return Boolean(
-    file
-    &&
-    file.validation_status === "VALIDA"
-    &&
-    file.mime.code !== "DICOM",
-  );
-}
-
-
-function getShortValidationLabel(
-  file?: RadiographicFile | null,
-): string {
-
-  if (!file) {
-    return "Sin archivo";
-  }
-
-  switch (file.validation_status) {
-    case "VALIDA":
-      return "Válida";
-
-    case "RECHAZADA":
-      return "Rechazada";
-
-    default:
-      return "Pendiente";
-  }
-}
-
-
 export function CaseRadiographiesSection({
   caseId,
   resolveAuthorName,
 }: Props) {
-
-  const {
-    usuario,
-  } = useAuth();
 
   const fileInputRef =
     useRef<HTMLInputElement | null>(
@@ -663,6 +242,30 @@ export function CaseRadiographiesSection({
     useState<string | null>(
       null,
     );
+
+  // Confirmación de reprocesamiento: nunca se muestra un prompt nativo.
+  const [reprocessTarget, setReprocessTarget] =
+    useState<RadiographicFile | null>(null);
+  const [reprocessReason, setReprocessReason] = useState("");
+  const [reprocessError, setReprocessError] = useState<string | null>(null);
+  const reprocessReasonRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    if (!reprocessTarget) return;
+
+    reprocessReasonRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && analyzingFileId === null) {
+        setReprocessTarget(null);
+        setReprocessReason("");
+        setReprocessError(null);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [reprocessTarget, analyzingFileId]);
+
+  const [solicitudesIA, setSolicitudesIA] = useState<Record<string, SolicitudIA>>({});
 
   const [
     analysisResults,
@@ -912,13 +515,19 @@ export function CaseRadiographiesSection({
         null
       : null;
 
+  const selectedSolicitud = selectedInlineFile
+    ? solicitudesIA[selectedInlineFile.id_file] ?? null
+    : null;
+
+  // Nunca mostrar un análisis histórico como si perteneciera a una solicitud
+  // nueva pendiente o fallida. Solo una solicitud COMPLETADA entrega resultado.
   const selectedAnalysis =
     selectedInlineFile
-      ? analysisResults[
-          selectedInlineFile.id_file
-        ]
-        ??
-        null
+      ? selectedSolicitud
+        ? selectedSolicitud.estado === "COMPLETADO"
+          ? selectedSolicitud.resultado ?? null
+          : null
+        : analysisResults[selectedInlineFile.id_file] ?? null
       : null;
 
   const selectedLocalization =
@@ -926,6 +535,29 @@ export function CaseRadiographiesSection({
       ?.localizacion_osteosarcoma
     ??
     null;
+
+  const detectorCamRoi = selectedLocalization?.detectada
+    ? selectedLocalization.coordenadas_normalizadas
+    : null;
+  const hasDetectorCamRoi = Boolean(
+    inlineViewerUrl &&
+    selectedInlineFile?.width_px &&
+    selectedInlineFile?.height_px &&
+    detectorCamRoi &&
+    [detectorCamRoi.x1, detectorCamRoi.y1, detectorCamRoi.x2, detectorCamRoi.y2].every(Number.isFinite) &&
+    detectorCamRoi.x1 >= 0 && detectorCamRoi.x2 <= 1 &&
+    detectorCamRoi.y1 >= 0 && detectorCamRoi.y2 <= 1 &&
+    detectorCamRoi.x1 < detectorCamRoi.x2 &&
+    detectorCamRoi.y1 < detectorCamRoi.y2
+  );
+
+  // Mapa termico del detector: representacion ilustrativa de su ROI.
+  // NO representa activaciones Grad-CAM ni segmentacion tumoral.
+  const showDetectorThermalPair = Boolean(
+    selectedSolicitud?.estado === "COMPLETADO" &&
+    selectedAnalysis?.osteosarcoma_sospechoso &&
+    hasDetectorCamRoi && detectorCamRoi && inlineViewerUrl
+  );
 
   const selectedInvalidValidations =
     selectedInlineFile
@@ -1205,6 +837,34 @@ export function CaseRadiographiesSection({
     ],
   );
 
+
+  // Seguimiento no bloqueante: consulta solo el estado, no recarga imágenes.
+  useEffect(() => {
+    if (!selectedInlineFile || selectedInlineFile.validation_status !== "VALIDA") return;
+    const fileId = selectedInlineFile.id_file;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const consultar = async () => {
+      try {
+        const actual = await obtenerUltimaSolicitudIA(caseId, fileId);
+        if (cancelled) return;
+        if (actual) {
+          setSolicitudesIA((old) => ({ ...old, [fileId]: actual }));
+          if (actual.estado === "COMPLETADO" && actual.resultado) {
+            setAnalysisResults((old) => ({ ...old, [fileId]: actual.resultado! }));
+          }
+          if (actual.estado === "PENDIENTE" || actual.estado === "PROCESANDO") {
+            timer = setTimeout(() => { void consultar(); }, 3500);
+          }
+        }
+      } catch {
+        // Mantener el resto del detalle del caso disponible si IA está caída.
+      }
+    };
+    void consultar();
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
+  }, [caseId, selectedInlineFile?.id_file, selectedInlineFile?.validation_status,
+    solicitudesIA[selectedInlineFile?.id_file ?? ""]?.id_solicitud]);
 
   useEffect(
     () => {
@@ -2256,146 +1916,82 @@ export function CaseRadiographiesSection({
   }
 
 
+  function closeReprocessModal() {
+    if (analyzingFileId !== null) return;
+    setReprocessTarget(null);
+    setReprocessReason("");
+    setReprocessError(null);
+  }
+
+
   async function handleAnalyzeWithAi(
-    file:
-      RadiographicFile,
+    file: RadiographicFile,
+    confirmedReason?: string,
   ) {
-
-    if (
-      file.validation_status
-      !==
-      "VALIDA"
-    ) {
-
+    if (file.validation_status !== "VALIDA") {
       setError(
         "Solo las radiografías validadas pueden enviarse al análisis asistido por IA.",
       );
-
       return;
     }
 
-    setAnalyzingFileId(
-      file.id_file,
-    );
+    const anterior = solicitudesIA[file.id_file];
 
-    setError(
-      null,
-    );
+    // El motivo se solicita antes de descargar la imagen o activar el spinner.
+    if (anterior?.estado === "COMPLETADO" && confirmedReason === undefined) {
+      setReprocessTarget(file);
+      setReprocessReason("");
+      setReprocessError(null);
+      setError(null);
+      return;
+    }
 
-    setSuccess(
-      null,
-    );
+    const motivo = (confirmedReason ?? "").trim();
+    if (anterior?.estado === "COMPLETADO" && motivo.length < 8) {
+      setReprocessError("Escribe un motivo de al menos 8 caracteres.");
+      return;
+    }
+
+    setAnalyzingFileId(file.id_file);
+    setReprocessError(null);
+    setError(null);
+    setSuccess(null);
 
     try {
-
-      const blob =
-        await getRadiographicFileBlob(
-          file.id_file,
-        );
-
-      const analysisFile =
-        new File(
-          [
-            blob,
-          ],
-          file.original_name,
-          {
-            type:
-              blob.type
-              ||
-              file.mime.mime_type
-              ||
-              "application/octet-stream",
-          },
-        );
-
-      const result =
-        await validateRadiography(
-          analysisFile,
-          {
-            radiografia_uuid:
-              file.id_file,
-
-            caso_uuid:
-              caseId,
-
-            solicitado_por_uuid:
-              usuario?.id_usuario
-              ??
-              null,
-          },
-        );
-
-      setAnalysisResults(
-        (current) => ({
-          ...current,
-          [file.id_file]:
-            result,
-        }),
-      );
-
-      if (
-        !result.es_radiografia
-      ) {
-
-        setError(
-          result.mensaje
-          ||
-          "El archivo no fue reconocido como una radiografía.",
-        );
-
-        return;
-      }
-
-      if (
-        result.anatomia_evaluada
-        &&
-        result.anatomia_admitida
-        ===
-        false
-      ) {
-
-        setError(
-          result.mensaje
-          ||
-          "La región anatómica no está admitida para el análisis de osteosarcoma.",
-        );
-
-        return;
-      }
-
-      setSuccess(
-        "Análisis asistido por IA completado.",
-      );
-
-      window.setTimeout(
-        () => {
-
-          setSuccess(
-            null,
-          );
+      const blob = await getRadiographicFileBlob(file.id_file);
+      const analysisFile = new File(
+        [blob],
+        file.original_name,
+        {
+          type: blob.type || file.mime.mime_type || "application/octet-stream",
         },
-        3200,
       );
 
-    } catch (
-      requestError
-    ) {
-
-      setError(
-        getErrorMessage(
-          requestError,
-        ),
+      const solicitud = await crearSolicitudIA(
+        analysisFile,
+        caseId,
+        file.id_file,
+        motivo,
       );
 
+      setSolicitudesIA((old) => ({ ...old, [file.id_file]: solicitud }));
+      setSuccess(null);
+
+      if (reprocessTarget?.id_file === file.id_file) {
+        setReprocessTarget(null);
+        setReprocessReason("");
+      }
+    } catch (requestError) {
+      const message = getErrorMessage(requestError);
+      if (reprocessTarget?.id_file === file.id_file) {
+        setReprocessError(message);
+      } else {
+        setError(message);
+      }
     } finally {
-
-      setAnalyzingFileId(
-        null,
-      );
+      setAnalyzingFileId(null);
     }
   }
-
 
   async function handleView(
     fileId: string,
@@ -3940,9 +3536,9 @@ async function handleReplacement() {
                                   type="button"
                                   className="case-radiographies-ai-button"
                                   disabled={
-                                    analyzingFileId
-                                    ===
-                                    selectedInlineFile.id_file
+                                    analyzingFileId === selectedInlineFile.id_file ||
+                                    selectedSolicitud?.estado === "PENDIENTE" ||
+                                    selectedSolicitud?.estado === "PROCESANDO"
                                   }
                                   onClick={
                                     () =>
@@ -3972,9 +3568,13 @@ async function handleReplacement() {
                                             />
 
                                             {
-                                              selectedAnalysis
-                                                ? "Reanalizar con IA"
-                                                : "Analizar con IA"
+                                              selectedSolicitud?.estado === "PENDIENTE"
+                                                ? "En cola"
+                                                : selectedSolicitud?.estado === "PROCESANDO"
+                                                  ? "Procesando"
+                                                  : selectedAnalysis
+                                                    ? "Reanalizar"
+                                                    : "Analizar con IA"
                                             }
                                           </>
                                         )
@@ -4022,6 +3622,111 @@ async function handleReplacement() {
                           </div>
                         </header>
 
+                        {selectedSolicitud && (
+                          <details
+                            key={selectedSolicitud.id_solicitud}
+                            className={`case-radiographies-ia-tracker case-radiographies-ia-tracker--${selectedSolicitud.estado.toLowerCase()}`}
+                          >
+                            <summary className="case-radiographies-ia-tracker-summary">
+                              <span className="case-radiographies-ia-tracker-icon" aria-hidden="true">
+                                {selectedSolicitud.estado === "COMPLETADO" ? (
+                                  <CheckCircle2 size={18} />
+                                ) : selectedSolicitud.estado === "FALLIDO" ? (
+                                  <AlertTriangle size={18} />
+                                ) : selectedSolicitud.estado === "PROCESANDO" ? (
+                                  <LoaderCircle size={18} className="case-radiographies-spin" />
+                                ) : (
+                                  <Clock3 size={18} />
+                                )}
+                              </span>
+                              <span className="case-radiographies-ia-tracker-copy">
+                                <span className="case-radiographies-ia-tracker-headline">
+                                  <strong>Seguimiento de IA</strong>
+                                  <span role="status" aria-live="polite" className="case-radiographies-ia-tracker-status">
+                                    {selectedSolicitud.estado === "COMPLETADO"
+                                      ? "Completado"
+                                      : selectedSolicitud.estado === "FALLIDO"
+                                        ? "Fallido"
+                                        : selectedSolicitud.estado === "PROCESANDO"
+                                          ? "Procesando"
+                                          : "En cola"}
+                                  </span>
+                                </span>
+                                <span className="case-radiographies-ia-tracker-subtitle">
+                                  {selectedSolicitud.estado === "COMPLETADO"
+                                    ? `Resultado disponible · ${selectedSolicitud.intentos} ${selectedSolicitud.intentos === 1 ? "intento" : "intentos"}`
+                                    : selectedSolicitud.estado === "FALLIDO"
+                                      ? "No se generó un nuevo resultado"
+                                      : selectedSolicitud.estado === "PROCESANDO"
+                                        ? "La radiografía se está analizando"
+                                        : "Solicitud recibida · puedes seguir trabajando"}
+                                </span>
+                              </span>
+                              <span className="case-radiographies-ia-tracker-expand">
+                                <span>Detalles</span>
+                                <ChevronDown size={15} aria-hidden="true" />
+                              </span>
+                            </summary>
+
+                            <div className="case-radiographies-ia-tracker-panel">
+                              <div className="case-radiographies-ia-tracker-facts">
+                                <div>
+                                  <span>Modelo utilizado</span>
+                                  <strong title={selectedSolicitud.version_modelo}>
+                                    {selectedSolicitud.version_modelo}
+                                  </strong>
+                                </div>
+                                <div>
+                                  <span>Intentos de procesamiento</span>
+                                  <strong>{selectedSolicitud.intentos} de {selectedSolicitud.max_intentos}</strong>
+                                </div>
+                                <div>
+                                  <span>Inicio</span>
+                                  <strong>{formatDateTime(selectedSolicitud.fecha_inicio)}</strong>
+                                </div>
+                                {selectedSolicitud.fecha_fin && (
+                                  <div>
+                                    <span>Finalización</span>
+                                    <strong>{formatDateTime(selectedSolicitud.fecha_fin)}</strong>
+                                  </div>
+                                )}
+                                {selectedSolicitud.duracion_segundos != null && (
+                                  <div>
+                                    <span>Duración</span>
+                                    <strong>{selectedSolicitud.duracion_segundos.toFixed(1)} segundos</strong>
+                                  </div>
+                                )}
+                                {selectedSolicitud.estado === "FALLIDO" && (
+                                  <div>
+                                    <span>Código del error</span>
+                                    <strong>{selectedSolicitud.error_codigo ?? "No disponible"}</strong>
+                                  </div>
+                                )}
+                              </div>
+
+                              {selectedSolicitud.historial.length > 0 && (
+                                <div className="case-radiographies-ia-tracker-history">
+                                  <strong>Historial de procesamiento</strong>
+                                  <ol>
+                                    {selectedSolicitud.historial.map((evento, index) => (
+                                      <li key={`${evento.fecha}-${evento.estado}-${index}`}>
+                                        <span className="case-radiographies-ia-tracker-event-state">
+                                          {evento.estado === "COMPLETADO" ? "Completado" :
+                                           evento.estado === "FALLIDO" ? "Fallido" :
+                                           evento.estado === "PROCESANDO" ? "Procesando" : "En cola"}
+                                        </span>
+                                        <span className="case-radiographies-ia-tracker-event-description">
+                                          {evento.detalle}
+                                        </span>
+                                        <time>{formatDateTime(evento.fecha)}</time>
+                                      </li>
+                                    ))}
+                                  </ol>
+                                </div>
+                              )}
+                            </div>
+                          </details>
+                        )}
 
                         <div
                           ref={
@@ -4435,6 +4140,17 @@ async function handleReplacement() {
                         </div>
 
 
+                        {selectedSolicitud?.estado === "FALLIDO" && (
+                          <div role="alert" style={{ marginTop: 12, padding: "12px 14px", borderRadius: 8, border: "1px solid #f59e0b", color: "#92400e", background: "#fffbeb" }}>
+                            <strong>El último análisis no pudo completarse.</strong>
+                            <p style={{ margin: "6px 0 0" }}>
+                              No se generó un resultado nuevo. La radiografía puede volver a enviarse
+                              cuando se corrija el error técnico; un resultado anterior no debe
+                              interpretarse como resultado de esta solicitud.
+                            </p>
+                          </div>
+                        )}
+
                         {
                           selectedInlineFile
                           &&
@@ -4501,6 +4217,62 @@ async function handleReplacement() {
                               </header>
 
 
+{showDetectorThermalPair && detectorCamRoi && inlineViewerUrl && (
+  <section className="case-radiographies-thermal-pair" aria-label="Radiografia y visualizacion termica del detector">
+    <div className="case-radiographies-thermal-card">
+      <strong>Radiografia · region estimada</strong>
+      <div className="case-radiographies-thermal-stage">
+        <div
+          className="case-radiographies-thermal-frame"
+          style={selectedInlineFile?.width_px && selectedInlineFile?.height_px
+            ? { aspectRatio: `${selectedInlineFile.width_px} / ${selectedInlineFile.height_px}` }
+            : undefined}
+        >
+          <img src={inlineViewerUrl} alt="Radiografia con la region estimada por el detector" draggable={false} />
+          <div
+            className="case-radiographies-thermal-box"
+            style={{
+              left: `${detectorCamRoi.x1 * 100}%`,
+              top: `${detectorCamRoi.y1 * 100}%`,
+              width: `${(detectorCamRoi.x2 - detectorCamRoi.x1) * 100}%`,
+              height: `${(detectorCamRoi.y2 - detectorCamRoi.y1) * 100}%`,
+            }}
+          >
+            <span>Region estimada</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div className="case-radiographies-thermal-card">
+      <strong>
+        Mapa termico del detector
+        <span className="case-radiographies-thermal-tag">Ilustrativo</span>
+      </strong>
+      <div className="case-radiographies-thermal-stage">
+        <div
+          className="case-radiographies-thermal-frame"
+          style={selectedInlineFile?.width_px && selectedInlineFile?.height_px
+            ? { aspectRatio: `${selectedInlineFile.width_px} / ${selectedInlineFile.height_px}` }
+            : undefined}
+        >
+          <img src={inlineViewerUrl} alt="Radiografia con superposicion termica ilustrativa delimitada por el detector" draggable={false} />
+          <div
+            className="case-radiographies-thermal-heat"
+            aria-hidden="true"
+            style={{
+              left: `${detectorCamRoi.x1 * 100}%`,
+              top: `${detectorCamRoi.y1 * 100}%`,
+              width: `${(detectorCamRoi.x2 - detectorCamRoi.x1) * 100}%`,
+              height: `${(detectorCamRoi.y2 - detectorCamRoi.y1) * 100}%`,
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+
+{!showDetectorThermalPair && (
                               <div
                                 className="case-radiographies-ai-result-body"
                               >
@@ -4591,8 +4363,8 @@ async function handleReplacement() {
                                               &&
                                               selectedLocalization
                                                 ?.detectada
-                                                ? "La región marcada corresponde a la localización estimada por el detector."
-                                                : "La imagen se mantiene sin marcas porque no se obtuvo una localización sospechosa que deba mostrarse."
+                                                ? "Region estimada por el detector."
+                                                : "No se obtuvo una region estimada."
                                             }
                                           </span>
                                         </div>
@@ -4728,7 +4500,7 @@ async function handleReplacement() {
                                   </p>
                                 </div>
                               </div>
-
+                              )}
 
                               <footer
                                 className="case-radiographies-ai-disclaimer"
@@ -5416,105 +5188,22 @@ async function handleReplacement() {
       </article>
 
 
-      {
-        uploadErrorModal
-        &&
-        (
-          <div
-            className="case-radiographies-upload-error-overlay"
-            role="presentation"
-          >
-            <section
-              className="case-radiographies-upload-error-modal"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="radiography-upload-error-title"
-              aria-describedby="radiography-upload-error-description"
-            >
-              <button
-                type="button"
-                className="case-radiographies-upload-error-close"
-                aria-label="Cerrar mensaje"
-                onClick={
-                  closeUploadErrorModal
-                }
-              >
-                <X
-                  size={19}
-                />
-              </button>
+      <RadiographyReprocessDialog
+        reprocessTarget={reprocessTarget}
+        reprocessReason={reprocessReason}
+        reprocessError={reprocessError}
+        reprocessReasonRef={reprocessReasonRef}
+        analyzingFileId={analyzingFileId}
+        closeReprocessModal={closeReprocessModal}
+        setReprocessReason={setReprocessReason}
+        setReprocessError={setReprocessError}
+        handleAnalyzeWithAi={handleAnalyzeWithAi}
+      />
 
-              <div
-                className="case-radiographies-upload-error-icon"
-                aria-hidden="true"
-              >
-                <XCircle
-                  size={31}
-                />
-              </div>
-
-              <div
-                className="case-radiographies-upload-error-content"
-              >
-                <span
-                  className="case-radiographies-upload-error-eyebrow"
-                >
-                  Archivo rechazado
-                </span>
-
-                <h3
-                  id="radiography-upload-error-title"
-                >
-                  La imagen seleccionada no es una radiografía válida
-                </h3>
-
-                <p
-                  id="radiography-upload-error-description"
-                  className="case-radiographies-upload-error-message"
-                >
-                  {
-                    uploadErrorModal
-                  }
-                </p>
-
-                <div
-                  className="case-radiographies-upload-error-guidance"
-                >
-                  <FileImage
-                    size={21}
-                  />
-
-                  <div>
-                    <strong>
-                      ¿Cómo corregirlo?
-                    </strong>
-
-                    <span>
-                      Cierre este mensaje y seleccione otra imagen
-                      JPG, JPEG, PNG o DICOM que corresponda a una
-                      radiografía.
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="case-radiographies-upload-error-action"
-                  onClick={
-                    closeUploadErrorModal
-                  }
-                >
-                  <X
-                    size={17}
-                  />
-                  Cerrar y seleccionar otra imagen
-                </button>
-              </div>
-            </section>
-          </div>
-        )
-      }
-
+      <RadiographyUploadErrorDialog
+        uploadErrorModal={uploadErrorModal}
+        closeUploadErrorModal={closeUploadErrorModal}
+      />
 
       {
         viewerUrl

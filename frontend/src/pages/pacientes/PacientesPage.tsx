@@ -582,12 +582,14 @@ export function PacientesPage() {
 
 
           <h1>
-            Pacientes
+            {tieneRol("JEFE_ONCOLOGIA") ? "Pacientes" : "Mis pacientes"}
           </h1>
 
 
           <p>
-            Consulta, búsqueda y seguimiento de pacientes registrados en el sistema.
+            {tieneRol("JEFE_ONCOLOGIA")
+              ? "Consulta y seguimiento de pacientes de la clínica."
+              : "Pacientes que registraste o que están asignados a tu atención."}
           </p>
 
         </div>

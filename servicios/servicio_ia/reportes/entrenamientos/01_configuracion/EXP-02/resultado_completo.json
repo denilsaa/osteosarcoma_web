@@ -1,0 +1,89 @@
+{
+  "experiment_id": "EXP-02",
+  "stage": "01_configuracion",
+  "dataset": {
+    "train_csv": "/datos_radiografias_san_juan_de_dios/03_particiones/train_v1.csv",
+    "validation_csv": "/datos_radiografias_san_juan_de_dios/03_particiones/validation_v1.csv",
+    "test_csv": "/datos_radiografias_san_juan_de_dios/03_particiones/test_v1.csv",
+    "train_total": 2606,
+    "validation_total": 559,
+    "test_total": 559
+  },
+  "architecture": "efficientnet_b0",
+  "image_size": 224,
+  "optimizer": "adamw",
+  "learning_rate": 5e-05,
+  "batch_size": 32,
+  "epochs": 5,
+  "best_epoch": 5,
+  "balancing": "none",
+  "balancing_info": {
+    "class_counts": [
+      2399,
+      207
+    ],
+    "class_weights": null
+  },
+  "augmentation_train_only": true,
+  "training_strategy": "finetune_last_3_blocks",
+  "parent_model": "osteosarcoma_efficientnet_b0_baseline_v1.pt",
+  "threshold_selected_from": "validation",
+  "selected_threshold": 0.11000000000000001,
+  "selection_score": 0.8399693491040259,
+  "responsable": "Denilson Asis Saavedra Mamani",
+  "fecha": "2026-10-03T22:18:35.716777+00:00",
+  "saved_model": "/datos_radiografias_san_juan_de_dios/04_reportes/experimentos_osteosarcoma/01_configuracion/EXP-02/EXP-02.pt",
+  "validation": {
+    "threshold": 0.11000000000000001,
+    "accuracy": 0.9033989266547406,
+    "precision": 0.449438202247191,
+    "sensitivity": 0.8888888888888888,
+    "recall": 0.8888888888888888,
+    "specificity": 0.9046692607003891,
+    "f1": 0.5970149253731343,
+    "roc_auc": 0.9518806744487678,
+    "pr_auc": 0.7204527070851211,
+    "true_negative": 465,
+    "false_positive": 49,
+    "false_negative": 5,
+    "true_positive": 40,
+    "confusion_matrix": [
+      [
+        465,
+        49
+      ],
+      [
+        5,
+        40
+      ]
+    ],
+    "loss": 0.13438243772134797,
+    "selection_score": 0.8399693491040259
+  },
+  "test": {
+    "threshold": 0.11000000000000001,
+    "accuracy": 0.8962432915921288,
+    "precision": 0.42045454545454547,
+    "sensitivity": 0.8409090909090909,
+    "recall": 0.8409090909090909,
+    "specificity": 0.9009708737864077,
+    "f1": 0.5606060606060606,
+    "roc_auc": 0.9464254192409534,
+    "pr_auc": 0.6931459533025633,
+    "true_negative": 464,
+    "false_positive": 51,
+    "false_negative": 7,
+    "true_positive": 37,
+    "confusion_matrix": [
+      [
+        464,
+        51
+      ],
+      [
+        7,
+        37
+      ]
+    ],
+    "loss": 0.13593658543656678
+  }
+}

@@ -147,6 +147,7 @@ def _obtener_contexto_persistencia(
                 "solicitado_por_uuid",
             )
         ),
+        "solicitud_uuid": _uuid_opcional(request.POST.get("solicitud_uuid"), "solicitud_uuid"),
     }
 
 
@@ -157,6 +158,19 @@ def _guardar_analisis_clinico(
     if contexto is None:
         return data
 
+    # Cuando RabbitMQ reentrega el mensaje, devolvemos el mismo resultado.
+    if contexto.get("solicitud_uuid"):
+        existente = AnalisisRadiografiaIA.objects.filter(
+            solicitud_uuid=contexto["solicitud_uuid"]
+        ).first()
+        if existente:
+            return {
+                **(existente.resultado_json or {}),
+                "persistencia": {
+                    "id_analisis": str(existente.id_analisis),
+                    "fecha_analisis": existente.fecha_analisis.isoformat(),
+                },
+            }
 
     tumor = (
         data.get(
@@ -185,6 +199,7 @@ def _guardar_analisis_clinico(
 
     analisis = (
         AnalisisRadiografiaIA.objects.create(
+            solicitud_uuid=contexto.get("solicitud_uuid"),
             radiografia_uuid=(
                 contexto[
                     "radiografia_uuid"
@@ -375,6 +390,20 @@ def ultimo_analisis_radiografia(
     request,
     radiografia_uuid,
 ):
+    from inteligencia.analisis_async import api_error, check_case_and_file, require_actor
+    try:
+        require_actor(request)
+        caso_id = _uuid_opcional(request.GET.get("caso_uuid"), "caso_uuid")
+        if not caso_id:
+            return api_error("CASE_REQUIRED", "Debe indicar el caso clínico.", 422)
+        check_case_and_file(request, caso_id, radiografia_uuid, require_file=False)
+    except (ValueError, TypeError):
+        return api_error("INVALID_CASE", "Caso inválido.", 422)
+    except PermissionError as exc:
+        return api_error("FORBIDDEN", str(exc), 403)
+    except (ConnectionError, RuntimeError):
+        return api_error("ACCESS_UNAVAILABLE", "No se pudieron verificar los permisos.", 503)
+
     queryset = (
         AnalisisRadiografiaIA
         .objects
@@ -893,6 +922,20 @@ def validar_radiografia(
             status=422,
         )
 
+
+    # Una solicitud externa con contexto clínico necesita autorización real.
+    # El worker usa una petición Django creada EN MEMORIA, sin aceptar cabeceras
+    # que puedan simular ese atributo desde Internet.
+    if contexto_persistencia and not getattr(request, "_trusted_worker", False):
+        from inteligencia.analisis_async import api_error, check_case_and_file, require_actor
+        try:
+            actor = require_actor(request)
+            check_case_and_file(request, contexto_persistencia["caso_uuid"], contexto_persistencia["radiografia_uuid"])
+            contexto_persistencia["solicitado_por_uuid"] = uuid.UUID(str(actor["usuario_id"]))
+        except PermissionError as exc:
+            return api_error("FORBIDDEN", str(exc), 403)
+        except (ConnectionError, RuntimeError):
+            return api_error("ACCESS_UNAVAILABLE", "No se pudieron verificar permisos clínicos.", 503)
 
     # ======================================================
     # ETAPA 1

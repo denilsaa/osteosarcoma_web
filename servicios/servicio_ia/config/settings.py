@@ -71,3 +71,6 @@ REST_FRAMEWORK = {
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# Imágenes temporales privadas; nunca exponer esta ruta mediante URL pública.
+MEDIA_ROOT = os.environ.get("IA_PRIVATE_UPLOAD_ROOT", str(BASE_DIR / ".private_ai_uploads"))
+MEDIA_URL = "/privado-no-publicar/"

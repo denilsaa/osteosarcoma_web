@@ -1,0 +1,36 @@
+{
+  "experiment_id": "BAL-03",
+  "stage": "02_balanceo",
+  "dataset": {
+    "train_csv": "/datos_radiografias_san_juan_de_dios/03_particiones/train_v1.csv",
+    "validation_csv": "/datos_radiografias_san_juan_de_dios/03_particiones/validation_v1.csv",
+    "test_csv": "/datos_radiografias_san_juan_de_dios/03_particiones/test_v1.csv",
+    "train_total": 2606,
+    "validation_total": 559,
+    "test_total": 559
+  },
+  "architecture": "efficientnet_b0",
+  "image_size": 224,
+  "optimizer": "adamw",
+  "learning_rate": 0.0001,
+  "batch_size": 32,
+  "epochs": 5,
+  "best_epoch": 5,
+  "balancing": "weighted_sampler",
+  "balancing_info": {
+    "class_counts": [
+      2399,
+      207
+    ],
+    "class_weights": null
+  },
+  "augmentation_train_only": true,
+  "training_strategy": "finetune_last_3_blocks",
+  "parent_model": "osteosarcoma_efficientnet_b0_baseline_v1.pt",
+  "threshold_selected_from": "validation",
+  "selected_threshold": 0.21000000000000002,
+  "selection_score": 0.884329404688058,
+  "responsable": "Denilson Asis Saavedra Mamani",
+  "fecha": "2026-10-03T23:20:43.681022+00:00",
+  "saved_model": "/datos_radiografias_san_juan_de_dios/04_reportes/experimentos_osteosarcoma/02_balanceo/BAL-03/BAL-03.pt"
+}

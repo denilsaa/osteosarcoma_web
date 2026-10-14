@@ -1,0 +1,9 @@
+{
+  "selected_from": "validation",
+  "experiment_id": "EXP-01",
+  "selection_score": 0.8581656130294263,
+  "optimizer": "adamw",
+  "learning_rate": 0.0001,
+  "batch_size": 32,
+  "epochs": 5
+}

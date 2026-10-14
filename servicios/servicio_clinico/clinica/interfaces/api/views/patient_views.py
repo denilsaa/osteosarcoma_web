@@ -1,3 +1,6 @@
+import hashlib
+import json
+
 from uuid import (
     UUID,
 )
@@ -48,6 +51,43 @@ from clinica.interfaces.api.serializers import (
 )
 
 
+from django.db import transaction, connection
+from clinica.infrastructure.persistence.models import AsignacionPaciente, CasoClinico, AltaPacienteOffline
+from clinica.infrastructure.security.patient_access import PatientAccess
+from clinica.infrastructure.security.clinical_case_access import ClinicalCaseAccess
+
+
+def _authenticate_patient_request(request):
+    try:
+        return PatientAccess.actor(request), None
+    except Exception as exc:
+        response = domain_error_response(exc)
+        if response is not None:
+            return None, response
+        raise
+
+
+def _check_patient_permission(actor, patient_id):
+    try:
+        PatientAccess.require(actor, patient_id)
+        return None
+    except Exception as exc:
+        response = domain_error_response(exc)
+        if response is not None:
+            return response
+        raise
+
+
+def _present_detail_for_actor(patient, actor):
+    result = PatientPresenter.detail(patient)
+    if not ClinicalCaseAccess.is_head(actor):
+        result["clinical_cases_count"] = CasoClinico.objects.filter(
+            paciente_id=patient.id_patient,
+            oncologo_responsable_uuid=actor.usuario_uuid,
+        ).count()
+    return result
+
+
 # ==========================================================
 # UTILIDADES HTTP
 # ==========================================================
@@ -88,7 +128,9 @@ def patient_catalogs_view(
     request,
 ):
 
-    del request
+    actor, auth_error = _authenticate_patient_request(request)
+    if auth_error is not None:
+        return auth_error
 
 
     container = (
@@ -126,6 +168,10 @@ def patient_catalogs_view(
 def patient_list_view(
     request,
 ):
+
+    actor, auth_error = _authenticate_patient_request(request)
+    if auth_error is not None:
+        return auth_error
 
     query_data = (
         _query_params_to_dict(
@@ -199,7 +245,10 @@ def patient_list_view(
         container
         .list_patients
         .execute(
-            dto
+            dto,
+            authorized_oncologist_uuid=(
+                None if ClinicalCaseAccess.is_head(actor) else actor.usuario_uuid
+            ),
         )
     )
 
@@ -258,6 +307,10 @@ def patient_list_view(
 def patient_create_view(
     request,
 ):
+
+    actor, auth_error = _authenticate_patient_request(request)
+    if auth_error is not None:
+        return auth_error
 
     # ======================================================
     # VALIDAR REQUEST
@@ -402,6 +455,21 @@ def patient_create_view(
         get_container()
     )
 
+    # Una operación diferida puede reintentarse tras un timeout, incluso si el
+    # primer POST sí llegó a crear al paciente. El UUID permite respuesta estable.
+    op_raw = request.headers.get("X-Osteo-Operation-Id", "").strip()
+    op_uuid = None
+    payload_hash = ""
+    if op_raw:
+        try:
+            op_uuid = UUID(op_raw)
+            if str(op_uuid) != op_raw.lower():
+                raise ValueError("UUID no canónico")
+        except (ValueError, AttributeError):
+            return Response({"detail": "Identificador de operación inválido."}, status=400)
+        payload_hash = hashlib.sha256(json.dumps(
+            request.data, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+        ).encode("utf-8")).hexdigest()
 
     try:
 
@@ -409,25 +477,51 @@ def patient_create_view(
         # 1. CREAR PACIENTE
         # ==================================================
 
-        patient = (
-            container
-            .create_patient
-            .execute(
-                dto
-            )
-        )
+        with transaction.atomic():
+            # Bloqueo de reintentos concurrentes sobre la misma operación:
+            # la primera solicitud confirma conjuntamente paciente y recibo.
+            previo = None
+            if op_uuid is not None:
+                # Exclusión transaccional por UUID (PostgreSQL) contra dos POST
+                # simultáneos: el segundo espera al primero antes de consultar.
+                advisory_key = op_uuid.int % (2 ** 63)
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT pg_advisory_xact_lock(%s)", [advisory_key])
+                previo = AltaPacienteOffline.objects.select_for_update().filter(
+                    operacion_uuid=op_uuid,
+                ).first()
+                if previo is not None:
+                    if (str(previo.actor_uuid) != str(actor.usuario_uuid)
+                            or previo.payload_sha256 != payload_hash):
+                        return Response({"detail": "Identificador de operación reutilizado."}, status=409)
+                    patient = container.get_patient.execute(previo.paciente_id)
+                    return Response({
+                        "message": "Paciente registrado previamente; reintento reconocido.",
+                        "data": _present_detail_for_actor(patient, actor),
+                    }, status=status.HTTP_200_OK)
+
+            patient = container.create_patient.execute(dto)
+            if not ClinicalCaseAccess.is_head(actor):
+                AsignacionPaciente.objects.create(
+                    paciente_id=patient.id_patient,
+                    oncologo_uuid=actor.usuario_uuid,
+                    asignado_por_uuid=actor.usuario_uuid,
+                    motivo="Registro del paciente por su oncólogo responsable.",
+                )
+            if op_uuid is not None:
+                AltaPacienteOffline.objects.create(
+                    operacion_uuid=op_uuid,
+                    actor_uuid=actor.usuario_uuid,
+                    payload_sha256=payload_hash,
+                    paciente_id=patient.id_patient,
+                )
 
 
         # ==================================================
         # 2. OBTENER ACTOR
         # ==================================================
 
-        actor = (
-            RequestActorExtractor
-            .extract(
-                request
-            )
-        )
+        # Se conserva el actor previamente validado mediante JWT.
 
 
         # ==================================================
@@ -512,7 +606,13 @@ def patient_detail_view(
     patient_id,
 ):
 
-    del request
+    actor, auth_error = _authenticate_patient_request(request)
+    if auth_error is not None:
+        return auth_error
+
+    denied = _check_patient_permission(actor, patient_id)
+    if denied is not None:
+        return denied
 
 
     try:
@@ -550,10 +650,7 @@ def patient_detail_view(
     return Response(
         {
             "data":
-                PatientPresenter
-                .detail(
-                    patient
-                ),
+                _present_detail_for_actor(patient, actor),
         },
         status=
             status.HTTP_200_OK,
@@ -574,6 +671,18 @@ def patient_update_view(
     request,
     patient_id,
 ):
+
+    actor, auth_error = _authenticate_patient_request(request)
+    if auth_error is not None:
+        return auth_error
+
+    denied = _check_patient_permission(actor, patient_id)
+    if denied is not None:
+        return denied
+
+    # Solo jefatura desactiva pacientes, no el oncólogo normal.
+    if not ClinicalCaseAccess.is_head(actor) and "active" in request.data:
+        return Response({"error": "Solo jefatura puede cambiar el estado del paciente."}, status=403)
 
     # ======================================================
     # VALIDAR REQUEST
@@ -673,12 +782,7 @@ def patient_update_view(
         # 2. ACTOR
         # ==================================================
 
-        actor = (
-            RequestActorExtractor
-            .extract(
-                request
-            )
-        )
+        # Se conserva el actor previamente validado mediante JWT.
 
 
         # ==================================================
@@ -750,12 +854,7 @@ def patient_update_view(
                 ),
 
             "data":
-                PatientPresenter
-                .detail(
-                    result[
-                        "patient"
-                    ]
-                ),
+                _present_detail_for_actor(result["patient"], actor),
 
             "changes": [
                 {
@@ -798,6 +897,10 @@ def patient_update_view(
 def patient_duplicates_view(
     request,
 ):
+
+    actor, auth_error = _authenticate_patient_request(request)
+    if auth_error is not None:
+        return auth_error
 
     query_data = (
         _query_params_to_dict(
@@ -888,6 +991,8 @@ def patient_duplicates_view(
         raise
 
 
+    patients = [patient for patient in patients if PatientAccess.can_access(actor, patient.id_patient)]
+
     return Response(
         {
             "data": [
@@ -937,6 +1042,10 @@ def patient_photo_view(
     patient_id,
 ):
 
+    actor, auth_error = _authenticate_patient_request(request)
+    if auth_error is not None:
+        return auth_error
+
     container = (
         get_container()
     )
@@ -952,6 +1061,10 @@ def patient_photo_view(
             )
         )
 
+
+        denied = _check_patient_permission(actor, patient_uuid)
+        if denied is not None:
+            return denied
 
         # ==================================================
         # SUBIR / REEMPLAZAR FOTO

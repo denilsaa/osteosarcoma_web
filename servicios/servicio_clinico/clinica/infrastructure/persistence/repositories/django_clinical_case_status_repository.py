@@ -343,6 +343,13 @@ class DjangoClinicalCaseStatusRepository(
             )
 
 
+        if next_code == "CERRADO":
+            from clinica.application.services.clinical_review_service import (
+                assert_case_can_close,
+            )
+            assert_case_can_close(case)
+
+
         previous_status = (
             case.estado_caso
         )

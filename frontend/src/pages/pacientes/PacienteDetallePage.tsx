@@ -53,6 +53,8 @@ import {
   PatientRadiographies,
 } from "../../components/pacientes/PatientRadiographies";
 
+import { useAuth } from "../../auth/AuthProvider";
+import { PatientAssignmentManager } from "../../components/pacientes/PatientAssignmentManager";
 import "./PacienteDetallePage.css";
 
 
@@ -523,6 +525,9 @@ const emptyForm:
 // ==========================================================
 
 export function PacienteDetallePage() {
+
+  const { tieneRol } = useAuth();
+  const esJefe = tieneRol("JEFE_ONCOLOGIA");
 
   const navigate =
     useNavigate();
@@ -3090,6 +3095,8 @@ export function PacienteDetallePage() {
                   )
                 }
 
+
+                {esJefe && <PatientAssignmentManager patientId={patient.id_patient} />}
 
                 <PatientClinicalCases
                   patientId={

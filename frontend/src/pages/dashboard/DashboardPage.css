@@ -560,3 +560,7 @@
     display: none;
   }
 }
+/* Estado de conexión real, no etiqueta de salud clínica general. */
+.dashboard-hero__status--disconnected {border-color:#fac9b9;background:#fff8f4}
+.dashboard-hero__status--disconnected .dashboard-hero__status-icon {color:#b94525;background:#fce4db}
+.dashboard-hero__status--disconnected strong {color:#a74023}

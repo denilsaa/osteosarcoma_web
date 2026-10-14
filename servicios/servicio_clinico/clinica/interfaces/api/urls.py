@@ -23,7 +23,36 @@ from .views import (
 )
 
 
+from .views.clinical_case_review_views import (
+    clinical_case_valuation_catalog_view,
+    clinical_case_valuations_view,
+)
+
+
+from .views.clinical_case_management_views import (
+    clinical_case_management_view,
+    clinical_case_supervision_view,
+)
+
+
+from .views.clinical_notifications_views import (
+    clinical_notifications_view,
+    clinical_notification_read_view,
+)
+
+
+from .views.patient_assignments_views import (
+    patient_assignments_view, patient_assignment_revoke_view,
+)
+
+
 urlpatterns = [
+    path("pacientes/<uuid:patient_id>/asignaciones/", patient_assignments_view, name="patient-assignments"),
+    path("pacientes/<uuid:patient_id>/asignaciones/<uuid:oncologist_id>/revocar/", patient_assignment_revoke_view, name="patient-assignment-revoke"),
+    path("notificaciones/", clinical_notifications_view, name="clinical-notifications"),
+    path("notificaciones/<uuid:notification_id>/leer/", clinical_notification_read_view, name="clinical-notification-read"),
+    path("casos/supervision/resumen/", clinical_case_supervision_view, name="case-supervision"),
+    path("casos/<uuid:case_id>/gestion/", clinical_case_management_view, name="case-management"),
 
     # ======================================================
     # PACIENTES
@@ -108,6 +137,19 @@ urlpatterns = [
         "casos/<uuid:case_id>/",
         clinical_case_detail_view,
         name="clinical-case-detail",
+    ),
+
+
+    path(
+        "casos/valoraciones/criterios/",
+        clinical_case_valuation_catalog_view,
+        name="case-valuation-catalog",
+    ),
+
+    path(
+        "casos/<uuid:case_id>/valoraciones/",
+        clinical_case_valuations_view,
+        name="case-valuations",
     ),
 
 

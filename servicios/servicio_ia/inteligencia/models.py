@@ -936,6 +936,9 @@ class AnalisisRadiografiaIA(models.Model):
 
     radiografia_uuid = models.UUIDField()
 
+    # Campo creado por la migracion 0003; idempotencia por trabajo RabbitMQ.
+    solicitud_uuid = models.UUIDField(null=True, blank=True, unique=True)
+
     caso_uuid = models.UUIDField()
 
     solicitado_por_uuid = models.UUIDField(
@@ -1055,3 +1058,52 @@ class AnalisisRadiografiaIA(models.Model):
 
     def __str__(self):
         return str(self.id_analisis)
+
+
+class SolicitudAnalisisIA(models.Model):
+    """Trabajo asíncrono auditado; no guardar bytes clínicos en RabbitMQ."""
+    id_solicitud = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    caso_uuid = models.UUIDField(db_index=True)
+    radiografia_uuid = models.UUIDField(db_index=True)
+    solicitado_por_uuid = models.UUIDField()
+    estado = models.CharField(max_length=20, default="PENDIENTE", db_index=True)
+    intentos = models.PositiveSmallIntegerField(default=0)
+    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    fecha_inicio = models.DateTimeField(null=True, blank=True)
+    fecha_fin = models.DateTimeField(null=True, blank=True)
+    duracion_segundos = models.FloatField(null=True, blank=True)
+    version_modelo = models.CharField(max_length=120)
+    archivo = models.FileField(upload_to="solicitudes_ia/")
+    analisis_id = models.UUIDField(null=True, blank=True)
+    error_codigo = models.CharField(max_length=60, null=True, blank=True)
+    motivo_reproceso = models.TextField(blank=True, default="")
+    historial = models.JSONField(default=list)
+
+    class Meta:
+        db_table = "solicitudes_analisis_ia"
+        indexes = [models.Index(fields=["caso_uuid", "fecha_solicitud"], name="idx_sol_ia_caso_fecha")]
+        constraints = [models.UniqueConstraint(
+            fields=["caso_uuid", "radiografia_uuid"],
+            condition=Q(estado__in=["PENDIENTE", "PROCESANDO"]),
+            name="uq_sol_ia_activa_radiografia",
+        )]
+
+
+class EventoNotificacionIA(models.Model):
+    """Outbox: se confirma en PostgreSQL antes de publicar en RabbitMQ."""
+    id_evento = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    solicitud = models.OneToOneField(
+        SolicitudAnalisisIA, on_delete=models.PROTECT, db_column="id_solicitud",
+        related_name="evento_notificacion",
+    )
+    caso_uuid = models.UUIDField()
+    estado = models.CharField(max_length=20)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    publicado_en = models.DateTimeField(null=True, blank=True)
+    intentos_publicacion = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = "eventos_notificacion_ia"
+        indexes = [
+            models.Index(fields=["publicado_en", "fecha_creacion"], name="idx_ia_evt_pendiente"),
+        ]

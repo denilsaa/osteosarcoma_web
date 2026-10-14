@@ -1,0 +1,23 @@
+.offline-clinical{margin-top:14px;padding:13px 14px;background:#f8fbfc;border:1px solid #d9e8ec;border-radius:11px;color:#315263}
+.offline-clinical__title{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:.8rem}
+.offline-clinical__title svg{color:#147a91}
+.offline-clinical__title span{margin-left:auto;color:#46806e;font-size:.67rem;font-weight:700}
+.offline-clinical__unlock p,.offline-clinical__warning{margin:8px 0 0;color:#55717a;font-size:.72rem;line-height:1.5}
+.offline-clinical__unlock input{max-width:260px;width:100%;border:1px solid #b8d4dc;background:white;padding:9px 11px;border-radius:8px;margin:10px 8px 4px 0;font-size:.78rem}
+.offline-clinical button{display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;border-radius:8px;border:1px solid #9acbd5;color:#13748a;background:white;padding:9px 11px;font-size:.73rem;font-weight:700;margin:4px 7px 2px 0}
+.offline-clinical button:disabled{cursor:not-allowed;opacity:.5}
+.offline-clinical__active{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding-top:10px;font-size:.76rem}
+.offline-clinical__active strong{font-size:.93rem;color:#164b5b}
+.offline-clinical .offline-clinical__error{color:#a62c2c;font-size:.72rem;margin:7px 0}
+.offline-clinical__warning{border-top:1px solid #e0ebed;margin-top:10px;padding-top:9px}
+
+.offline-clinical__linked{margin-top:10px;padding:10px 0;border-top:1px solid #ddecef;font-size:.77rem}
+.offline-clinical__linked>p{margin:4px 0 7px;color:#55717a;font-size:.72rem}
+.offline-clinical__linked-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* Formulario compacto de clave y aviso de sincronización contextual. */
+.offline-clinical__unlock { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.offline-clinical__unlock input { margin:0; }
+.offline-clinical__unlock button { margin:0; }
+.offline-clinical__unlock .offline-clinical__error { flex-basis:100%; }
+.offline-clinical__pending-note { margin:10px 0 0; padding:8px 10px; border:1px solid #f3d9a0; border-radius:8px; background:#fffaf0; color:#80521b; font-size:.7rem; line-height:1.4; }

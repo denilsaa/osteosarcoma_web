@@ -2,6 +2,8 @@ import {
   apiClinico,
 } from "./axios";
 
+import { cacheAuthorizedCasePatient } from "../offline/clinicalQueue";
+
 
 // ==========================================================
 // CATÁLOGOS
@@ -539,17 +541,27 @@ export interface PatientPhotoResponse {
 // OBTENER CATÁLOGOS
 // ==========================================================
 
-export async function getPatientCatalogs():
-  Promise<PatientCatalogs> {
-
-  const response =
-    await apiClinico
-      .get<PatientCatalogsResponse>(
-        "/pacientes/catalogos/",
-      );
-
-
-  return response.data.data;
+export async function getPatientCatalogs(): Promise<PatientCatalogs> {
+  // Catálogos genéricos SIN información clínica personal.
+  const cacheKey = "osteo-public-patient-catalogs-v1";
+  try {
+    const response = await apiClinico.get<PatientCatalogsResponse>(
+      "/pacientes/catalogos/", { timeout: 7000 },
+    );
+    try { localStorage.setItem(cacheKey, JSON.stringify(response.data.data)); } catch { /* cuota */ }
+    return response.data.data;
+  } catch (error) {
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const obj: unknown = JSON.parse(cached);
+        if (obj && typeof obj === "object" && "sexes" in obj && "document_types" in obj && "contact_types" in obj) {
+          return obj as PatientCatalogs;
+        }
+      }
+    } catch { /* no hay copia válida */ }
+    throw error;
+  }
 }
 
 
@@ -656,6 +668,10 @@ export async function getPatient(
       );
 
 
+  // Guardar una referencia MÍNIMA cifrada si la bandeja está desbloqueada.
+  // La ficha clínica completa nunca se coloca en caché pública.
+  void cacheAuthorizedCasePatient(response.data.data)
+    .catch(() => { /* no hay clave offline disponible */ });
   return response.data.data;
 }
 

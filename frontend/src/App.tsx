@@ -1,3 +1,5 @@
+import { lazy, Suspense } from "react";
+
 import {
   Navigate,
   Route,
@@ -38,18 +40,18 @@ import {
   CambiarPasswordRecuperacionPage,
 } from "./pages/recuperacion/CambiarPasswordRecuperacionPage";
 
-import {
-  RecuperacionesJefePage,
-} from "./pages/recuperacion/RecuperacionesJefePage";
+const RecuperacionesJefePage = lazy(() =>
+  import("./pages/recuperacion/RecuperacionesJefePage").then((module) => ({ default: module.RecuperacionesJefePage })),
+);
 
 
 // ==========================================================
 // PERMISOS
 // ==========================================================
 
-import {
-  PermisosJefePage,
-} from "./pages/permisos/PermisosJefePage";
+const PermisosJefePage = lazy(() =>
+  import("./pages/permisos/PermisosJefePage").then((module) => ({ default: module.PermisosJefePage })),
+);
 
 
 // ==========================================================
@@ -65,13 +67,13 @@ import {
 // USUARIOS / ONCÓLOGOS
 // ==========================================================
 
-import {
-  UsuariosPage,
-} from "./pages/usuarios/UsuariosPage";
+const UsuariosPage = lazy(() =>
+  import("./pages/usuarios/UsuariosPage").then((module) => ({ default: module.UsuariosPage })),
+);
 
-import {
-  NuevoUsuarioPage,
-} from "./pages/usuarios/NuevoUsuarioPage";
+const NuevoUsuarioPage = lazy(() =>
+  import("./pages/usuarios/NuevoUsuarioPage").then((module) => ({ default: module.NuevoUsuarioPage })),
+);
 
 
 // ==========================================================
@@ -103,9 +105,11 @@ import {
   NuevoCasoPage,
 } from "./pages/casos/NuevoCasoPage";
 
-import {
-  CasoDetallePage,
-} from "./pages/casos/CasoDetallePage";
+const CasoDetallePage = lazy(() =>
+  import("./pages/casos/CasoDetallePage").then((module) => ({
+    default: module.CasoDetallePage,
+  })),
+);
 
 
 // ==========================================================
@@ -139,9 +143,9 @@ import {
 // AUDITORÍA
 // ==========================================================
 
-import {
-  AuditoriaPage,
-} from "./pages/auditoria/AuditoriaPage";
+const AuditoriaPage = lazy(() =>
+  import("./pages/auditoria/AuditoriaPage").then((module) => ({ default: module.AuditoriaPage })),
+);
 
 
 // ==========================================================
@@ -265,7 +269,9 @@ function App() {
           <Route
             path="/usuarios"
             element={
-              <UsuariosPage />
+              <Suspense fallback={<div role="status" aria-live="polite" style={{ padding: 16 }}>Cargando módulo...</div>}>
+                <UsuariosPage />
+              </Suspense>
             }
           />
 
@@ -273,7 +279,9 @@ function App() {
           <Route
             path="/usuarios/nuevo"
             element={
-              <NuevoUsuarioPage />
+              <Suspense fallback={<div role="status" aria-live="polite" style={{ padding: 16 }}>Cargando módulo...</div>}>
+                <NuevoUsuarioPage />
+              </Suspense>
             }
           />
 
@@ -286,7 +294,9 @@ function App() {
           <Route
             path="/recuperaciones"
             element={
-              <RecuperacionesJefePage />
+              <Suspense fallback={<div role="status" aria-live="polite" style={{ padding: 16 }}>Cargando módulo...</div>}>
+                <RecuperacionesJefePage />
+              </Suspense>
             }
           />
 
@@ -299,7 +309,9 @@ function App() {
           <Route
             path="/permisos"
             element={
-              <PermisosJefePage />
+              <Suspense fallback={<div role="status" aria-live="polite" style={{ padding: 16 }}>Cargando módulo...</div>}>
+                <PermisosJefePage />
+              </Suspense>
             }
           />
 
@@ -355,7 +367,9 @@ function App() {
           <Route
             path="/casos/:id"
             element={
-              <CasoDetallePage />
+              <Suspense fallback={<div role="status" aria-live="polite" style={{ padding: 16 }}>Cargando detalle del caso...</div>}>
+                <CasoDetallePage />
+              </Suspense>
             }
           />
 
@@ -408,7 +422,9 @@ function App() {
           <Route
             path="/auditoria"
             element={
-              <AuditoriaPage />
+              <Suspense fallback={<div role="status" aria-live="polite" style={{ padding: 16 }}>Cargando módulo...</div>}>
+                <AuditoriaPage />
+              </Suspense>
             }
           />
 

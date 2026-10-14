@@ -1,0 +1,27 @@
+{
+  "threshold": 0.11000000000000001,
+  "accuracy": 0.9033989266547406,
+  "precision": 0.449438202247191,
+  "sensitivity": 0.8888888888888888,
+  "recall": 0.8888888888888888,
+  "specificity": 0.9046692607003891,
+  "f1": 0.5970149253731343,
+  "roc_auc": 0.9518806744487678,
+  "pr_auc": 0.7204527070851211,
+  "true_negative": 465,
+  "false_positive": 49,
+  "false_negative": 5,
+  "true_positive": 40,
+  "confusion_matrix": [
+    [
+      465,
+      49
+    ],
+    [
+      5,
+      40
+    ]
+  ],
+  "loss": 0.13438243772134797,
+  "selection_score": 0.8399693491040259
+}

@@ -700,6 +700,7 @@ class DjangoPatientRepository(
         document_type_code: str | None,
         page: int,
         page_size: int,
+        authorized_oncologist_uuid: UUID | None = None,
     ) -> tuple[
         list[Patient],
         int,
@@ -708,6 +709,15 @@ class DjangoPatientRepository(
         queryset = (
             self._base_queryset()
         )
+
+        if authorized_oncologist_uuid is not None:
+            from clinica.infrastructure.persistence.models import CasoClinico
+            from clinica.infrastructure.security.patient_access import PatientAccess
+            from clinica.application.dto import AuditActorDTO
+            queryset = PatientAccess.scope(
+                queryset,
+                AuditActorDTO(usuario_uuid=authorized_oncologist_uuid, rol="ONCOLOGO"),
+            )
 
         # ==================================================
         # BÚSQUEDA
@@ -811,6 +821,10 @@ class DjangoPatientRepository(
         # DISTINCT + CASOS
         # ==================================================
 
+        cases_filter = (
+            Q(casos_clinicos__oncologo_responsable_uuid=authorized_oncologist_uuid)
+            if authorized_oncologist_uuid is not None else Q()
+        )
         queryset = (
             queryset
             .distinct()
@@ -818,6 +832,7 @@ class DjangoPatientRepository(
                 cantidad_casos=Count(
                     "casos_clinicos",
                     distinct=True,
+                    filter=cases_filter,
                 )
             )
             .order_by(

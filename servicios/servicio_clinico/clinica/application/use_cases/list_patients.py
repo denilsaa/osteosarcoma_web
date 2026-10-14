@@ -21,6 +21,7 @@ class ListPatientsUseCase:
     def execute(
         self,
         dto: PatientFiltersDTO,
+        authorized_oncologist_uuid=None,
     ):
         page = max(
             dto.page,
@@ -63,6 +64,7 @@ class ListPatientsUseCase:
 
                 page_size=
                     page_size,
+                authorized_oncologist_uuid=authorized_oncologist_uuid,
             )
         )
 

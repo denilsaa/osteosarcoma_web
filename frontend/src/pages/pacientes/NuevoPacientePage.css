@@ -1119,3 +1119,6 @@
   }
 
 }
+/* La acción depende de un alta cifrada local y no confirma registro clínico. */
+.new-patient-offline-next{margin-left:auto;padding:9px 12px;border:1px solid #86cbd1;border-radius:8px;background:#fff;color:#0c6577;cursor:pointer;font-size:.78rem;font-weight:750}
+.new-patient-offline-next:hover{background:#ecfeff}
